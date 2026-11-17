@@ -91,6 +91,13 @@ h1,h2,h3{font-weight:400}
 .sl input{flex:1;accent-color:var(--accent);height:28px}
 .sl output{width:52px;text-align:right;font-family:'Noto Sans KR';font-weight:700}
 .nameIn{font-family:inherit;font-size:18px;border:3px solid var(--ink);border-radius:10px;padding:6px 10px;width:220px;max-width:100%}
+input,textarea{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+input::placeholder{color:#b9bfc7;opacity:1}
+.nameplate.edit{display:flex;align-items:center;gap:4px;cursor:text;padding:2px 6px 2px 10px}
+.nameplate.edit:focus-within{outline:3px solid var(--accent);outline-offset:1px}
+#nameIn2{font-family:var(--head);font-size:16px;border:none;background:transparent;width:9.5em;padding:2px 0;color:var(--ink);outline:none;text-transform:uppercase}
+#nameIn2::placeholder{text-transform:none;font-family:'Jua',sans-serif}
+.nameplate.edit .pen{font-size:13px;opacity:.6}
 .cfoot{justify-content:flex-end;position:sticky;bottom:-16px;background:var(--paper);padding:10px 0 4px;z-index:4}
 
 /* ---------- Game ---------- */
@@ -311,7 +318,7 @@ body.touch #joyHint{display:grid}
       <div class="cmain">
         <div class="pv">
           <canvas id="preview"></canvas>
-          <div class="nameplate" id="namePlate">PT - JOHN DOE</div>
+          <label class="nameplate edit" id="namePlate">PT -<input id="nameIn2" maxlength="10" placeholder="닉네임 입력" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done"><span class="pen">✏️</span></label>
           <div class="vbtns" id="viewBtns">
             <button data-v="down">정면</button><button data-v="right">측면</button><button data-v="up">뒷면</button><button data-v="spin" class="on">회전</button><button data-v="walk">걷기</button>
           </div>
@@ -954,15 +961,18 @@ function proj(x,y,h){_v.set(x/T,h,y/T).project(R.camera);return {x:(_v.x+1)/2*R.
 /* =========================================================
    STATE
    ========================================================= */
-const DEFAULT_CHAR={name:'JOHN DOE',hair:'bald',hairColor:'#1d1d1d',eyes:'dot',brows:'angry',nose:'nostril',lips:'big',
+const DEFAULT_CHAR={name:'',hair:'bald',hairColor:'#1d1d1d',eyes:'dot',brows:'angry',nose:'nostril',lips:'big',
   skin:'#f5d9bf',crocs:'#2d2d2d',top:'#1f2f5c',bottom:'#1f2f5c',height:1,bulk:1,
   hat:'none',face:'none',neck:'none',hand:'none',accColor:'#4fc3f7',preset:0};
 let charCfg=Object.assign({},DEFAULT_CHAR,load('alonechief_char_v1',{}));
+if(charCfg.name==='JOHN DOE')charCfg.name='';
+const dispName=()=>(charCfg.name||'').trim()||'익명 실장';
+const badgeText=()=>charCfg.name?'PT - '+charCfg.name.toUpperCase():'PT';
 let G=null;
 const keys={};
 let joyVec={x:0,y:0};
 
-function playerCfg(){return Object.assign({},charCfg,{badge:'PT - '+(charCfg.name||'JOHN DOE').toUpperCase(),extra:null});}
+function playerCfg(){return Object.assign({},charCfg,{badge:badgeText(),extra:null});}
 function newGame(){
   for(const s of stations)Object.assign(s,{phase:'idle',occ:null,t:0,dur:0,autoList:[],handsList:[],cur:null,neglect:0});
   for(const ch of chairs)ch.occ=null;
@@ -1459,7 +1469,7 @@ function endGame(){
   const el=$('#countdown');el.className='sign end';el.textContent='퇴근!';el.style.animation='none';void el.offsetWidth;el.style.animation='';
   $('#cdOv').classList.add('show');
   const sc=G.score, st=G.stats, id=Date.now()+'_'+Math.random().toString(36).slice(2,6);
-  const name=(charCfg.name||'JOHN DOE').slice(0,10);
+  const name=dispName().slice(0,10);
   saveScore({id,name,score:sc,date:new Date().toISOString().slice(0,10)});
   const b=board(monthKey()), rank=b.findIndex(e=>e.id===id)+1;
   const stars=STAR_T.filter(v=>sc>=v).length;
@@ -1591,7 +1601,7 @@ let curTab='acc', pvView='spin', pvT=0, pvYaw=0, pvDrag=null, rosterImgs=null;
 function ctrlHtml(k){
   if(OPTS[k]){const [lab,list]=OPTS[k];return `<div class="grp"><label class="t">${lab}</label><div class="chips">${list.map(([v,n])=>`<button class="chip ${charCfg[k]===v?'on':''}" data-k="${k}" data-v="${v}">${n}</button>`).join('')}</div></div>`;}
   if(COLORS[k]){const [lab,list]=COLORS[k];return `<div class="grp"><label class="t">${lab}</label><div class="chips">${list.map(v=>`<button class="sw ${charCfg[k]===v?'on':''}" data-k="${k}" data-v="${v}" style="background:${v}" aria-label="${lab} ${v}"></button>`).join('')}</div></div>`;}
-  if(k==='_name')return `<div class="grp"><label class="t">이름 (명찰)</label><input id="nameIn" class="nameIn" maxlength="10" placeholder="JOHN DOE" autocomplete="off" value="${esc(charCfg.name||'')}"></div>`;
+  if(k==='_name')return `<div class="grp"><label class="t">이름 (명찰)</label><input id="nameIn" class="nameIn" maxlength="10" placeholder="닉네임 입력" autocomplete="off" spellcheck="false" enterkeyhint="done" value="${esc(charCfg.name||'')}"></div>`;
   if(k==='_h')return `<div class="grp"><label class="t">키</label><div class="sl"><input type="range" id="hSl" min="0.82" max="1.22" step="0.01" value="${charCfg.height}"><output id="hOut"></output></div></div>`;
   if(k==='_b')return `<div class="grp"><label class="t">체격 (벌크)</label><div class="sl"><input type="range" id="bSl" min="0.78" max="1.4" step="0.01" value="${charCfg.bulk}"><output id="bOut"></output></div></div>`;
   return '';
@@ -1600,7 +1610,7 @@ function buildCustom(){
   $('#tabs').innerHTML=TABS.map(([id,lab])=>`<button class="tab ${id===curTab?'on':''}" data-tab="${id}">${lab}</button>`).join('');
   $('#optGroups').innerHTML=TABS.find(t=>t[0]===curTab)[2].map(ctrlHtml).join('');
   if($('#hSl'))syncSl();
-  $('#namePlate').textContent='PT - '+(charCfg.name||'JOHN DOE').toUpperCase();
+  syncName();
   buildRoster();
 }
 function buildRoster(){
@@ -1612,7 +1622,8 @@ function presetCfg(r){return Object.assign({},DEFAULT_CHAR,r.c,{badge:'PT',name:
 function syncSl(){if($('#hOut'))$('#hOut').textContent=Math.round(150+(charCfg.height-.82)/.4*45)+'cm';if($('#bOut'))$('#bOut').textContent=['슬림','보통','탄탄','벌크'][clamp(Math.floor((charCfg.bulk-.78)/.62*4),0,3)];}
 function saveChar(){store('alonechief_char_v1',charCfg);}
 let pvRebuildT=null;
-function changed(){saveChar();clearTimeout(pvRebuildT);pvRebuildT=setTimeout(rebuildPreview,30);$('#namePlate').textContent='PT - '+(charCfg.name||'JOHN DOE').toUpperCase();}
+function changed(){saveChar();clearTimeout(pvRebuildT);pvRebuildT=setTimeout(rebuildPreview,30);syncName();}
+function syncName(skip){for(const id of ['nameIn','nameIn2']){const el=document.getElementById(id);if(el&&el!==skip&&el.value!==(charCfg.name||''))el.value=charCfg.name||'';}}
 function randomize(){for(const [k,[,list]] of Object.entries(OPTS))charCfg[k]=pick(list)[0];
   for(const [k,[,list]] of Object.entries(COLORS))charCfg[k]=pick(list);charCfg.bottom=charCfg.top;
   charCfg.height=+rand(.84,1.2).toFixed(2);charCfg.bulk=+rand(.8,1.35).toFixed(2);charCfg.preset=null;buildCustom();changed();sfx('whoosh');}
@@ -1625,9 +1636,14 @@ $('#optGroups').addEventListener('click',e=>{const b=e.target.closest('[data-k]'
   charCfg.preset=null;$$('#roster button.on').forEach(x=>x.classList.remove('on'));
   $$(`#optGroups [data-k="${k}"]`).forEach(x=>x.classList.toggle('on',x===b));changed();sfx('click');});
 $('#optGroups').addEventListener('input',e=>{const t=e.target;
-  if(t.id==='nameIn'){charCfg.name=t.value.trim()||'JOHN DOE';changed();}
+  if(t.id==='nameIn'){setName(t);}
   if(t.id==='hSl'){charCfg.height=+t.value;syncSl();changed();}
   if(t.id==='bSl'){charCfg.bulk=+t.value;syncSl();changed();}});
+function setName(el){charCfg.name=el.value.replace(/\s+/g,' ').trimStart().slice(0,10);saveChar();syncName(el);clearTimeout(pvRebuildT);pvRebuildT=setTimeout(rebuildPreview,250);}
+$('#nameIn2').addEventListener('input',e=>setName(e.target));
+for(const ev of ['keydown','keyup','pointerdown'])$('#nameIn2').addEventListener(ev,e=>e.stopPropagation());
+$('#nameIn2').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur();});
+$('#nameIn2').addEventListener('blur',()=>{charCfg.name=(charCfg.name||'').trim();saveChar();syncName();});
 $('#viewBtns').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;pvView=b.dataset.v;$$('#viewBtns button').forEach(x=>x.classList.toggle('on',x===b));});
 $('#randBtn').addEventListener('click',randomize);
 const pv=$('#preview');const PV={};

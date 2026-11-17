@@ -1419,7 +1419,6 @@ function renderOverlays(t){
     if(p.state==='leaving'&&p.mood==='happy'&&p.y<H)ov('h'+p.id,'emo','😊',p.x,p.y,hh+.1);
   }
   if(P.stunT>0)ov('stun','ob red',`💫 기절 ${P.stunT.toFixed(1)}s`,P.x,P.y,2.45);
-  if(P.escort)ov('esc','emo','🤝',P.x,P.y,2.05);
   const cand=G.cand;
   if(cand&&!G.modal){const a=cand.at;ov('hint','hint'+(cand.bad?' bad':''),`<b>E</b>${cand.icon} ${esc(cand.label)}`,a.x,a.y,a.h+Math.sin(t*6)*.04);}
   }

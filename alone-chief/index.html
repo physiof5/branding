@@ -1180,11 +1180,16 @@ function nextStep(s){
   s.phase='next';p.patience=p.patMax=40;p.mood=null;
   toast(`➡️ 다음 치료로 안내 · ${remaining(p).map(t=>TREAT[t].n).join(', ')}`,'warn');sfx('ding');
 }
-function startChase(p,s){
-  const a=tc(s.access.x,s.access.y);
-  s.occ=null;s.phase='idle';s.autoList=[];s.handsList=[];s.cur=null;
-  p.station=null;p.state='chase';p.chaseT=0;p.repath=0;p.angry=2;p.mood='angry';p.speed=118;p.wp=[a];
-  toast('😡 방치된 환자 돌진! 피하세요','bad');sfx('angry');buzz([60,40,60]);
+// a patient who turns red-angry gets up and heads straight for the player (never just leaves)
+function startChase(p){
+  if(p.state==='chase'||p.state==='leaving')return;
+  const s=p.station;
+  if(s){if(s.occ===p){s.occ=null;s.phase='idle';s.autoList=[];s.handsList=[];s.cur=null;s.t=0;}p.wp=[tc(s.access.x,s.access.y)];p.station=null;}
+  else if(p.chair!=null){const ch=chairs[p.chair];if(ch.occ===p)ch.occ=null;p.wp=[tc(ch.access.x,ch.access.y)];p.chair=null;}
+  else p.wp=[];
+  if(G.player.escort===p)G.player.escort=null;
+  p.state='chase';p.chaseT=0;p.repath=.2;p.angry=2;p.mood='angry';p.speed=120;
+  toast('😡 화난 환자 돌진! 피하세요','bad');sfx('angry');buzz([60,40,60]);
 }
 
 /* =========================================================
@@ -1319,13 +1324,13 @@ function update(dt){
         toast(`🟢 ${s.label} 완료 · 마무리!`,'good');}}
     else if(s.phase==='autoDone'){s.neglect+=dt;const prev=p.angry;p.angry=s.neglect>=20?2:s.neglect>=10?1:0;
       if(p.angry===1&&prev===0){particle(cx,cy,1.6,'😠',0,1,1);sfx('angry');buzz(40);}
-      if(s.neglect>=20)startChase(p,s);}
+      if(s.neglect>=20)startChase(p);}
     else if(s.phase==='hands'){
       if(active===s&&(s.cur!=='US'||cartNear(s))){s.t+=dt;if(Math.random()<dt*8)particle(cx+rand(-20,20),cy+rand(-10,10),1,pick(['✨','💫',TREAT[s.cur].icon]),rand(-20,20),1.2,.6);
         if(s.t>=s.dur){award(p,s.cur,s);s.cur=null;nextStep(s);}}
-      else{p.patience-=dt*.5;if(p.patience<=0)angryLeave(p,'😤 치료 중단 · 환자 퇴장');}
+      else{p.patience-=dt*.5;if(p.patience<=0)startChase(p);}
     }
-    else if(s.phase==='handsReady'||s.phase==='next'){p.patience-=dt;if(p.patience<=0)angryLeave(p,'😤 기다리다 지쳐 퇴장');}
+    else if(s.phase==='handsReady'||s.phase==='next'){p.patience-=dt;if(p.patience<=0)startChase(p);}
   }
 
   for(const p of G.patients){
@@ -1333,7 +1338,7 @@ function update(dt){
     switch(p.state){
       case 'arriving': if(followPath(p,dt)){p.state='waiting';p.face=0;} break;
       case 'toChair': if(followPath(p,dt)){p.state='waiting';p.face=0;} break;
-      case 'waiting': p.patience-=dt;if(p.patience<=0)angryLeave(p,'😤 대기 초과 · 환자 귀가'); break;
+      case 'waiting': p.patience-=dt;if(p.patience<=0)startChase(p); break;
       case 'following':{
         const tr=P.trail;const idx=Math.max(0,tr.length-1-8);const tgt=tr.length>9?tr[idx]:null;
         const d=dist(p,P);
@@ -1343,21 +1348,20 @@ function update(dt){
         break;}
       case 'toSeat': if(followPath(p,dt)&&p.station)onSeated(p.station); break;
       case 'chase':{
-        p.chaseT+=dt;p.repath-=dt;
+        p.chaseT+=dt;p.repath-=dt;p.speed=Math.min(205,120+p.chaseT*7);
         if(p.repath<=0){p.repath=.35;const st=tileOfFree(p.x,p.y);const pt=tileOfFree(P.x,P.y);
           const path=bfs(st.x,st.y,pt.x,pt.y)||[];p.wp=smooth([{x:p.x,y:p.y},...path]).slice(1);p.wp.push({x:P.x,y:P.y});}
         followPath(p,dt);
         if(Math.random()<dt*3)particle(p.x,p.y,1.9,'💢',rand(-10,10),.8,.7);
-        if(dist(p,P)<28&&P.stunT<=0){
-          P.stunT=5;G.stats.stuns++;dropCart(true);
+        if(dist(p,P)<28){
+          if(P.stunT<=0){P.stunT=5;sfx('stun');buzz([200,80,200]);}
+          G.stats.stuns++;dropCart(true);
           const lost=Math.min(G.score,p.earned);G.score-=lost;G.stats.revPts+=lost;
           popup(P.x,P.y,2.4,lost?`-${lost} (0점 처리)`:'기절!','#ff4d4d');
           for(let i=0;i<8;i++)particle(P.x+rand(-10,10),P.y,1.4,pick(['⭐','💫','💥']),rand(-90,90),rand(1,2.2),1);
-          if(P.escort){const e=P.escort;P.escort=null;angryLeave(e,'😤 안내 중 환자도 퇴장',0);}
           p.earned=0;p.speed=p.type.speed;
-          angryLeave(p,'💥 충돌! 5초 기절 · 환자 0점',0);
-          sfx('stun');buzz([200,80,200]);
-        }else if(p.chaseT>12){p.speed=p.type.speed;angryLeave(p,'😤 "다신 안 와요!"',0);}
+          angryLeave(p,'💥 충돌! 5초 정지 · 환자 0점',0);
+        }
         break;}
       case 'leaving': if(followPath(p,dt))p.state='gone'; break;
     }

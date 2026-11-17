@@ -1570,6 +1570,8 @@ function mockEntries(mk){const r=seeded('npc'+mk);const names=NPC_NAMES.slice().
   return names.map(n=>({name:n,score:Math.round((450+r()*1900)/10)*10,npc:true}));}
 function monthPrize(mk){if(PRIZE_OVERRIDE[mk])return PRIZE_OVERRIDE[mk];const r=seeded('prize'+mk);return PRIZES[Math.floor(r()*PRIZES.length)];}
 function loadLB(){const lb=load(LB_KEY,{});const keep=[monthKey(),prevMonthKey()];let ch=false;
+  // records saved before avatars existed were played with the default character (송 쌤): give them that costume
+  for(const k of Object.keys(lb))for(const e of (lb[k]||[]))if(e&&!e.av){e.av={};ch=true;}
   for(const k of Object.keys(lb))if(!keep.includes(k)){delete lb[k];ch=true;}if(ch)store(LB_KEY,lb);return lb;}
 function board(mk){const lb=loadLB();return (lb[mk]||[]).slice().sort((a,b)=>b.score-a.score);}
 function saveScore(entry){const lb=loadLB();const mk=monthKey();(lb[mk]=lb[mk]||[]).push(entry);lb[mk].sort((a,b)=>b.score-a.score);lb[mk]=lb[mk].slice(0,30);store(LB_KEY,lb);}

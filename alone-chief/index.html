@@ -210,6 +210,17 @@ body.touch #joyHint{display:grid}
 .total{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;font-family:var(--head);font-size:22px}
 .total b{font-size:56px;font-weight:400;line-height:1}
 #endRank{font-size:18px;margin:12px 0 4px;text-align:center}
+#igBox{display:none;margin-top:10px;background:linear-gradient(135deg,#fff3e0,#fce4ec);border:3px solid var(--ink);border-radius:16px;padding:12px 14px;box-shadow:0 5px 0 rgba(0,0,0,.2);animation:tin .35s cubic-bezier(.3,1.6,.6,1)}
+.igt{font-family:var(--head);font-size:21px}
+.igd{font-size:15px;margin:2px 0 8px}
+.igrow{display:flex;align-items:center;gap:6px}
+.igrow .at{font-family:var(--head);font-size:24px;color:#c13584}
+#igIn{flex:1;min-width:0;font-family:'Noto Sans KR';font-size:17px;border:3px solid var(--ink);border-radius:10px;padding:8px 10px;-webkit-user-select:text;user-select:text}
+#igSave{padding:8px 16px;font-size:17px;background:linear-gradient(45deg,#f09433,#dc2743,#bc1888)}
+.igmsg{font-size:14px;margin-top:6px;min-height:1em;font-family:'Noto Sans KR';font-weight:700}
+.igmsg.bad{color:#d32f2f}.igmsg.good{color:#2e7d32}
+.ign{font-size:12px;color:#7a6a6a;margin-top:4px;font-family:'Noto Sans KR'}
+.igtag{margin-left:6px;font-size:12px;color:#c13584;font-family:'Noto Sans KR';font-weight:700}
 .lbd{margin-top:8px}.lbd summary{cursor:pointer;font-family:var(--head);font-size:18px;padding:4px 0}
 #end .cbtns{justify-content:center}
 @media (max-width:700px){.egrid{grid-template-columns:1fr}.echar img{max-width:170px}.total b{font-size:44px}.stw{width:52px;height:50px}}
@@ -360,6 +371,13 @@ body.touch #joyHint{display:grid}
             <div class="total"><span>합계</span><b id="endScore">0</b></div>
           </div>
           <div id="endRank"></div>
+          <div id="igBox">
+            <div class="igt">🎉 이번 달 <b>TOP 10 · <span id="igRank"></span>위</b> 진입!</div>
+            <div class="igd">월간 상품 안내를 받을 <b>인스타그램 아이디</b>를 남겨주세요.</div>
+            <form class="igrow" id="igForm" autocomplete="off"><span class="at">@</span><input id="igIn" maxlength="31" placeholder="instagram_id" inputmode="url" autocapitalize="off" spellcheck="false"><button class="btn" id="igSave" type="submit">등록</button></form>
+            <div class="igmsg" id="igMsg"></div>
+            <div class="ign">※ 아이디는 이 기기의 랭킹에만 저장되며, 랭킹 표에 @아이디로 표시돼요. 원치 않으면 비워두셔도 돼요.</div>
+          </div>
         </div>
       </div>
       <details class="lbd"><summary>🏆 이번 달 랭킹 보기</summary><table class="lbtable" id="endTable"></table></details>
@@ -1367,7 +1385,26 @@ function saveScore(entry){const lb=loadLB();const mk=monthKey();(lb[mk]=lb[mk]||
 function daysToReset(){const d=new Date();const n=new Date(d.getFullYear(),d.getMonth()+1,1);return Math.ceil((n-d)/86400000);}
 function renderBoard(el,hlId,limit=10){
   const b=board(monthKey()).slice(0,limit);
-  el.innerHTML=b.map((e,i)=>`<tr class="${e.id&&e.id===hlId?'me':''}"><td class="r">${['🥇','🥈','🥉'][i]||(i+1)}</td><td>${esc(e.name)}${e.npc?'<span class="npc">NPC</span>':''}</td><td class="s">${e.score.toLocaleString()}</td></tr>`).join('');
+  el.innerHTML=b.map((e,i)=>`<tr class="${e.id&&e.id===hlId?'me':''}"><td class="r">${['🥇','🥈','🥉'][i]||(i+1)}</td><td>${esc(e.name)}${e.npc?'<span class="npc">NPC</span>':''}${e.ig?`<span class="igtag">@${esc(e.ig)}</span>`:''}</td><td class="s">${e.score.toLocaleString()}</td></tr>`).join('');
+}
+// ---- Instagram ID for top-10 finishers (stored only in this browser) ----
+const IG_RE=/^(?!.*\.\.)(?!\.)[A-Za-z0-9._]{1,30}(?<!\.)$/;
+let igEntryId=null;
+function showIgBox(id,rank){
+  igEntryId=id;const box=$('#igBox');box.style.display='block';
+  $('#igRank').textContent=rank;$('#igMsg').textContent='';$('#igMsg').className='igmsg';
+  const inp=$('#igIn');inp.value=load('alonechief_ig','');inp.disabled=false;$('#igSave').disabled=false;
+  $('#igSave').textContent='등록';
+}
+function saveIg(){
+  const raw=$('#igIn').value.trim().replace(/^@+/,''), msg=$('#igMsg');
+  if(!IG_RE.test(raw)){msg.textContent='영문·숫자·마침표(.)·밑줄(_)만, 30자 이내로 입력해 주세요.';msg.className='igmsg bad';sfx('bad');return;}
+  const lb=loadLB(),list=lb[monthKey()]||[],e=list.find(x=>x.id===igEntryId);
+  if(!e){msg.textContent='기록을 찾지 못했어요.';msg.className='igmsg bad';return;}
+  e.ig=raw;store(LB_KEY,lb);store('alonechief_ig',raw);
+  msg.textContent=`✅ @${raw} 등록 완료! 월말 상품 안내는 이 아이디로 드려요.`;msg.className='igmsg good';
+  $('#igSave').textContent='수정';sfx('coin');
+  renderBoard($('#endTable'),igEntryId,10);$('#endTable').closest('details').open=true;
 }
 function renderTitle(){
   const mk=monthKey(), m=+mk.slice(5), pm=+prevMonthKey().slice(5);
@@ -1415,6 +1452,7 @@ function endGame(){
   $('#endScore').textContent='0';
   $('#endRank').innerHTML=rank===1?`👑 이번 달 <b>1위</b> 달성! 상품: ${monthPrize(monthKey())}`:`이번 달 랭킹 <b>${rank}위</b> / ${b.length}명`;
   renderBoard($('#endTable'),id,10);
+  $('#igBox').style.display='none';if(rank>=1&&rank<=10&&sc>=STAR_T[0])setTimeout(()=>showIgBox(id,rank),2900);
   setTimeout(()=>{$('#cdOv').classList.remove('show');show('end');animateEnd(sc,grade);},1200);
 }
 function animateEnd(sc,grade){
@@ -1605,6 +1643,7 @@ $('#quickStart').onclick=()=>startGame();
 $('#backBtn').onclick=()=>show('title');
 $('#startBtn').onclick=()=>startGame();
 $('#againBtn').onclick=()=>startGame();
+$('#igForm').addEventListener('submit',e=>{e.preventDefault();saveIg();});
 $('#endCustom').onclick=()=>show('custom');
 $('#endTitle').onclick=()=>show('title');
 $('#resumeBtn').onclick=()=>togglePause();

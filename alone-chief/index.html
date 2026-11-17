@@ -350,8 +350,8 @@ body.touch #joyHint{display:grid}
         <ol class="steps">
           <li><b>💻 차트 확인</b><span>컴퓨터에서 처방부터 봐요</span></li>
           <li><b>👋 환자 안내</b><span>환자를 데리고 초록 베드로</span></li>
-          <li><b>⚡☀️ ICT · IR</b><span>자동 진행 → 초록불이면 마무리</span></li>
-          <li><b>🔊💥💆🧤 손 치료</b><span>US·ESWT·도수·파라핀은 끝까지 곁에</span></li>
+          <li><b>⚡☀️🧤 ICT · IR · 파라핀</b><span>자리만 안내하면 자동 진행 → 초록불이면 마무리</span></li>
+          <li><b>🔊💥💆 직접 치료</b><span>US·ESWT·도수는 끝날 때까지 곁에</span></li>
           <li class="warn"><b>😡 방치 금지</b><span>20초 방치 → 돌진! 부딪히면 5초 기절</span></li>
           <li><b>💖 팁 보너스</b><span>연속 만족 퇴원하면 팁 UP</span></li>
         </ol>
@@ -502,7 +502,7 @@ const TREAT={
   ESWT2:{n:'ESWT 2000', full:'체외충격파 2000발', icon:'💥', dur:8,  pts:90,  kind:'hands', col:'#ab47bc'},
   ESWT4:{n:'ESWT 4000', full:'체외충격파 4000발', icon:'💥', dur:16, pts:170, kind:'hands', col:'#7b1fa2'},
   MAN:  {n:'도수',       full:'도수치료(마사지)',  icon:'💆', dur:5,  pts:70,  kind:'hands', col:'#26a69a'},
-  PAR:  {n:'파라핀',     full:'파라핀치료',       icon:'🧤', dur:10, pts:100, kind:'hands', col:'#ffb300'},
+  PAR:  {n:'파라핀',     full:'파라핀치료',       icon:'🧤', dur:10, pts:100, kind:'auto',  col:'#ffb300'},
 };
 const RX_POOL=[
   [['ICT','IR'],6],[['ICT'],1.2],[['IR'],1],[['US'],1],
@@ -1139,13 +1139,13 @@ function seatPatient(s,p){
 function onSeated(s){
   const p=s.occ;p.state='seated';p.x=s.seat.x;p.y=s.seat.y;
   const rem=remaining(p);
-  s.autoList=s.type==='combo'?rem.filter(t=>TREAT[t].kind==='auto'):[];
+  s.autoList=rem.filter(t=>TREAT[t].kind==='auto'&&s.sup.includes(t));
   s.handsList=rem.filter(t=>s.sup.includes(t)&&TREAT[t].kind==='hands');
   nextStep(s);
 }
 function nextStep(s){
   const p=s.occ;
-  if(s.autoList.length){s.phase='auto';s.t=0;s.dur=15;p.mood='sleep';return;}
+  if(s.autoList.length){s.phase='auto';s.t=0;s.dur=Math.max(...s.autoList.map(t=>TREAT[t].dur));p.mood='sleep';return;}
   if(s.handsList.length){s.cur=s.handsList.shift();s.phase='handsReady';s.t=0;s.dur=TREAT[s.cur].dur;p.patience=p.patMax=35;p.mood=null;return;}
   if(remaining(p).length===0){discharge(p);return;}
   s.phase='next';p.patience=p.patMax=40;p.mood=null;

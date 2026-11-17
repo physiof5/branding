@@ -74,6 +74,11 @@ h1,h2,h3{font-weight:400}
 .lbtable tr.me td{background:#fff1c1}
 .lbtable td.r{width:44px;text-align:center;font-size:20px}
 .lbtable td.s{text-align:right;font-variant-numeric:tabular-nums}
+.lbn{display:inline-flex;align-items:center;gap:8px;vertical-align:middle;max-width:100%}
+.lbnm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbav{flex:none;width:38px;height:38px;border-radius:10px;border:2.5px solid var(--ink);background:linear-gradient(#d6f1fb,#86cde9);overflow:hidden;display:grid;place-items:center;font-size:20px;box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.lbav img{width:100%;height:100%;display:block;object-fit:cover}
+tr.me .lbav{border-color:var(--accent)}
 .npc{font-size:11px;color:#a08470;font-family:'Noto Sans KR';margin-left:4px}
 
 /* ---------- Customize ---------- */
@@ -1569,10 +1574,18 @@ function loadLB(){const lb=load(LB_KEY,{});const keep=[monthKey(),prevMonthKey()
 function board(mk){const lb=loadLB();return (lb[mk]||[]).slice().sort((a,b)=>b.score-a.score);}
 function saveScore(entry){const lb=loadLB();const mk=monthKey();(lb[mk]=lb[mk]||[]).push(entry);lb[mk].sort((a,b)=>b.score-a.score);lb[mk]=lb[mk].slice(0,30);store(LB_KEY,lb);}
 function daysToReset(){const d=new Date();const n=new Date(d.getFullYear(),d.getMonth()+1,1);return Math.ceil((n-d)/86400000);}
+// ---- ranking avatars: the player's own customized character, rendered without any name text ----
+const AV_KEYS=['hair','hairColor','eyes','brows','nose','lips','skin','crocs','top','bottom','height','bulk','hat','face','neck','hand','accColor'];
+function avatarCfg(){const o={};for(const k of AV_KEYS)if(charCfg[k]!=null)o[k]=charCfg[k];return o;}
+const AV_CACHE=new Map();
+function avatarImg(av){if(!av)return '';const key=JSON.stringify(av);
+  if(!AV_CACHE.has(key)){let url='';try{url=portrait(Object.assign({},DEFAULT_CHAR,av,{badge:null,name:''}),{size:96,yaw:-.2});}catch(e){}AV_CACHE.set(key,url);}
+  return AV_CACHE.get(key);}
+function avatarHtml(e){const u=avatarImg(e.av);return `<span class="lbav">${u?`<img src="${u}" alt="">`:'🧑‍⚕️'}</span>`;}
 function renderBoard(el,hlId,limit=10){
   const b=board(monthKey()).slice(0,limit);
   if(!b.length){el.innerHTML='<tr><td style="text-align:center;color:#7a6a6a;padding:14px 4px">아직 기록이 없어요 · 첫 1위에 도전하세요! 🏆</td></tr>';return;}
-  el.innerHTML=b.map((e,i)=>`<tr class="${e.id&&e.id===hlId?'me':''}"><td class="r">${['🥇','🥈','🥉'][i]||(i+1)}</td><td>${esc(e.name)}${e.npc?'<span class="npc">NPC</span>':''}${e.ig?`<span class="igtag">@${esc(e.ig)}</span>`:''}</td><td class="s">${e.score.toLocaleString()}</td></tr>`).join('');
+  el.innerHTML=b.map((e,i)=>`<tr class="${e.id&&e.id===hlId?'me':''}"><td class="r">${['🥇','🥈','🥉'][i]||(i+1)}</td><td><span class="lbn">${avatarHtml(e)}<span class="lbnm">${esc(e.name)}</span></span>${e.npc?'<span class="npc">NPC</span>':''}${e.ig?`<span class="igtag">@${esc(e.ig)}</span>`:''}</td><td class="s">${e.score.toLocaleString()}</td></tr>`).join('');
 }
 // ---- Instagram ID for top-10 finishers (stored only in this browser) ----
 const IG_RE=/^(?!.*\.\.)(?!\.)[A-Za-z0-9._]{1,30}(?<!\.)$/;
@@ -1625,7 +1638,7 @@ function endGame(){
   $('#cdOv').classList.add('show');
   const sc=G.score, st=G.stats, id=Date.now()+'_'+Math.random().toString(36).slice(2,6);
   const name=dispName().slice(0,10);
-  saveScore({id,name,score:sc,date:new Date().toISOString().slice(0,10)});
+  saveScore({id,name,score:sc,date:new Date().toISOString().slice(0,10),av:avatarCfg()});
   const b=board(monthKey()), rank=b.findIndex(e=>e.id===id)+1;
   const stars=STAR_T.filter(v=>sc>=v).length;
   const grade=stars===3&&st.lost===0&&st.stuns===0?'S':['D','C','B','A'][stars];

@@ -1471,7 +1471,7 @@ function rxChip(t,done,unknown){const tr=TREAT[t];if(unknown)return `<span class
 function ticketStatus(p){
   if(p.state==='arriving')return ['입장 중',''];
   if(p.state==='waiting')return [p.charted?'👋 안내 가능':'💻 차트 확인',p.patience<20?'alert':''];
-  if(p.state==='following')return ['🤝 안내 중',''];
+  if(p.state==='following')return ['🟢 초록 베드로 안내',''];
   if(p.state==='toSeat'||p.state==='toChair')return ['이동 중',''];
   if(p.state==='chase')return ['😡 돌진 중!','alert'];
   const s=p.station;if(!s)return ['',''];
@@ -1490,7 +1490,7 @@ function updateHUD(){
   $('#scoreTxt').textContent=G.score;
   $('#tipTxt').textContent=`TIP x${G.tip}`;
   $('#cureTxt').textContent=`퇴원 ${G.stats.cured}`;
-  const list=G.patients.filter(p=>p.state!=='leaving').slice(0,9);
+  const escP=G.player.escort;const list=escP&&escP.state==='following'?[escP]:[];
   const tk=$('#tickets');
   const ids=list.map(p=>p.id).join(',');
   if(tk.dataset.ids!==ids){tk.dataset.ids=ids;

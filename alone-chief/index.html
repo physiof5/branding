@@ -225,7 +225,7 @@ body.touch #joyHint{display:grid}
 .echar.shake{animation:cshake .4s}
 @keyframes cshake{15%{transform:translate(-5px,3px) rotate(-1.2deg)}35%{transform:translate(5px,-2px) rotate(1deg)}55%{transform:translate(-3px,2px)}75%{transform:translate(2px,-1px)}}
 .grade.S{background:linear-gradient(#ffd54f,#ff9800)}.grade.A{background:#3ec46d}.grade.B{background:#29b6f6}.grade.C{background:#ab47bc}.grade.D{background:#8d8d8d}
-.etitle{font-family:var(--head);font-size:21px;margin-top:4px}
+.etitle{font-family:var(--head);font-size:21px;margin-top:4px;white-space:nowrap}
 .receipt{background:#fbf7ee;border:3px solid var(--ink);border-radius:6px;padding:14px 20px 30px;box-shadow:0 6px 0 rgba(0,0,0,.18);
   -webkit-mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/22px 100%;mask:conic-gradient(from -45deg at bottom,#0000,#000 1deg 89deg,#0000 90deg) 50%/22px 100%}
 .stars3{display:flex;justify-content:center;gap:clamp(10px,4vw,28px);margin-bottom:10px}
@@ -1617,7 +1617,7 @@ function endGame(){
   $('#endTitle2').textContent=GRADES[grade];
   const g=$('#endGrade');g.textContent=grade;g.className='grade '+grade;
   $('#endStars').innerHTML=STAR_T.map(v=>`<div class="st"><div class="stw"><i></i></div>${v.toLocaleString()}</div>`).join('');
-  const rows=[['완료된 치료',st.treat,st.treatPts,1],['만족 퇴원 팁',st.cured,st.tipPts,1],['이탈 환자',st.lost,-st.penPts,0],['방치 충돌 몰수',st.stuns,-st.revPts,0]];
+  const rows=[['완료된 치료',st.treat,st.treatPts,1],['만족 퇴원 팁',st.cured,st.tipPts,1],['화난 환자 충돌',st.stuns,-(st.revPts+st.penPts),0]];
   $('#endRows').innerHTML=rows.map(([n,c,v,pos])=>`<tr class="${pos?'':'neg'}"><td>${n} × ${c}</td><td class="v">${v>0?'+':v<0?'−':''}${Math.abs(v).toLocaleString()}</td></tr>`).join('');
   $('#endScore').textContent='0';
   $('#endRank').innerHTML=rank===1?'👑 이번 달 1위!':`🏆 이번 달 ${rank}위 / ${b.length}명`;
@@ -1868,9 +1868,11 @@ $('#quitBtn').onclick=()=>{G.state='end';$('#pauseOv').classList.remove('show');
    ========================================================= */
 emojify(document.body);
 new MutationObserver(ms=>{for(const m of ms){if(m.type==='characterData')emojiText(m.target);else m.addedNodes.forEach(emojify);}}).observe(document.body,{childList:true,subtree:true,characterData:true});
-initRenderer();initPreview();updMute();
+try{initRenderer();initPreview();}catch(err){
+  const le=document.getElementById('loadErr');le.innerHTML='이 기기(브라우저)에서는 3D 그래픽(WebGL)을 사용할 수 없어요.<br>크롬·사파리 최신 버전에서 다시 열어 주세요.';le.style.display='flex';return;}
+updMute();
 let lowQ=false, qChecked=false, qFrames=0, qT=0;
-function setQuality(low,silent){lowQ=low;store('alonechief_lowq',low);
+function setQuality(low,silent,persist=true){lowQ=low;if(persist)store('alonechief_lowq',low);
   R.renderer.setPixelRatio(low?1:Math.min(window.devicePixelRatio||1,isTouch?1.75:2));R.renderer.shadowMap.enabled=!low;
   R.scene.traverse(o=>{if(o.material)(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);});resize();
   $('#qBtn').textContent=low?'🎨 그래픽: 저사양':'🎨 그래픽: 고화질';if(!silent)toast(low?'⚙️ 저사양 그래픽 모드':'✨ 고화질 그래픽 모드');}
@@ -1883,7 +1885,7 @@ function loop(now){
   const last2=last;const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
   if($('#game').classList.contains('active')&&G){
     update(dt);
-    if(G.state==='play'&&!qChecked&&!lowQ){qFrames++;qT+=(now-last2)/1000;if(qT>3){qChecked=true;if(qFrames/qT<28){setQuality(true,true);toast('⚙️ 저사양 모드로 전환','warn');}}}
+    if(G.state==='play'&&!qChecked&&!lowQ&&G.elapsed>2){qFrames++;qT+=(now-last2)/1000;if(qT>4){qChecked=true;if(qFrames/qT<24){setQuality(true,true,false);toast('⚙️ 저사양 모드로 전환','warn');}}}
     G.cand=(G.state==='play'&&!G.modal)?(candidates()[0]||null):null;
     render3D(dt,t);renderOverlays(t);
   }

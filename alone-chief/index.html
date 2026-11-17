@@ -121,8 +121,11 @@ input::placeholder{color:#b9bfc7;opacity:1}
 .ob .pb b{display:block;height:100%;background:var(--green)}
 .ring{width:42px;height:42px;border-radius:50%;border:3px solid var(--ink);background:conic-gradient(var(--c) calc(var(--p)*1turn),#e6e6e6 0);display:grid;place-items:center;box-shadow:0 3px 0 rgba(0,0,0,.3)}
 .ring span{width:28px;height:28px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:14px}
-.af{font-size:34px;filter:drop-shadow(0 2px 0 var(--ink));animation:afp .4s infinite alternate}
-.af.red{animation-duration:.15s}
+.af{font-size:26px;line-height:1;padding:3px 7px 4px;background:#fff;border:2.5px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+.af.red{background:#ffcdd2}.af.yellow{background:#fff59d}
+.af::after{content:'';position:absolute;left:50%;bottom:-10px;margin-left:-7px;border:7px solid transparent;border-top:8px solid var(--ink)}
+.af::before{content:'';position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-top:6px solid #fff;z-index:1}
+.af.red::before{border-top-color:#ffcdd2}.af.yellow::before{border-top-color:#fff59d}
 @keyframes afp{to{transform:scale(1.18)}}
 .af>span{display:inline-block}
 .hint{background:#fff;border:2.5px solid var(--ink);border-radius:10px;padding:2px 9px 2px 3px;font-size:15px;box-shadow:0 3px 0 rgba(0,0,0,.3);display:flex;align-items:center;gap:6px}
@@ -327,7 +330,7 @@ body.touch #joyHint{display:grid}
   #toasts{top:calc(var(--sat) + 92px)}
   .toast{font-size:14px;padding:4px 12px;max-width:92vw}
   .ob{font-size:13px}
-  .af{font-size:28px}
+  .af{font-size:22px}
   .ring{width:36px;height:36px}.ring span{width:24px;height:24px;font-size:12px}
 }
 @media (max-height:420px){
@@ -1438,7 +1441,7 @@ function renderOverlays(t){
     const cx=s.irect.x+s.irect.w/2, cy=s.irect.y+s.irect.h/2, hh=1.55;
     if(s.phase==='auto'){const e=ov('r'+s.id,'ring',`<span>${s.autoList.map(x=>TREAT[x].icon).join('')}</span>`,cx,cy,hh);e.style.setProperty('--p',s.t/s.dur);e.style.setProperty('--c','#ff9800');}
     else if(s.phase==='autoDone'){
-      if(p.angry)ov('a'+s.id,'af'+(p.angry===2?' red':''),`<span>${p.angry===2?'😡':'😠'}</span>`,cx,cy,hh);
+      if(p.angry)ov('a'+s.id,'af'+(p.angry===2?' red':' yellow'),`<span>${p.angry===2?'😡':'😠'}</span>`,cx,cy,hh);
       else ov('b'+s.id,'ob green','✅ 완료!',cx,cy,hh);
       edge('e'+s.id,p.angry?'😠':'✅',cx,cy,1);}
     else if(s.phase==='hands'){const e=ov('r'+s.id,'ring',`<span>${TREAT[s.cur].icon}</span>`,cx,cy,hh);e.style.setProperty('--p',s.t/s.dur);e.style.setProperty('--c',G.activeHands===s?'#42a5f5':'#b0bec5');

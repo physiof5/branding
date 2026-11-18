@@ -1926,13 +1926,13 @@ function renderCharShot(cfg,px){
   if(!CARD.r){CARD.c=document.createElement('canvas');CARD.r=new THREE.WebGLRenderer({canvas:CARD.c,antialias:true,alpha:true,preserveDrawingBuffer:true});
     CARD.r.shadowMap.enabled=true;CARD.r.shadowMap.type=THREE.PCFSoftShadowMap;
     CARD.s=new THREE.Scene();CARD.s.add(new THREE.HemisphereLight(0xffffff,0x8a7a60,.82));
-    const d=new THREE.DirectionalLight(0xffffff,.62);d.position.set(2,5,4);d.castShadow=true;d.shadow.mapSize.set(2048,2048);
+    const d=new THREE.DirectionalLight(0xffffff,.62);d.position.set(-1.6,5,4.5);d.castShadow=true;d.shadow.mapSize.set(2048,2048);
     Object.assign(d.shadow.camera,{left:-2,right:2,top:2,bottom:-2,near:.5,far:20});CARD.s.add(d);
     const disc=mesh(geo(k3('cyl',.85,.9,40)),M('#ffd23f','toon'),CARD.s);disc.scale.y=.12;disc.position.y=-.06;
     const disc2=mesh(geo(k3('cyl',.92,.96,40)),M('#22313f','toon'),CARD.s);disc2.scale.y=.1;disc2.position.y=-.1;
     CARD.cam=new THREE.PerspectiveCamera(26,1,.1,50);}
   CARD.r.setPixelRatio(1);CARD.r.setSize(px,px,false);
-  const o=makeChar(cfg);CARD.s.add(o.root);o.yaw=.28;o.root.rotation.y=.28;animChar(o,0,0,{moving:false,walk:0,face:null,mood:null});
+  const o=makeChar(cfg);CARD.s.add(o.root);o.yaw=-.3;o.root.rotation.y=-.3;animChar(o,0,0,{moving:false,walk:0,face:null,mood:null});
   const ht=o.height;CARD.cam.position.set(0,ht*.62+.55,ht*1.7+2.75);CARD.cam.lookAt(0,ht*.36,0);
   CARD.r.render(CARD.s,CARD.cam);const c2=document.createElement('canvas');c2.width=c2.height=px;c2.getContext('2d').drawImage(CARD.c,0,0);disposeChar(o);return c2;
 }

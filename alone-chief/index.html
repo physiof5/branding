@@ -156,7 +156,8 @@ input::placeholder{color:#b9bfc7;opacity:1}
 .nrow #nameCnt{font-family:'Noto Sans KR';font-size:14px;color:#7a6a6a}
 .nrow .btn{padding:8px 26px;font-size:18px}
 body.kb .cfoot,body.kb .ebtns{position:static}
-.cfoot{justify-content:flex-end;position:sticky;bottom:-16px;background:var(--paper);padding:10px 0 4px;z-index:4}
+.cfoot{display:grid;grid-template-columns:1fr 2fr;gap:10px;position:sticky;bottom:-16px;background:var(--paper);padding:10px 0 4px;z-index:4;border-top:3px solid var(--ink)}
+.cfoot .btn{width:100%;white-space:nowrap}
 
 /* ---------- Game ---------- */
 #game{padding:0;background:#1a100b;touch-action:none}
@@ -368,10 +369,19 @@ body.touch #joyHint{display:grid}
   .cbody{border-radius:0;border-left:none;border-right:none;min-height:100%;padding:10px max(12px,var(--sar)) 0 max(12px,var(--sal))}
   .roster{grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:62px;overflow-x:auto;scrollbar-width:none}
   .cmain{grid-template-columns:1fr}
-  .pv{position:sticky;top:0}
-  #preview{height:30vh;width:auto;aspect-ratio:320/360}
-  .cfoot{bottom:0;padding-bottom:max(10px,var(--sab))}
-  .cfoot .btn{padding:10px 14px;font-size:17px}
+  .cwrap .banner{font-size:20px;padding-bottom:16px}
+  .roster{grid-auto-columns:56px;padding:6px;margin-bottom:8px}
+  .pv{position:sticky;top:0;padding:4px 6px 6px;border-radius:14px}
+  #preview{height:22vh;width:auto;aspect-ratio:320/360}
+  .nameplate.edit{font-size:14px;padding:2px 8px}
+  .vbtns{gap:4px;margin-top:4px}.vbtns button{font-size:13px;padding:2px 8px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:2px -12px 10px;padding:0 12px}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{flex:none;font-size:15px;padding:6px 11px 4px}
+  .opts{min-height:46vh}
+  .chip{font-size:14px;padding:6px 11px}
+  .cfoot{bottom:0;margin:0 -12px;padding:8px 12px max(10px,var(--sab))}
+  .cfoot .btn{padding:10px 8px;font-size:17px}
 }
 @media (max-width:860px){
   body.land .cmain{grid-template-columns:40% 1fr}
@@ -453,7 +463,6 @@ body.touch #joyHint{display:grid}
         </div>
       </div>
       <div class="cbtns cfoot">
-        <button class="btn sec" id="randBtn">🎲 랜덤</button>
         <button class="btn sec" id="backBtn">← 뒤로</button>
         <button class="btn green" id="startBtn">출근하기 ▶</button>
       </div>
@@ -1953,7 +1962,7 @@ function buildRoster(){
   if(!rosterImgs)rosterImgs=ROSTER.map(r=>portrait(presetCfg(r)));
   $('#roster').innerHTML=ROSTER.map((r,i)=>`<button data-r="${i}" class="${charCfg.preset===i?'on':''}" aria-label="${r.n}"><img src="${rosterImgs[i]}" alt=""><span>${r.n}</span></button>`).join('')
     +`<button class="rnd" data-r="rand" aria-label="랜덤">🎲<b class="dleft">${diceLeft()}</b></button>`;
-  $('#randBtn').innerHTML=`🎲 랜덤 <small>${diceLeft()}/${DICE_MAX}</small>`;emojify($('#randBtn'));
+
 }
 function presetCfg(r){return Object.assign({},DEFAULT_CHAR,r.c,{badge:'PT',name:charCfg.name});}
 function syncSl(){if($('#hOut'))$('#hOut').textContent=Math.round(150+(charCfg.height-.82)/.4*45)+'cm';if($('#bOut'))$('#bOut').textContent=['슬림','보통','탄탄','벌크'][clamp(Math.floor((charCfg.bulk-.78)/.62*4),0,3)];}
@@ -1968,7 +1977,7 @@ function closeNameSheet(){const i=$('#nameIn2');i.blur();charCfg.name=(charCfg.n
 const DICE_MAX=10, DIRECTOR_RATE=.03;
 function todayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
 function diceLeft(){const v=load('alonechief_dice',null);return v&&v.d===todayKey()?v.n:DICE_MAX;}
-function useDice(){const n=diceLeft()-1;store('alonechief_dice',{d:todayKey(),n});const t=$('#roster .dleft');if(t)t.textContent=n;$('#randBtn').innerHTML=`🎲 랜덤 <small>${n}/${DICE_MAX}</small>`;emojify($('#randBtn'));return n;}
+function useDice(){const n=diceLeft()-1;store('alonechief_dice',{d:todayKey(),n});const t=$('#roster .dleft');if(t)t.textContent=n;return n;}
 let armT=0;
 function confirmLeaveDirector(){if(charCfg.special!=='director')return true;
   if(performance.now()-armT<3000){armT=0;return true;}
@@ -2020,7 +2029,6 @@ function updLand(){let land;try{land=screen.orientation&&screen.orientation.type
   if(!isTouch)land=innerWidth>innerHeight;document.body.classList.toggle('land',land);}
 updLand();addEventListener('orientationchange',()=>setTimeout(updLand,200));addEventListener('resize',updLand);
 $('#viewBtns').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;pvView=b.dataset.v;$$('#viewBtns button').forEach(x=>x.classList.toggle('on',x===b));});
-$('#randBtn').addEventListener('click',rollDice);
 const pv=$('#preview');const PV={};
 function initPreview(){
   PV.r=new THREE.WebGLRenderer({canvas:pv,antialias:true,alpha:true});PV.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));

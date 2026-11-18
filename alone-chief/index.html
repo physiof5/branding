@@ -40,6 +40,10 @@ button{font-family:inherit;cursor:pointer;touch-action:manipulation;color:inheri
 .btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
 .btn.sec{background:#fff;color:var(--ink);text-shadow:none}
 .btn.green{background:var(--green)}
+.btn.lunch{background:linear-gradient(#ff8fb1,#ff5d8f)}
+body.lunchmode #scoreBox,body.lunchmode #abIcons,body.lunchmode #tickets{display:none}
+.lname{font-family:var(--head);font-size:13px;color:#fff;background:rgba(31,47,92,.88);border:2px solid #fff;border-radius:999px;padding:0 9px 1px;white-space:nowrap;box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.lname.me{background:rgba(255,93,143,.92)}
 .kbd{display:inline-block;border:2px solid var(--ink);border-bottom-width:4px;border-radius:6px;padding:0 6px;background:#fff;font-family:'Jua';font-size:13px}
 .cbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
 
@@ -642,7 +646,7 @@ body.touch #joyHint{display:grid}
     <div id="tickets"></div>
     <div id="hudR">
       <div class="pill" id="scoreBox"><div class="small">🪙 점수</div><div class="big" id="scoreTxt">0</div><div class="small" id="tipTxt">TIP x1</div></div>
-      <div class="pill" id="timerBox"><div class="small">⏳ 시간</div><div class="big" id="timeTxt">3:00</div><div class="small" id="cureTxt">퇴원 0</div></div>
+      <div class="pill" id="timerBox"><div class="small" id="timeLbl">⏳ 시간</div><div class="big" id="timeTxt">3:00</div><div class="small" id="cureTxt">퇴원 0</div></div>
       <div class="ibtns"><button class="ib" id="pauseBtn" aria-label="일시정지">⏸</button><div class="ib accbadge" id="accBadge" style="display:none"></div><button class="ib" id="zoomBtn" aria-label="확대/축소">🔍</button><button class="ib" id="muteBtn" aria-label="소리">🔊</button></div>
     </div>
   </div>
@@ -1794,6 +1798,7 @@ function candidates(){
   return out;
 }
 function interact(){
+  if(G&&G.state==='lunch'){const c=lunchCands()[0];if(c)c.fn();return;}
   if(!G||G.state!=='play')return;
   if(G.modal){closeChart();return;}
   const c=candidates()[0];
@@ -1840,6 +1845,7 @@ function pBlocked(x,y){const r=13;for(const [ox,oy] of [[-r,-r],[r,-r],[-r,r],[r
 
 function update(dt){
   const P=G.player;
+  if(G.state==='lunch'){lunchUpdate(dt);return;}
   if(G.state==='countdown'){
     G.cd-=dt;const n=Math.max(0,Math.ceil(G.cd-0.2));
     if(n!==G.lastCd){G.lastCd=n;const el=$('#countdown');el.className=n>0?'':'sign';el.style.fontSize='';el.textContent=n>0?n:'시작!';
@@ -1970,6 +1976,7 @@ function popup(x,y,h,text,col){G.particles.push({id:G.pid++,x,y,h,text,vx:0,vh:.
    ========================================================= */
 const LAMP={idle:0x9e9e9e,auto:0xff9800,done:0x3ec46d,done2:0x1b7a3e,hands:0x42a5f5,next:0xffd23f};
 function render3D(dt,t){
+  if(G.lunch){lunchRender(dt,t);return;}
   const P=G.player;
   const po=R.playerObj;po.root.position.set(P.x/T,0,P.y/T);
   animChar(po,dt,t,{moving:P.moving,walk:P.walk,face:P.face,mood:P.stunT>0?'stun':null,stun:P.stunT>0});
@@ -2032,6 +2039,7 @@ function edge(key,icon,x,y,h){const s=proj(x,y,h);const small=R.w<760||R.h<520;c
 function renderOverlays(t){
   ovFrame++;
   const P=G.player, playing=G.state==='play';
+  if(G.lunch)lunchOverlays(t);
   if(playing){
   const unch=G.patients.some(p=>!p.charted&&p.state!=='leaving');
   if(unch){ov('desk','ob yellow','💻 새 차트!',12.3*T,8.6*T,2.0);edge('e-desk','💻',12.3*T,8.6*T,1);}
@@ -2088,6 +2096,8 @@ function ticketStatus(p){
 }
 function setT(el,t){if(el._t!==t){el.textContent=t;el._t=t;}}
 function updateHUD(){
+  if(G.lunch){lunchHUD();return;}
+  setT($('#timeLbl'),'⏳ 시간');
   const m=Math.floor(G.time/60), s=Math.floor(G.time%60);
   $('#timeTxt').textContent=`${m}:${String(s).padStart(2,'0')}`;
   $('#timerBox').classList.toggle('low',G.time<=30);
@@ -2206,6 +2216,7 @@ async function saveIg(){
   renderBoard($('#endTable'),igEntryId,10);$('#endTable').closest('details').open=true;
 }
 function renderTitle(){
+  updLunchBtn();
   const mk=monthKey(), m=+mk.slice(5), pm=+prevMonthKey().slice(5);
   const b=board(mk), top=b[0], prev=board(prevMonthKey())[0];
   $('#prizeText').textContent=`🎁 ${m}월 1위 상품: ${monthPrize(mk)}   ·   `+(top?`👑 현재 1위 ${top.name} ${top.score.toLocaleString()}점`:'👑 1위 자리가 비어 있어요! 지금 도전하세요')+(prev?`   ·   🎉 ${pm}월 우승 ${prev.name}님 축하해요!`:'');
@@ -2221,8 +2232,9 @@ function renderTitle(){
 /* =========================================================
    SCREENS / FLOW
    ========================================================= */
-function show(id){$$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
-  if(id==='game')resize();if(id==='custom'){buildCustom();rebuildPreview();$('#customBanner').textContent=DUEL?'⚔️ 대결 · 캐릭터 꾸미기':'🧑‍⚕️ 캐릭터 선택';$('#startBtn').textContent=DUEL?'⚔️ 대결장 입장 ▶':'출근하기 ▶';emojify($('#customBanner'));emojify($('#startBtn'));}if(id==='lobby'){renderLobby();}if(id==='title')renderTitle();}
+function show(id){if(id!=='game'&&G&&G.lunch&&!G.lunch.left)lunchLeave();
+  $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  if(id==='game')resize();if(id==='custom'){buildCustom();rebuildPreview();const LU=!DUEL&&isLunch();$('#customBanner').textContent=DUEL?'⚔️ 대결 · 캐릭터 꾸미기':LU?'🍱 점심 시간 · 캐릭터 꾸미기':'🧑‍⚕️ 캐릭터 선택';$('#startBtn').textContent=DUEL?'⚔️ 대결장 입장 ▶':LU?'🍱 휴게실 입장 ▶':'출근하기 ▶';emojify($('#customBanner'));emojify($('#startBtn'));}if(id==='lobby'){renderLobby();}if(id==='title')renderTitle();}
 function startGame(){
   if(isTouch){try{const de=document.documentElement;if(!document.fullscreenElement&&de.requestFullscreen)de.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(e){}}
   newGame();show('game');
@@ -2319,6 +2331,7 @@ function animateEnd(sc,grade,stars,rows,onDone){
 }
 function togglePause(){
   if(!G)return;
+  if(G.state==='lunch'){$('#pauseOv').classList.toggle('show');return;}
   if(G.state==='play'){G.state='pause';$('#pauseOv').classList.add('show');for(const k in keys)keys[k]=false;joyEnd();}
   else if(G.state==='pause'){G.state='play';$('#pauseOv').classList.remove('show');}
 }
@@ -2333,7 +2346,7 @@ window.addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(e.repeat)return;
   if(isTouch&&/^(Key[WASDE]|Arrow)/.test(e.code))setTouch(false);
-  if(e.code==='KeyE'||e.code==='Space'||e.code==='Enter'){if(G&&G.state==='play')interact();}
+  if(e.code==='KeyE'||e.code==='Space'||e.code==='Enter'){if(G&&(G.state==='play'||G.state==='lunch'))interact();}
   if(e.code==='Escape'){if(G&&G.modal)closeChart();else togglePause();}
   if(e.code==='KeyP')togglePause();
   if(G&&G.state==='ability'&&/^Digit[123]$/.test(e.code)){const k=G.abChoices&&G.abChoices[+e.code.slice(5)-1];if(k)pickAbility(k);}
@@ -2590,6 +2603,150 @@ async function shareLink(){
 $('#shareBtn').addEventListener('click',shareLink);
 $('#kakaoBtn').addEventListener('click',shareKakao);
 
+/* ---------- 🍱 점심 시간 (13:00–14:00 KST): shared break room, real-time via Supabase Realtime ---------- */
+const LUNCH_FORCE=/[?&]lunch=1/.test(location.search), LUNCH_CAP=10, SBJS_URL='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/dist/umd/supabase.js';
+const kstNow=()=>new Date(Date.now()+9*3600e3);
+function isLunch(){return LUNCH_FORCE||kstNow().getUTCHours()===13;}
+function lunchLeft(){const d=kstNow();if(d.getUTCHours()!==13)return null;return 3600-(d.getUTCMinutes()*60+d.getUTCSeconds());}
+function updLunchBtn(){const b=$('#toCustom');if(!b)return;const L=isLunch(),t=L?'🍱 점심 시간':'🧑‍⚕️ 출근 준비';
+  if(b.dataset.t!==t){b.dataset.t=t;b.textContent=t;b.className='btn '+(L?'lunch':'green');emojify(b);}}
+setInterval(()=>{if($('#title').classList.contains('active'))updLunchBtn();},15000);
+let SBC=null;
+function loadSB(){return new Promise((res,rej)=>{if(window.supabase&&window.supabase.createClient)return res(window.supabase);
+  const sc=document.createElement('script');sc.src=SBJS_URL;sc.onload=()=>res(window.supabase);sc.onerror=rej;document.head.appendChild(sc);});}
+const stById=id=>stations.find(s=>s.id===id);
+function startLunch(){
+  if(isTouch){try{const de=document.documentElement;if(!document.fullscreenElement&&de.requestFullscreen)de.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(e){}}
+  newGame();G.state='lunch';
+  G.lunch={sid:Math.random().toString(36).slice(2,10),peers:new Map(),ch:null,room:0,sendT:0,hbT:0,sent:null,clockT:0,left:false,cool:0};
+  const P=G.player;P.x=16*T;P.y=12*T;P.bed=null;P.actT=0;P.fxT=0;
+  document.body.classList.add('lunchmode');show('game');
+  CAM.x=16;CAM.z=9.4;camUpdate(0,true,true);
+  $('#tickets').innerHTML='';$('#tickets').dataset.ids='';$('#toasts').innerHTML='';
+  closeChart();$('#pauseOv').classList.remove('show');$('#cdOv').classList.remove('show');$('#joyHint').style.opacity=1;
+  updateHUD();cv.focus({preventScroll:true});sfx('start');
+  toast('🍱 점심 시간! 침대에 눕거나 동료에게 마사지를 해 주세요','good');
+  lunchConnect(G.lunch);
+}
+async function lunchConnect(L){
+  try{const sb=await loadSB();SBC=SBC||sb.createClient(SB_URL,SB_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}});}
+  catch(e){if(!L.left)toast('📶 휴게실에 연결하지 못했어요 · 혼자 쉬는 중','warn');return;}
+  for(let r=1;r<=8&&!L.left;r++){if(await lunchJoin(L,r))return;}
+}
+function lunchJoin(L,r){return new Promise(res=>{
+  const ch=SBC.channel('alonechief-lunch-'+r,{config:{broadcast:{self:false},presence:{key:L.sid}}});let decided=false;L.pending=ch;const mine=()=>L.ch===ch||L.pending===ch;
+  const decide=ok=>{if(decided)return;decided=true;if(L.pending===ch)L.pending=null;if(!ok||L.left){L.peers.clear();SBC.removeChannel(ch);res(!!L.left);return;}
+    L.ch=ch;L.room=r;ch.track({n:dispName().slice(0,10),av:avatarCfg()});lunchSend(true);res(true);};
+  ch.on('presence',{event:'sync'},()=>{if(mine())lunchPresence(L,ch.presenceState());});
+  ch.on('broadcast',{event:'st'},({payload:m})=>{if(mine())lunchOnState(L,m);});
+  ch.on('broadcast',{event:'act'},({payload:m})=>{if(mine())lunchOnAct(L,m);});
+  ch.subscribe(st=>{if(st==='SUBSCRIBED')setTimeout(()=>decide(Object.keys(ch.presenceState()).length<LUNCH_CAP),900);
+    else if(st==='CHANNEL_ERROR'||st==='TIMED_OUT'){if(!decided){decided=true;SBC.removeChannel(ch);res(false);}}});
+  setTimeout(()=>{if(!decided){decided=true;SBC.removeChannel(ch);res(false);}},9000);
+});}
+function lunchPeer(L,sid){let p=L.peers.get(sid);if(!p){p={sid,n:'동료 실장',av:{},x:0,y:0,tx:0,ty:0,f:0,bed:null,ready:false,actT:0,act:'',fxT:0,fx:'',walk:0,moving:false};L.peers.set(sid,p);}return p;}
+function lunchPresence(L,state){const seen=new Set();L.greeted=L.greeted||new Set();let greet=false;
+  for(const k in state){if(k===L.sid)continue;const meta=(state[k]||[])[0]||{};seen.add(k);const isNew=!L.peers.has(k);const p=lunchPeer(L,k);
+    p.n=typeof meta.n==='string'&&meta.n.trim()?meta.n.trim().slice(0,10):'익명 실장';const av=cleanAv(meta.av);
+    if(JSON.stringify(av)!==JSON.stringify(p.av)){p.av=av;p.cfgDirty=true;}
+    if(!L.greeted.has(k)){L.greeted.add(k);greet=true;if(L.ch)toast(`👋 ${p.n}님이 휴게실에 왔어요`,'');}}
+  if(greet)setTimeout(()=>lunchSend(true),150);
+  for(const k of [...L.peers.keys()])if(!seen.has(k)){const p=L.peers.get(k);if(p.ready)toast(`🚪 ${p.n}님이 나갔어요`,'');L.peers.delete(k);L.greeted.delete(k);}}
+function lunchOnState(L,m){if(!m||typeof m.s!=='string'||m.s===L.sid)return;const p=lunchPeer(L,m.s);
+  const x=clamp(+m.x||0,0,W),y=clamp(+m.y||0,0,H);p.tx=x;p.ty=y;p.f=+m.f||0;p.bed=typeof m.b==='string'&&stById(m.b)?m.b:null;
+  if(!p.ready){p.ready=true;p.x=x;p.y=y;}}
+const LACT={massage:{i:'💆',t:3,fx:['💕','♨️','✨','😌'],msg:'마사지를 해 줬어요!'},eswt:{i:'💥',t:3,fx:['💥','⚡','💥','✨'],msg:'충격파를 해 줬어요!'},wave:{i:'👋',t:1.4,fx:['👋'],msg:''}};
+function lunchFxSound(k){if(k==='eswt'){const l=[];for(let i=0;i<14;i++)l.push([i%2?95:130,.06,'square']);playTones(l);}
+  else if(k==='massage')playTones([[523,.18,'sine'],[659,.18,'sine'],[784,.3,'sine'],[659,.25,'sine']]);else playTones([[880,.06],[1175,.12]]);}
+function lunchOnAct(L,m){if(!m||typeof m.s!=='string'||!LACT[m.k])return;const a=LACT[m.k],p=lunchPeer(L,m.s);p.actT=a.t;p.act=m.k;
+  if(m.k==='wave'){particle(p.x,p.y,2.6,'👋',0,.6,1.2);return;}
+  if(m.t===L.sid){const P=G.player;P.fxT=a.t;P.fx=m.k;lunchFxSound(m.k);buzz(m.k==='eswt'?[30,30,30,30,30]:[60]);toast(`${a.i} ${p.n}님이 ${a.msg}`,'good');}
+  else{const q=L.peers.get(m.t);if(q){q.fxT=a.t;q.fx=m.k;}}}
+function lunchSend(force){const L=G&&G.lunch;if(!L||!L.ch)return;const P=G.player;
+  const m={s:L.sid,x:Math.round(P.x),y:Math.round(P.y),f:+(P.face||0).toFixed(2),b:P.bed||0};
+  const k=JSON.stringify(m);if(!force&&k===L.sent)return;L.sent=k;L.hbT=0;L.ch.send({type:'broadcast',event:'st',payload:m});}
+function lunchAct(k,target){const L=G.lunch,P=G.player;if(L.cool>0)return;L.cool=k==='wave'?1.2:2.5;
+  const a=LACT[k];P.actT=a.t;P.act=k;P.actTarget=target;
+  if(k==='wave')particle(P.x,P.y,2.6,'👋',0,.6,1.2);
+  else{const q=L.peers.get(target);if(q){q.fxT=a.t;q.fx=k;}lunchFxSound(k);buzz(30);}
+  if(L.ch)L.ch.send({type:'broadcast',event:'act',payload:{s:L.sid,k,t:target||''}});}
+function bedTaken(s){if(G.player.bed===s.id)return true;for(const p of G.lunch.peers.values())if(p.bed===s.id)return true;return false;}
+function lunchLie(s){const P=G.player;P.bed=s.id;P.x=s.seat.x;P.y=s.seat.y;sfx('click');lunchSend(true);}
+function lunchStand(){const P=G.player,s=stById(P.bed);P.bed=null;if(s){P.x=s.access.x*T+T/2;P.y=s.access.y*T+T/2;}lunchSend(true);}
+function lunchCands(){const P=G.player,L=G.lunch,out=[];
+  if(P.bed){const s=stById(P.bed);out.push({d:0,icon:'🚶',label:s&&s.lie==='sit'?'일어나기':'일어나기',at:{x:P.x,y:P.y,h:2.2},fn:lunchStand});return out;}
+  for(const [sid,p] of L.peers){if(!p.ready)continue;
+    if(p.bed){const s=stById(p.bed);if(!s)continue;const d=rectDist(s.irect,P.x,P.y);if(d>34)continue;
+      if(s.type==='eswt')out.push({d,icon:'💥',label:'충격파 해주기',at:{x:p.x,y:p.y,h:1.9},fn:()=>lunchAct('eswt',sid)});
+      out.push({d:d+1,icon:'💆',label:'마사지 해주기',at:{x:p.x,y:p.y,h:1.9},fn:()=>lunchAct('massage',sid)});}
+    else{const d=Math.hypot(p.x-P.x,p.y-P.y)-14;if(d<44)out.push({d,icon:'💆',label:'마사지 해주기',at:{x:p.x,y:p.y,h:2.5},fn:()=>lunchAct('massage',sid)});}}
+  for(const s of stations){const d=rectDist(s.irect,P.x,P.y);if(d>34||bedTaken(s))continue;
+    out.push({d:d+3,icon:s.lie==='sit'?'🪑':'🛏',label:s.lie==='sit'?'앉아서 쉬기':'눕기',at:{x:s.seat.x,y:s.seat.y,h:1.5},fn:()=>lunchLie(s)});}
+  out.sort((a,b)=>a.d-b.d);
+  if(!out.length)out.push({d:999,icon:'👋',label:'손 흔들기',at:{x:P.x,y:P.y,h:2.4},fn:()=>lunchAct('wave',null),idle:true});
+  return out;}
+function lunchUpdate(dt){const P=G.player,L=G.lunch;
+  L.cool=Math.max(0,L.cool-dt);P.actT=Math.max(0,P.actT-dt);
+  P.moving=false;
+  let mx=0,my=0;
+  if(keys.ArrowLeft||keys.KeyA)mx-=1;if(keys.ArrowRight||keys.KeyD)mx+=1;if(keys.ArrowUp||keys.KeyW)my-=1;if(keys.ArrowDown||keys.KeyS)my+=1;
+  mx+=joyVec.x;my+=joyVec.y;const m=Math.hypot(mx,my);
+  if(m>.12){if(P.bed)lunchStand();
+    const sc=Math.min(1,m)/m;mx*=sc;my*=sc;const nx=P.x+mx*P.speed*dt, ny=P.y+my*P.speed*dt;
+    if(!pBlocked(nx,P.y))P.x=nx;if(!pBlocked(P.x,ny))P.y=ny;
+    setDir(P,mx,my);P.face=Math.atan2(mx,my);P.walk+=dt*12*Math.min(1,m+.3);P.moving=true;P.actT=0;}
+  // effects on me / peers
+  const fxTick=(o,x,y,h)=>{if(o.fxT>0){const prev=o.fxT;o.fxT-=dt;const a=LACT[o.fx];if(a&&Math.floor(prev*3)!==Math.floor(o.fxT*3))particle(x+(Math.random()-.5)*24,y,h,a.fx[Math.floor(Math.random()*a.fx.length)],(Math.random()-.5)*14,.9,1);}};
+  fxTick(P,P.x,P.y,P.bed?1.3:2.1);
+  for(const p of L.peers.values()){const dx=p.tx-p.x,dy=p.ty-p.y,d=Math.hypot(dx,dy);
+    if(d>140){p.x=p.tx;p.y=p.ty;}else{const k=Math.min(1,dt*9);p.x+=dx*k;p.y+=dy*k;}
+    p.moving=d>3&&!p.bed;if(p.moving){p.walk+=dt*12;p.face=Math.atan2(dx,dy);}else p.face=p.f;
+    p.actT=Math.max(0,p.actT-dt);fxTick(p,p.x,p.y,p.bed?1.3:2.1);}
+  for(const q of G.particles){q.t+=dt;q.x+=q.vx*dt;q.h+=q.vh*dt;}G.particles=G.particles.filter(q=>q.t<q.life);
+  // network: ~4 updates/s while moving, heartbeat every 5s
+  L.sendT-=dt;L.hbT+=dt;if(L.sendT<=0){L.sendT=.25;lunchSend(L.hbT>5);}
+  L.clockT-=dt;if(L.clockT<=0){L.clockT=1;if(!isLunch()){toast('🔔 점심 시간 끝! 2시부터 다시 출근할 수 있어요','warn');show('title');}}
+  G.hudT-=dt;if(G.hudT<=0){G.hudT=.15;updateHUD();}
+}
+function lunchHUD(){const L=G.lunch,left=lunchLeft();
+  setT($('#timeLbl'),'🍱 점심 시간');
+  $('#timeTxt').textContent=left==null?'미리보기':`${Math.floor(left/60)}:${String(left%60).padStart(2,'0')}`;
+  $('#timerBox').classList.toggle('low',left!=null&&left<=120);
+  setT($('#cureTxt'),L.ch?`👥 ${[...L.peers.values()].filter(p=>p.ready).length+1}명 · ${L.room}번방`:'📶 연결 중…');
+  const c=G.cand, btn=$('#actBtn'), lbl=$('#actLbl');
+  if(c){setT(btn,c.icon);setT(lbl,c.label);btn.className=c.idle?'':'go';}else{setT(btn,'✋');setT(lbl,'-');btn.className='none';}}
+function lunchCfg(p){return Object.assign({},DEFAULT_CHAR,p.av,{badge:'PT - '+p.n.toUpperCase(),name:'',extra:null});}
+function poseOn(o,bedId,dt,t,opt){const s=stById(bedId);
+  if(s&&s.lie!=='sit'){setPose(o,'lie',.55/1.1);o.root.position.set(s.seat.x/T,0,s.seat.y/T);o.yaw=s.lie==='h'?PI/2:0;o.root.rotation.y=o.yaw;animChar(o,dt,t,Object.assign({},opt,{moving:false,face:null}));return;}
+  if(s){setPose(o,'sit');o.root.position.set(s.seat.x/T,0,s.seat.y/T);animChar(o,dt,t,Object.assign({},opt,{moving:false,face:PI/2}));return;}
+  setPose(o,'stand');animChar(o,dt,t,opt);}
+function armsFx(o,act,actT,t){if(actT<=0||!o.arms)return;
+  if(act==='wave'){o.arms[1].rotation.x=0;o.arms[1].rotation.z=2.4+Math.sin(t*14)*.35;}
+  else for(let i=0;i<o.arms.length;i++){o.arms[i].rotation.x=-1.25+Math.sin(t*(act==='eswt'?30:12)+i*PI)*(act==='eswt'?.12:.35);}}
+function lunchRender(dt,t){const P=G.player,L=G.lunch;
+  const po=R.playerObj;if(!P.bed)po.root.position.set(P.x/T,0,P.y/T);
+  poseOn(po,P.bed,dt,t,{moving:P.moving,walk:P.walk,face:P.face,mood:P.fxT>0?'happy':null});armsFx(po,P.act,P.actT,t);
+  if(P.actT>0&&P.actTarget&&!P.moving){const q=L.peers.get(P.actTarget);if(q){po.yaw=Math.atan2(q.x-P.x,q.y-P.y);po.root.rotation.y=po.yaw;}}
+  R.pring.position.set(P.x/T,.025,P.y/T);R.pring.material.opacity=P.bed?0:.55+Math.sin(t*5)*.25;
+  R.lchars=R.lchars||new Map();
+  for(const [sid,p] of L.peers){if(!p.ready)continue;let o=R.lchars.get(sid);
+    if(o&&p.cfgDirty){disposeChar(o);R.lchars.delete(sid);o=null;}
+    if(!o){p.cfgDirty=false;o=makeChar(lunchCfg(p));o.root.scale.setScalar(1.18);R.scene.add(o.root);R.lchars.set(sid,o);o.yaw=p.face;}
+    if(!p.bed)o.root.position.set(p.x/T,0,p.y/T);
+    poseOn(o,p.bed,dt,t,{moving:p.moving,walk:p.walk,face:p.face,mood:p.fxT>0?'happy':null});armsFx(o,p.act,p.actT,t);}
+  for(const [sid,o] of R.lchars)if(!L.peers.has(sid)||!L.peers.get(sid).ready){disposeChar(o);R.lchars.delete(sid);}
+  for(const s of stations){s.lampMat.color.setHex(LAMP.idle);s.lamp.scale.setScalar(.12);if(s.irMat){s.irMat.emissive.setHex(0);s.irLight.intensity=0;}s.hl.visible=false;}
+  R.screenMat.color.setHex(0x4dd0e1);
+  camUpdate(dt,false);R.renderer.render(R.scene,R.camera);}
+function lunchOverlays(t){const L=G.lunch,P=G.player;
+  for(const p of L.peers.values()){if(!p.ready)continue;ov('ln'+p.sid,'lname',esc(p.n),p.x,p.y,p.bed?1.25:2.35);}
+  ov('ln-me','lname me','나',P.x,P.y,P.bed?1.25:2.35);
+  const c=G.cand;if(c&&!c.idle){const a=c.at;ov('hint','hint',`<b>E</b>${c.icon} ${esc(c.label)}`,a.x,a.y,a.h+.35+Math.sin(t*6)*.04);}}
+function lunchLeave(){const L=G.lunch;if(!L||L.left)return;L.left=true;
+  try{if(L.ch&&SBC){L.ch.untrack();SBC.removeChannel(L.ch);}}catch(e){}L.ch=null;
+  if(R.lchars){for(const o of R.lchars.values())disposeChar(o);R.lchars.clear();}
+  document.body.classList.remove('lunchmode');$('#pauseOv').classList.remove('show');G.state='end';}
+
 /* ---------- 1:1 도전장 대결 (real-time lobby: both ready → start together, same patient seed) ---------- */
 let DUEL=null, duelTimer=null;
 const DUEL_ERR={taken:'이미 다른 친구가 대결장에 들어왔어요',expired:'기한(24시간)이 지난 도전장이에요',missing:'도전장을 찾을 수 없어요','not allowed':'대결 기록을 저장하지 못했어요'};
@@ -2723,8 +2880,8 @@ $('#lobbyExit').onclick=()=>{const D=DUEL;if(!D||D.started)return;DUEL=null;clea
 $('#toCustom').onclick=()=>show('custom');
 $('#duelBtn').onclick=()=>openDuelIntro();
 $('#backBtn').onclick=()=>{if(DUEL)enterLobby();else show('title');};
-$('#startBtn').onclick=()=>{if(DUEL)enterLobby();else startGame();};
-$('#againBtn').onclick=()=>{DUEL=null;startGame();};
+$('#startBtn').onclick=()=>{if(DUEL)enterLobby();else if(isLunch())startLunch();else startGame();};
+$('#againBtn').onclick=()=>{DUEL=null;if(isLunch()){toast('🍱 지금은 점심 시간이에요 (오후 1~2시)','warn');show('title');return;}startGame();};
 $('#end').addEventListener('pointerdown',e=>{if(endAnim&&!endAnim.done&&!e.target.closest('button,input,summary,a'))endAnim.skip=true;});
 $('#abCards').addEventListener('click',e=>{const b=e.target.closest('[data-ab]');if(b)pickAbility(b.dataset.ab);});
 $('#igForm').addEventListener('submit',e=>{e.preventDefault();saveIg();});
@@ -2757,7 +2914,7 @@ function loop(now){
   if($('#game').classList.contains('active')&&G){
     update(dt);
     if(G.state==='play'&&!qChecked&&!lowQ&&G.elapsed>2){qFrames++;qT+=(now-last2)/1000;if(qT>4){qChecked=true;if(qFrames/qT<24){setQuality(true,true,false);toast('⚙️ 저사양 모드로 전환','warn');}}}
-    G.cand=(G.state==='play'&&!G.modal)?(candidates()[0]||null):null;
+    G.cand=(G.state==='play'&&!G.modal)?(candidates()[0]||null):G.state==='lunch'?(lunchCands()[0]||null):null;
     render3D(dt,t);renderOverlays(t);
   }
   if($('#custom').classList.contains('active'))renderPreview(dt);

@@ -1922,7 +1922,7 @@ const SHARE_URL='https://physiof5.github.io/branding/alone-chief/';
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:-100px;opacity:0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}}
 // ---- KakaoTalk share (official Kakao JS SDK). Paste the app's JavaScript key here to enable it. ----
-const KAKAO_JS_KEY='';
+const KAKAO_JS_KEY='4e2964cec853b421238adc1f36fe4ebf';
 const KAKAO_SDK=['https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js','https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js'];
 let kakaoReady=null;
 function loadKakao(){if(kakaoReady)return kakaoReady;
@@ -1938,7 +1938,7 @@ async function shareKakao(){
       buttons:[{title:'게임 하러 가기',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}}]});}
   catch(e){shareLink();}
 }
-if(KAKAO_JS_KEY){$('#kakaoBtn').style.display='';$('.eshare').classList.add('two');setTimeout(()=>loadKakao().catch(()=>{}),1500);}
+if(KAKAO_JS_KEY&&location.hostname==='physiof5.github.io'){$('#kakaoBtn').style.display='';$('.eshare').classList.add('two');setTimeout(()=>loadKakao().catch(()=>{}),1500);}
 async function shareLink(){
   const sc=G?G.score:0, text=`🏥 나홀로 실장! 3분 동안 몰려드는 환자를 치료하라\n내 점수 ${sc.toLocaleString()}점 · 너도 도전해 봐!`;
   if(navigator.share){try{await navigator.share({title:'나홀로 실장!',text,url:SHARE_URL});return;}catch(e){if(e&&e.name==='AbortError')return;}}

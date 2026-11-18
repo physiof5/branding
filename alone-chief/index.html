@@ -295,20 +295,9 @@ body.touch #joyHint{display:grid}
 .lbd[open] summary::after{transform:rotate(180deg)}
 .lbd .lbtable{font-size:15px;margin:4px 0 6px}
 .ebtns{display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
-.eshare{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.eshare{display:grid;grid-template-columns:1fr;gap:8px}
 .eshare .btn{padding:10px 6px;font-size:17px;white-space:nowrap}
-.btn.cam{background:#a77bea}
 .btn.shr{background:#ffd23f;color:var(--ink);text-shadow:none}
-.cardov{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;background:rgba(18,28,40,.72);padding:max(14px,var(--sat)) 14px max(14px,var(--sab))}
-.cardov.show{display:flex}
-.cardbox{width:min(420px,100%);display:flex;flex-direction:column;align-items:center;gap:10px;animation:tin .2s ease-out}
-.cardimg{width:100%;display:grid;place-items:center}
-.cardimg img{width:auto;max-width:100%;max-height:68vh;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.45);-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;pointer-events:auto}
-.cardimg.loading{min-height:200px;color:#fff;font-family:var(--head);font-size:18px}
-.cardhint{color:#fff;font-size:14px;line-height:1.5;font-family:'Noto Sans KR';text-align:center;text-shadow:0 1px 0 #000;padding:6px 10px;border-radius:10px;background:rgba(0,0,0,.25)}
-.cardhint.good{background:#2e7d32}.cardhint.bad{background:#c62828}
-.cardbtns{display:flex;gap:10px;width:100%}
-.cardbtns .btn{flex:1;padding:10px 6px;font-size:17px;white-space:nowrap}
 @media (max-width:700px){
   #end{padding:max(10px,var(--sat)) max(10px,var(--sar)) 0 max(10px,var(--sal))}
   #end .banner{font-size:24px;padding:8px 18px 20px}
@@ -487,7 +476,6 @@ body.touch #joyHint{display:grid}
             <div class="total"><span>합계</span><b id="endScore">0</b></div>
           </div>
           <div class="eshare">
-            <button class="btn cam" id="saveCardBtn" type="button">📷 캐릭터 저장</button>
             <button class="btn shr" id="shareBtn" type="button">💬 친구에게 공유</button>
           </div>
           <div id="igBox">
@@ -513,11 +501,6 @@ body.touch #joyHint{display:grid}
   <div class="nprev">PT - <b id="namePrev" class="ph">닉네임</b></div>
   <input id="nameIn2" maxlength="10" placeholder="닉네임 입력 (최대 10자)" autocomplete="off" spellcheck="false" enterkeyhint="done">
   <div class="nrow"><span id="nameCnt">0 / 10</span><button type="button" class="btn green" id="nameOk">완료</button></div>
-</div></div>
-<div id="cardOv" class="cardov"><div class="cardbox">
-  <div class="cardimg"><img id="cardImg" alt="내 캐릭터 카드"></div>
-  <div class="cardhint" id="cardHint"></div>
-  <div class="cardbtns"><button class="btn cam" id="cardSave" type="button">💾 이미지 저장</button><button class="btn cam" id="cardExt" type="button" style="display:none">🌐 브라우저로 열기</button><button class="btn sec" id="cardClose" type="button">닫기</button></div>
 </div></div>
 <div id="tip"></div>
 
@@ -1920,85 +1903,8 @@ function renderPreview(dt){
   PV.r.render(PV.s,PV.cam);
 }
 
-/* ---------- character card image (save) & link sharing ---------- */
+/* ---------- link sharing ---------- */
 const SHARE_URL='https://physiof5.github.io/branding/alone-chief/';
-const CARD={};
-function renderCharShot(cfg,px){
-  if(!CARD.r){CARD.c=document.createElement('canvas');CARD.r=new THREE.WebGLRenderer({canvas:CARD.c,antialias:true,alpha:true,preserveDrawingBuffer:true});
-    CARD.r.shadowMap.enabled=true;CARD.r.shadowMap.type=THREE.PCFSoftShadowMap;
-    CARD.s=new THREE.Scene();CARD.s.add(new THREE.HemisphereLight(0xffffff,0x8a7a60,.82));
-    const d=new THREE.DirectionalLight(0xffffff,.62);d.position.set(-1.6,5,4.5);d.castShadow=true;d.shadow.mapSize.set(2048,2048);
-    Object.assign(d.shadow.camera,{left:-2,right:2,top:2,bottom:-2,near:.5,far:20});CARD.s.add(d);
-    const disc=mesh(geo(k3('cyl',.85,.9,40)),M('#ffd23f','toon'),CARD.s);disc.scale.y=.12;disc.position.y=-.06;
-    const disc2=mesh(geo(k3('cyl',.92,.96,40)),M('#22313f','toon'),CARD.s);disc2.scale.y=.1;disc2.position.y=-.1;
-    CARD.cam=new THREE.PerspectiveCamera(26,1,.1,50);}
-  CARD.r.setPixelRatio(1);CARD.r.setSize(px,px,false);
-  const o=makeChar(cfg);CARD.s.add(o.root);o.yaw=-.3;o.root.rotation.y=-.3;animChar(o,0,0,{moving:false,walk:0,face:null,mood:null});
-  const ht=o.height;CARD.cam.position.set(0,ht*.62+.55,ht*1.7+2.75);CARD.cam.lookAt(0,ht*.36,0);
-  CARD.r.render(CARD.s,CARD.cam);const c2=document.createElement('canvas');c2.width=c2.height=px;c2.getContext('2d').drawImage(CARD.c,0,0);disposeChar(o);return c2;
-}
-function rrect(x,X,Y,w,h,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+w,Y,X+w,Y+h,r);x.arcTo(X+w,Y+h,X,Y+h,r);x.arcTo(X,Y+h,X,Y,r);x.arcTo(X,Y,X+w,Y,r);x.closePath();}
-async function makeCard(cfg=playerCfg(),rawName=charCfg.name){
-  try{await Promise.all([document.fonts.load('72px "Black Han Sans"'),document.fonts.load('60px "Jua"')]);}catch(e){}
-  const W=1080,H=1350,c=document.createElement('canvas');c.width=W;c.height=H;const x=c.getContext('2d');
-  x.fillStyle='#fffaf0';x.fillRect(0,0,W,H);
-  const P={x:44,y:44,w:W-88,h:H-88,r:72};
-  rrect(x,P.x,P.y,P.w,P.h,P.r);const g=x.createRadialGradient(W/2,H*.62,40,W/2,H*.55,H*.75);g.addColorStop(0,'#fffbe6');g.addColorStop(.75,'#9fdcf2');g.addColorStop(1,'#8fd3ef');
-  x.fillStyle=g;x.fill();x.lineWidth=16;x.strokeStyle='#22313f';x.stroke();
-  x.save();rrect(x,P.x,P.y,P.w,P.h,P.r);x.clip();x.drawImage(renderCharShot(cfg,1000),40,70,1000,1000);x.restore();
-  // nameplate
-  const nm=(rawName||'').trim().toUpperCase(), label='PT - '+(nm||'익명 실장');
-  let fs=84;x.font=`${fs}px "Black Han Sans","Jua",sans-serif`;while(x.measureText(label).width>W-300&&fs>40){fs-=4;x.font=`${fs}px "Black Han Sans","Jua",sans-serif`;}
-  const tw=x.measureText(label).width,bw=tw+120,bh=fs+64,bx=(W-bw)/2,by=1092;
-  x.fillStyle='rgba(0,0,0,.18)';rrect(x,bx,by+12,bw,bh,36);x.fill();
-  rrect(x,bx,by,bw,bh,36);x.fillStyle='#fff';x.fill();x.lineWidth=12;x.strokeStyle='#22313f';x.stroke();
-  x.fillStyle='#22313f';x.textAlign='center';x.textBaseline='middle';x.fillText(label,W/2,by+bh/2+4);
-  return c;
-}
-let cardBlob=null,cardData=null,cardOpts=null;
-const UA=navigator.userAgent||'';
-const IN_APP=/Instagram|FBAN|FBAV|FB_IAB|KAKAOTALK|NAVER\(inapp|; wv\)|Line\/|DaumApps|everytimeApp|Snapchat|Twitter|BAND\//i.test(UA);
-const IS_KAKAO=/KAKAOTALK/i.test(UA), IS_IOS=/iPhone|iPad|iPod/i.test(UA)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1), IS_ANDROID=/Android/i.test(UA);
-const IN_FRAME=(()=>{try{return window.top!==window.self;}catch(e){return true;}})();
-function cardStatus(html,cls){const h=$('#cardHint');h.innerHTML=html;h.className='cardhint'+(cls?' '+cls:'');}
-async function openCard(opts){
-  cardOpts=opts||null;
-  const ov=$('#cardOv'),img=$('#cardImg'),box=img.parentElement;ov.classList.add('show');box.classList.add('loading');img.style.visibility='hidden';sfx('click');
-  $('#cardExt').style.display='none';cardStatus(IN_APP||IN_FRAME?'앱 안 브라우저에서는 갤러리 저장이 막혀 있어요.<br><b>이미지를 길게 눌러</b> 저장하거나 아래 버튼으로 브라우저에서 열어 주세요':'<b>💾 이미지 저장</b>을 누르면 갤러리에 저장돼요');
-  if(IN_APP||IN_FRAME){$('#cardExt').style.display='';$('#cardSave').style.display='none';}else{$('#cardSave').style.display='';}
-  await new Promise(r=>setTimeout(r,30));
-  try{const c=cardOpts?await makeCard(Object.assign({},DEFAULT_CHAR,cardOpts.c,{badge:cardOpts.n?'PT - '+cardOpts.n.toUpperCase():'PT'}),cardOpts.n):await makeCard();
-    cardData=c.toDataURL('image/png');cardBlob=await new Promise(r=>c.toBlob(r,'image/png'));img.src=cardData;}
-  catch(e){cardStatus('😢 이미지를 만들지 못했어요','bad');}
-  box.classList.remove('loading');img.style.visibility='';
-}
-function cardName(){const d=new Date();return `alone-chief-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${d.getHours()}${d.getMinutes()}${d.getSeconds()}.png`;}
-async function saveCard(){
-  if(!cardData)return;
-  // iPhone/iPad: the share sheet offers "이미지 저장" straight into Photos
-  if(IS_IOS&&cardBlob){try{const f=new File([cardBlob],cardName(),{type:'image/png'});
-    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});cardStatus('✅ 저장 완료! 사진 앱을 확인하세요','good');return;}}catch(e){if(e&&e.name==='AbortError')return;}}
-  // Android & desktop: download the PNG (shows up in Gallery › Download)
-  try{const url=cardBlob?URL.createObjectURL(cardBlob):cardData;const a=document.createElement('a');a.href=url;a.download=cardName();a.rel='noopener';
-    document.body.appendChild(a);a.click();a.remove();if(cardBlob)setTimeout(()=>URL.revokeObjectURL(url),4000);
-    cardStatus(IS_ANDROID?'✅ 저장 완료! 갤러리 › <b>Download</b> 앨범을 확인하세요':'✅ 이미지를 저장했어요','good');sfx('coin');buzz(20);}
-  catch(e){cardStatus('저장이 막혀 있어요. <b>이미지를 길게 눌러</b> 저장해 주세요','bad');}
-}
-// open this card in the phone's real browser (Chrome/Safari), where saving to the gallery works
-function cardLink(){const o=cardOpts||{c:avatarCfg(),n:(charCfg.name||'').trim()};
-  const b64=btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');return SHARE_URL+'?card='+b64;}
-async function openExternal(){
-  const url=cardLink();
-  if(IS_KAKAO){location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(url);return;}
-  if(IS_ANDROID&&!IN_FRAME){location.href='intent://'+url.replace(/^https?:\/\//,'')+'#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url='+encodeURIComponent(url)+';end';
-    setTimeout(()=>cardStatus('브라우저가 열리지 않으면 오른쪽 위 <b>⋮ 메뉴 → 다른 브라우저로 열기</b>를 눌러 주세요',''),1500);return;}
-  if(IN_FRAME){const w=window.open(url,'_blank','noopener');if(w)return;}
-  const ok=await copyText(url);
-  cardStatus(ok?'🔗 링크를 복사했어요! <b>크롬·사파리</b>에 붙여넣어 열면 바로 저장할 수 있어요':'오른쪽 위 <b>⋯ 메뉴 → 외부 브라우저로 열기</b>를 눌러 주세요','');
-}
-function readCardParam(){try{const m=location.search.match(/[?&]card=([^&]+)/);if(!m)return null;
-  const j=decodeURIComponent(escape(atob(m[1].replace(/-/g,'+').replace(/_/g,'/'))));const o=JSON.parse(j);
-  const c={};for(const k of AV_KEYS)if(o.c&&o.c[k]!=null)c[k]=o.c[k];return {c,n:String(o.n||'').slice(0,10)};}catch(e){return null;}}
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:-100px;opacity:0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}}
 async function shareLink(){
@@ -2007,11 +1913,6 @@ async function shareLink(){
   const ok=await copyText(text+'\n'+SHARE_URL);
   toast(ok?'🔗 링크 복사 완료! 카톡·DM에 붙여넣기 하세요':'🔗 '+SHARE_URL,ok?'good':'warn');
 }
-$('#saveCardBtn').addEventListener('click',openCard);
-$('#cardSave').addEventListener('click',saveCard);
-$('#cardExt').addEventListener('click',openExternal);
-$('#cardClose').addEventListener('click',()=>$('#cardOv').classList.remove('show'));
-$('#cardOv').addEventListener('click',e=>{if(e.target.id==='cardOv')$('#cardOv').classList.remove('show');});
 $('#shareBtn').addEventListener('click',shareLink);
 
 /* ---------- buttons ---------- */
@@ -2044,7 +1945,6 @@ $('#qBtn').onclick=()=>setQuality(!lowQ);
 if(/[?&]low/.test(location.search)||load('alonechief_lowq',false))setQuality(true,true);
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(rebuildFloor);
 renderTitle();
-{const co=readCardParam();if(co){try{history.replaceState(null,'',location.pathname);}catch(e){}setTimeout(()=>openCard(co),400);}}
 let last=performance.now();
 function loop(now){
   const last2=last;const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;

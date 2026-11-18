@@ -164,7 +164,7 @@ body.kb .cfoot,body.kb .ebtns{position:static}
 #ov{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
 .ovi{position:absolute;left:0;top:0;will-change:transform;white-space:nowrap}
 .ob{background:#fff;border:2.5px solid var(--ink);border-radius:10px;padding:1px 8px;font-size:15px;box-shadow:0 3px 0 rgba(0,0,0,.3);text-align:center;line-height:1.35}
-.ob.yellow{background:#fff59d}.ob.cmpl{font-size:14px;animation:cmpl .25s infinite alternate}.ob.green{background:#b9f6ca}.ob.blue{background:#bbdefb}.ob.orange{background:#ffe0b2;font-size:12px}.ob.red{background:#ffcdd2}
+.ob.yellow{background:#fff59d}.ob.green{background:#b9f6ca}.ob.blue{background:#bbdefb}.ob.orange{background:#ffe0b2;font-size:12px}.ob.red{background:#ffcdd2}
 .ob .pb{display:block;height:6px;margin:1px 0 3px;border:2px solid var(--ink);border-radius:4px;background:#eee;overflow:hidden;min-width:40px}
 .ob .pb b{display:block;height:100%;background:var(--green)}
 .ring{width:42px;height:42px;border-radius:50%;border:3px solid var(--ink);background:conic-gradient(var(--c) calc(var(--p)*1turn),#e6e6e6 0);display:grid;place-items:center;box-shadow:0 3px 0 rgba(0,0,0,.3)}
@@ -174,8 +174,6 @@ body.kb .cfoot,body.kb .ebtns{position:static}
 .af::after{content:'';position:absolute;left:50%;bottom:-10px;margin-left:-7px;border:7px solid transparent;border-top:8px solid var(--ink)}
 .af::before{content:'';position:absolute;left:50%;bottom:-5px;margin-left:-5px;border:5px solid transparent;border-top:6px solid #fff;z-index:1}
 .af.red::before{border-top-color:#ffcdd2}.af.yellow::before{border-top-color:#fff59d}
-.ob.cmpl{transform-origin:50% 100%}
-@keyframes cmpl{to{margin-top:-3px}}
 @keyframes afp{to{transform:scale(1.18)}}
 .af>span{display:inline-block}
 .hint{background:#fff;border:2.5px solid var(--ink);border-radius:10px;padding:2px 9px 2px 3px;font-size:15px;box-shadow:0 3px 0 rgba(0,0,0,.3);display:flex;align-items:center;gap:6px}
@@ -1462,15 +1460,15 @@ function update(dt){
           for(let i=0;i<8;i++)particle(P.x+rand(-10,10),P.y,1.4,pick(['⭐','💫','💥']),rand(-90,90),rand(1,2.2),1);
           p.earned=0;p.speed=p.type.speed;
           // the patient stays beside the player for 3s, complaining, then storms out
-          p.state='complain';p.complainT=3;p.wp=[];p.complainMsg=pick(COMPLAINTS);
+          p.state='complain';p.complainT=3;p.wp=[];
           {const side=(p.x<=P.x?-1:1),tx=P.x+side*36;p.x=pBlocked(tx,P.y+4)?P.x-side*36:tx;p.y=P.y+4;setDir(p,P.x-p.x,0);} // stand side by side, facing the player
           toast('💥 충돌! 3초 기절 · 환자 0점','bad');sfx('angry');
         }
         break;}
       case 'complain':{
         p.complainT-=dt;setDir(p,P.x-p.x,P.y-p.y);p.walk+=dt*6;
-        if(Math.random()<dt*2.5)particle(p.x,p.y,1.9,pick(['💢','💢','😤']),rand(-14,14),.8,.7);
-        if(p.complainT<=0)angryLeave(p,'😤 불만을 쏟아내고 퇴장했어요',0);
+        if(Math.random()<dt*2.5)particle(p.x,p.y,1.9,'💢',rand(-14,14),.8,.7);
+        if(p.complainT<=0)angryLeave(p,'💢 화난 환자가 퇴장했어요',0);
         break;}
       case 'leaving': if(followPath(p,dt))p.state='gone'; break;
     }
@@ -1571,7 +1569,7 @@ function renderOverlays(t){
     const hh=1.75*p.type.scale+.05;
     if(p.state==='waiting'){const e=ov('p'+p.id,'ob',(p.charted?p.rx.map(x=>TREAT[x].icon).join(''):'❓')+'<i class="pb"><b></b></i>',p.x,p.y,hh);setBar(e,p.patience/p.patMax);}
     if(p.state==='chase'){ov('c'+p.id,'af red','<span>😡</span>',p.x,p.y,hh+.15);edge('ec'+p.id,'😡',p.x,p.y,1);}
-    if(p.state==='complain')ov('cm'+p.id,'ob red cmpl',`😡 ${esc(p.complainMsg)}`,p.x,p.y,2.95);
+    if(p.state==='complain')ov('cm'+p.id,'emo','💢',p.x,p.y,hh+.15);
     if(p.state==='leaving'&&p.mood==='angry'&&p.y<H)ov('c'+p.id,'af red','<span>😡</span>',p.x,p.y,hh+.15);
     if(p.state==='leaving'&&p.mood==='happy'&&p.y<H)ov('h'+p.id,'emo','😊',p.x,p.y,hh+.1);
   }
@@ -1596,7 +1594,7 @@ function ticketStatus(p){
   if(p.state==='following')return ['🟢 초록 베드로 안내',''];
   if(p.state==='toSeat'||p.state==='toChair')return ['이동 중',''];
   if(p.state==='chase')return ['😡 돌진 중!','alert'];
-  if(p.state==='complain')return ['😤 불만 제기 중','alert'];
+  if(p.state==='complain')return ['💢 화난 환자','alert'];
   const s=p.station;if(!s)return ['',''];
   if(s.phase==='auto')return [`🟠 진행 ${Math.ceil(s.dur-s.t)}초`,''];
   if(s.phase==='autoDone')return [p.angry?`${p.angry===2?'🔴':'🟡'} 방치 중!`:'🟢 마무리!',p.angry?'alert':'ready'];
@@ -1751,7 +1749,6 @@ function startGame(){
   updateHUD();cv.focus({preventScroll:true});
   if(isTouch&&R.h>R.w)setTimeout(()=>toast('📱 가로 화면이 더 넓어요','warn'),400);
 }
-const COMPLAINTS=['왜 이렇게 오래 걸려요!','저 계속 기다렸잖아요!','치료 받으러 온 건데요!?','실장님 어디 계셨어요!','다신 안 올 거예요!','원장님 불러 주세요!'];
 const STAR_T=[400,1000,1800];
 const GRADES={S:'전설의 실장님 👑',A:'에이스 실장님 ✨',B:'믿음직한 실장님 👍',C:'수습 실장님 🌱',D:'퇴사 위기 😵'};
 function endGame(){

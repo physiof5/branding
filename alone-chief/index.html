@@ -855,6 +855,10 @@ function geo(k){
     case 'cap':g=new THREE.CapsuleGeometry(n[0],n[1],6,14);break;
     case 'cyl':g=new THREE.CylinderGeometry(n[0],n[1],1,n[2]||18);break;
     case 'hcap':g=new THREE.SphereGeometry(1,26,16,0,PI*2,0,n[0]);break;
+    case 'hood':g=new THREE.SphereGeometry(1,30,18,PI/2+n[0],PI*2-2*n[0],0,n[1]);break;
+    case 'lathe':{const [gap,rt,rb,len,amp,wv]=n,pts=[];for(let i=0;i<=28;i++){const t=i/28;pts.push(new THREE.Vector2(rt+(rb-rt)*Math.pow(t,1.3)+amp*t*Math.sin(t*PI*wv),-t*len));}
+      g=new THREE.LatheGeometry(pts,32,gap,PI*2-2*gap);break;}
+    case 'drape':g=new THREE.CylinderGeometry(n[1],n[2],1,30,4,true,n[0],PI*2-2*n[0]);break;
     case 'tor':g=new THREE.TorusGeometry(n[0],n[1],8,18,n[2]);break;
     case 'cone':g=new THREE.ConeGeometry(1,1,14);break;
     case 'ring':g=new THREE.RingGeometry(n[0],n[1],40);break;
@@ -937,17 +941,68 @@ function buildFace(cfg,mood){
   if(cfg.extra==='glasses'){for(const k of[-1,1])add(fm(k3('tor',.06,.011,PI*2),'#222222'),k*EX,EY,.03,0,1,1,1);add(fm('box','#222222'),0,EY,.045,0,.06,.012,.01);}
   return f;
 }
+const EARLESS_HAIR=new Set(['long','wave','hippieF','parted']);
 function buildHair(cfg,g){
   const hc=cfg.hairColor, hm=M(hc,'toon'), h=cfg.hair;
   const cap=(theta,tilt,s=1.05)=>{const m=mesh(geo(k3('hcap',theta)),hm,g,true);m.scale.set(HA*s,HB*s,HC*(s+.02));m.rotation.x=-tilt;return m;};
+  // --- helpers for the fuller styles ---
+  const hm2=M(hc,'toon',{side:THREE.DoubleSide}), hmD=M(shade(hc,-12),'toon'), hmL=M(shade(hc,10),'toon');
+  const rnd=i=>{const x=Math.sin(i*127.1+h.length*31.7)*43758.5453;return x-Math.floor(x);}; // stable jitter
+  const P=(a,th,s)=>[Math.sin(th)*Math.sin(a)*HA*s,Math.cos(th)*HB*s,Math.sin(th)*Math.cos(a)*HC*s]; // a:0=front, th from crown
+  const hood=(gap,thMax,s)=>{const m=mesh(geo(k3('hood',gap,thMax)),hm2,g,true);m.scale.set(HA*s,HB*s,HC*s);return m;};
+  const lathe=(gap,rt,rb,len,zs,amp,wv)=>{const m=mesh(geo(k3('lathe',gap,rt,rb,len,amp,wv)),hm2,g,true);m.scale.z=zs;return m;};
+  const drape=(gap,rt,rb,len,zs)=>{const m=mesh(geo(k3('drape',gap,rt,rb)),hm2,g,true);m.scale.set(1,len,zs);m.position.y=-len/2;return m;};
+  const blob=(x,y,z,r,o={})=>sph(g,r,hc,x,y,z,Object.assign({mat:o.m||hm,low:true,cast:false},o));
+  const surfZ=(x,y,s=1)=>HC*s*Math.sqrt(Math.max(0,1-(x/(HA*s))**2-(y/(HB*s))**2));
+  // curls scattered over the skull (skips the face window)
+  const curls=(thMin,thMax,s,r,gap,faceTh,step,seed)=>{let i=seed;
+    for(let th=thMin;th<=thMax+1e-6;th+=step){const n=Math.max(1,Math.round(PI*2*Math.sin(th)/step));
+      for(let j=0;j<n;j++){i++;const a=(j+rnd(i)*.6)/n*PI*2-PI;if(th>faceTh&&Math.abs(a)<gap)continue;
+        const [x,y,z]=P(a,th+(rnd(i+7)-.5)*step*.5,s);blob(x,y,z,r*(.85+rnd(i+3)*.35),{m:i%5===0?hmD:i%7===0?hmL:hm});}}};
+  // curls over a hanging drape (y from 0 down to -len, radius rt→rb)
+  const drapeCurls=(gap,rt,rb,len,zs,r,rows,seed,wave)=>{let i=seed;
+    for(let k=0;k<rows;k++){const t=(k+.5)/rows,y=-t*len,rad=rt+(rb-rt)*t+(wave?(k%2?.03:-.005):0);
+      const n=Math.round((PI*2-2*gap)*rad/(r*1.25));
+      for(let j=0;j<=n;j++){i++;const a=gap+(j+(wave?(k%2)*.5:rnd(i)*.5))/n*(PI*2-2*gap);if(a>PI*2-gap)continue;
+        blob(Math.sin(a)*rad,y+(rnd(i+5)-.5)*r*.6,Math.cos(a)*rad*zs,r*(.85+rnd(i+2)*.3),{m:i%5===0?hmD:i%6===0?hmL:hm,sy:wave?1.25:1});}}};
+  // a strand of blobs (face-framing locks), zig-zag for waves/curls
+  const strand=(x0,z0,y0,y1,r,n,zig,seed)=>{for(let k=0;k<n;k++){const t=k/(n-1),y=y0+(y1-y0)*t,zz=(k%2?1:-1)*zig;
+      blob(x0+zz*Math.sign(x0),y,z0+Math.abs(zz)*.3,r*(1-.15*t)*(.9+rnd(seed+k)*.2),{m:k%3===2?hmD:hm,sy:1.15});}};
   if(h==='buzz'){const m=mesh(geo(k3('hcap',1.38)),M(mix(hc,cfg.skin,.45),'toon'),g,true);m.scale.set(HA*1.015,HB*1.015,HC*1.02);m.rotation.x=-.3;}
   else if(h==='short'||h==='pony'||h==='bun'||h==='side'){cap(1.22,.45);
     for(let i=-2;i<=2;i++)sph(g,.055,hc,i*.05,.2-Math.abs(i)*.012,.2-Math.abs(i)*.02,{mat:hm,low:true,sx:1,sy:.8,sz:.8});
     if(h==='side'){sph(g,.1,hc,.07,.25,.13,{mat:hm,sx:1.8,sy:.7,sz:1.4}).rotation.z=-.35;}
     if(h==='pony'){const t=mesh(geo(k3('cap',.08,.2)),hm,g,true);t.position.set(0,-.04,-.34);t.rotation.x=.55;sph(g,.05,'#e53935',0,.07,-.3,{kind:'toon'});}
     if(h==='bun'){sph(g,.13,hc,0,.33,-.06,{mat:hm});}}
-  else if(h==='long'){cap(1.32,.32,1.06);const b=mesh(geo(k3('cap',.24,.26)),hm,g,true);b.position.set(0,-.13,-.12);b.scale.z=.65;
-    for(const k of[-1,1]){const s=mesh(geo(k3('cap',.07,.24)),hm,g,true);s.position.set(k*.25,-.1,.02);}}
+  else if(h==='long'||h==='wave'){ // one continuous shell: crown → sides → back, hanging to the shoulders
+    const W=h==='wave', gap=.82, s=1.07, rt=HA*s, len=W?.56:.48, rb=W?.36:.34, zs=HC/HA;
+    cap(1.3,.3,1.08);hood(gap,PI/2,s);
+    if(W)lathe(gap,rt,rb,len,zs,.045,3.2);else drape(gap,rt,rb,len,zs);
+    for(let j=0;j<=14;j++){const a=gap+j/14*(PI*2-2*gap),r=rb+(W?.045*Math.sin(PI*3.2):0);blob(Math.sin(a)*r*.97,-len,Math.cos(a)*r*zs*.97,.06,{sy:.8});}
+    for(const k of[-1,1]){const x=k*Math.sin(gap)*rt*.98, z=Math.cos(gap)*rt*zs;
+      if(W){for(let i=0;i<5;i++){const t=i/4,bl=blob(x+k*(i%2?.03:0),-.05-t*(len-.08),z+.005,.065*(1-.12*t),{sx:.9,sy:1.55,sz:.85});bl.rotation.z=k*(i%2?-.35:.35);}}
+      else{const l=mesh(geo(k3('cap',.062,.34)),hm,g,true);l.position.set(x,-.25,z-.005);l.rotation.z=k*.04;}}
+    if(W){for(let i=-3;i<=3;i++){const x=i*.05,y=.165-Math.abs(i)*.012,bl=blob(x,y,surfZ(x,y,1.03)+.012,.052,{sx:.8,sy:1.45,sz:.4});bl.rotation.z=-i*.1;}}}
+  else if(h==='hippieF'){ // big long curly volume, middle part
+    const gap=.86, s=1.1, rt=HA*s+.01, len=.58, rb=.4, zs=HC/HA*1.02;
+    cap(1.32,.28,1.09);hood(gap,PI/2,s);lathe(gap,rt,rb,len,zs,.03,5);
+    curls(.4,1.6,1.12,.07,gap,.9,.23,0);
+    drapeCurls(gap,rt+.012,rb+.012,len,zs,.075,5,300,false);
+    for(const k of[-1,1]){const x=k*Math.sin(gap)*rt, z=Math.cos(gap)*rt*zs+.02;strand(x,z,.05,-len+.02,.072,6,.028,k*50);}
+    for(const k of[-1,1])blob(k*.075,.29,.1,.08,{sx:1.4,sy:.65});} // parted crown
+  else if(h==='hippieM'){ // messy curly medium cut with curly bangs
+    cap(1.42,.18,1.07);hood(.95,1.85,1.05);
+    curls(.28,1.72,1.06,.072,.95,1.05,.21,500);
+    for(let i=-3;i<=3;i++){const x=i*.058,y=.15-Math.abs(i)*.018+(i%2?.012:0);blob(x,y,surfZ(x,y,1.03)+.018,.062,{m:i%2?hmD:hm,sz:.7});}
+    for(const k of[-1,1])for(let j=0;j<3;j++){const [x,y,z]=P(k*(1.25+j*.3),1.75+j*.08,1.06);blob(x,y-.02,z,.066);}}
+  else if(h==='parted'){ // 가르마펌: curtain bangs swept to both sides, soft volume covering the ears
+    cap(1.36,.2,1.12);hood(.98,1.86,1.09);
+    for(const k of[-1,1]){const v=blob(k*.1,.27,.03,.15,{sx:1,sy:.55,sz:1.25,low:false});v.rotation.z=-k*.35;} // soft volume either side of the part
+    for(const k of[-1,1]){
+      for(let i=0;i<4;i++){const t=i/3,x=k*(.045+.18*t),y=.255-.17*Math.pow(t,1.2),bl=blob(x,y,surfZ(x,y,1.05)+.01,.095*(1-.2*t),{sx:1.25,sy:.75,sz:.5,low:false});bl.rotation.z=k*(.45+.6*t);}
+      const tip=blob(k*.245,.045,surfZ(.245,.045,1.05)-.02,.06,{sx:.75,sy:1.25,sz:.7});tip.rotation.z=-k*.25; // curl at the temple
+      const sv=blob(k*.27,-.06,-.03,.1,{sx:.55,sy:1.15,sz:1.45});sv.rotation.z=k*.12;} // over the ears
+    for(let j=0;j<5;j++){const [x,y,z]=P(PI+(j-2)*.36,1.8,1.08);blob(x,y,z,.07,{sy:.9});}} // nape
   else if(h==='curly'){for(let r=0;r<2;r++){const th=r?0.38:0.85, n=r?6:12;for(let i=0;i<n;i++){const ph=i/n*PI*2;
       sph(g,.1,hc,Math.sin(th)*Math.cos(ph)*HA*1.02,Math.cos(th)*HB*1.02,Math.sin(th)*Math.sin(ph)*HC*1.05,{mat:hm,low:true});}}
     sph(g,.11,hc,0,HB,0,{mat:hm,low:true});}
@@ -1136,7 +1191,7 @@ function makeChar(cfg){
   // --- big round head, sitting right on the shoulders ---
   const head=new THREE.Group();head.scale.set(HSX,HSY,HSZ);head.position.y=top+HB*HSY*.5;pose.add(head);o.head=head;
   const hm=sph(head,1,cfg.skin,0,0,0,{kind:'toon',sx:HA,sy:HB,sz:HC});outline(hm,1.04);
-  for(const k of[-1,1]){const e=sph(head,1,cfg.skin,k*.285,-.02,-.02,{kind:'toon',sx:.05,sy:.075,sz:.06});outline(e,1.18);}
+  if(!EARLESS_HAIR.has(cfg.hair))for(const k of[-1,1]){const e=sph(head,1,cfg.skin,k*.285,-.02,-.02,{kind:'toon',sx:.05,sy:.075,sz:.06});outline(e,1.18);}
   if(cfg.hair!=='bald')buildHair(cfg,head);
   o.faceSlot=new THREE.Group();head.add(o.faceSlot);
   o.faceAcc=new THREE.Group();head.add(o.faceAcc);
@@ -1367,6 +1422,7 @@ const DEFAULT_CHAR={name:'',hair:'bald',hairColor:'#1d1d1d',eyes:'dot',brows:'an
   skin:'#f5d9bf',crocs:'#2d2d2d',top:'#1f2f5c',bottom:'#1f2f5c',height:1,bulk:1,
   hat:'none',face:'none',neck:'none',hand:'none',accColor:'#4fc3f7',preset:0};
 let charCfg=Object.assign({},DEFAULT_CHAR,load('alonechief_char_v1',{}));
+{const RETIRED_HAIR={buzz:'bald',short:'side',pony:'long'};if(RETIRED_HAIR[charCfg.hair])charCfg.hair=RETIRED_HAIR[charCfg.hair];}
 if(charCfg.name==='JOHN DOE')charCfg.name='';
 const dispName=()=>(charCfg.name||'').trim()||'익명 실장';
 const badgeText=()=>charCfg.name?'PT - '+charCfg.name.toUpperCase():'PT';
@@ -1980,7 +2036,7 @@ const AV_CACHE=new Map();
 function cleanAv(av){const o={};if(!av||typeof av!=='object')return o;
   if(av.special==='director')o.special='director';
   const pick=(k,ok)=>{if(ok(av[k]))o[k]=av[k];};
-  for(const k of ['hair','eyes','brows','nose','lips','hat','face','neck','hand'])pick(k,v=>typeof v==='string'&&OPTS[k]&&OPTS[k][1].some(([x])=>x===v));
+  for(const k of ['hair','eyes','brows','nose','lips','hat','face','neck','hand'])pick(k,v=>typeof v==='string'&&(k==='hair'&&['buzz','short','pony'].includes(v)||OPTS[k]&&OPTS[k][1].some(([x])=>x===v)));
   for(const k of ['hairColor','skin','crocs','top','bottom','accColor'])pick(k,v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v));
   if(typeof av.height==='number'&&av.height>=.82&&av.height<=1.22)o.height=av.height;
   if(typeof av.bulk==='number'&&av.bulk>=.78&&av.bulk<=1.4)o.bulk=av.bulk;return o;}
@@ -2209,7 +2265,7 @@ document.addEventListener('dblclick',e=>e.preventDefault());
    CUSTOMIZATION (roster + tabs + 3D preview)
    ========================================================= */
 const OPTS={
-  hair:['헤어 스타일',[['bald','민머리'],['buzz','삭발'],['short','짧은머리'],['side','가르마'],['curly','곱슬'],['long','긴머리'],['pony','포니테일'],['bun','똥머리'],['sides','옆머리']]],
+  hair:['헤어 스타일',[['bald','민머리'],['side','가르마'],['parted','가르마펌'],['curly','곱슬'],['hippieM','히피펌(남)'],['long','긴머리'],['wave','웨이브펌'],['hippieF','히피펌(여)'],['bun','똥머리'],['sides','옆머리']]],
   eyes:['눈',[['dot','점눈'],['round','동글눈'],['sparkle','반짝눈'],['happy','웃는눈'],['sleepy','졸린눈']]],
   brows:['눈썹',[['angry','진지한'],['flat','일자'],['arch','아치'],['thick','짙은']]],
   nose:['코',[['nostril','콧구멍'],['button','동글코'],['pointy','오똑코']]],
@@ -2244,15 +2300,15 @@ const ACC_INFO={
 const ROSTER=[
   {n:'송 쌤',c:{}},
   {n:'민트쌤',c:{hair:'long',hairColor:'#5a3825',eyes:'sparkle',brows:'arch',nose:'button',lips:'small',top:'#3c8d5a',crocs:'#ff8fd0',hat:'band',accColor:'#66bb6a',hand:'clip'}},
-  {n:'근육실장',c:{hair:'buzz',eyes:'dot',brows:'thick',lips:'smile',top:'#8b1e3f',bulk:1.38,height:1.1,neck:'towel',accColor:'#ff7043',hand:'candy'}},
-  {n:'새싹인턴',c:{hair:'short',hairColor:'#5a3825',eyes:'round',brows:'flat',nose:'button',lips:'smile',top:'#4dd0e1',height:.86,hat:'sprout',hand:'coffee',crocs:'#3ec46d'}},
+  {n:'근육실장',c:{hair:'bald',eyes:'dot',brows:'thick',lips:'smile',top:'#8b1e3f',bulk:1.38,height:1.1,neck:'towel',accColor:'#ff7043',hand:'candy'}},
+  {n:'새싹인턴',c:{hair:'hippieM',hairColor:'#5a3825',eyes:'round',brows:'flat',nose:'button',lips:'smile',top:'#4dd0e1',height:.86,hat:'sprout',hand:'coffee',crocs:'#3ec46d'}},
   {n:'왕원장',c:{hair:'sides',hairColor:'#d9d9d9',eyes:'happy',brows:'thick',nose:'button',lips:'smile',face:'mustache',top:'#7b4bb3',hat:'crown',neck:'medal',bulk:1.2}},
-  {n:'토끼쌤',c:{hair:'pony',hairColor:'#e75480',eyes:'sparkle',brows:'arch',nose:'button',lips:'smile',top:'#e57373',crocs:'#ffffff',hat:'bunny',neck:'bowtie'}},
+  {n:'토끼쌤',c:{hair:'wave',hairColor:'#e75480',eyes:'sparkle',brows:'arch',nose:'button',lips:'smile',top:'#e57373',crocs:'#ffffff',hat:'bunny',neck:'bowtie'}},
   {n:'쿨가이',c:{hair:'side',hairColor:'#1d1d1d',eyes:'dot',brows:'flat',lips:'small',face:'sun',top:'#3a3a3a',hand:'gun',accColor:'#37474f',crocs:'#ff5e5e'}},
   {n:'수술실장',c:{hair:'curly',hairColor:'#a0522d',eyes:'round',brows:'flat',nose:'button',face:'mask',hat:'scrub',accColor:'#4fc3f7',top:'#2a6f97'}},
   {n:'비니실장',c:{hair:'bald',eyes:'sleepy',brows:'flat',lips:'small',hat:'beanie',accColor:'#ffd23f',face:'glasses',neck:'bowtie',hand:'coffee',top:'#3c8d5a'}},
-  {n:'반창고',c:{hair:'short',hairColor:'#e0b04a',eyes:'happy',brows:'arch',lips:'smile',face:'bandage',top:'#ffd23f',crocs:'#3a7bd5',height:.9}},
-  {n:'코치',c:{hair:'short',hairColor:'#1d1d1d',eyes:'dot',brows:'angry',lips:'small',hat:'cap',accColor:'#ff7043',neck:'whistle',hand:'clip',top:'#2a6f97'}},
+  {n:'반창고',c:{hair:'parted',hairColor:'#e0b04a',eyes:'happy',brows:'arch',lips:'smile',face:'bandage',top:'#ffd23f',crocs:'#3a7bd5',height:.9}},
+  {n:'코치',c:{hair:'side',hairColor:'#1d1d1d',eyes:'dot',brows:'angry',lips:'small',hat:'cap',accColor:'#ff7043',neck:'whistle',hand:'clip',top:'#2a6f97'}},
   {n:'사탕요정',c:{hair:'bun',hairColor:'#7e57c2',eyes:'sparkle',brows:'arch',nose:'button',lips:'smile',hand:'candy',accColor:'#ec407a',top:'#7b4bb3',bulk:.85}},
 ];
 if(!ACC_INFO[charCfg.hand])charCfg.hand='none';

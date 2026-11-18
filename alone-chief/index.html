@@ -181,6 +181,28 @@ input::placeholder{color:#b9bfc7;opacity:1}
 .vsc{font-family:var(--head);font-size:20px}
 .crown{position:absolute;top:-16px;font-size:26px}
 .vsmid{font-family:'Bagel Fat One',var(--head);font-size:26px;color:#ff5a4e;-webkit-text-stroke:.1em var(--ink);paint-order:stroke fill}
+.metag{position:absolute;top:-10px;left:-6px;background:var(--navy);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:0 9px;font-family:var(--head);font-size:13px;z-index:1}
+#lobby{touch-action:pan-y}
+.lwrap{max-width:520px;width:100%}
+.lbody{padding:18px 16px 16px;text-align:center}
+.lvs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.lslot{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:18px;border:3px solid var(--ink);background:#fff;transition:background .2s}
+.lslot.ready{background:linear-gradient(#e8fbe9,#9be3ab)}
+.lslot.off,.lslot.empty{background:#eef1f4}
+.limg{width:100%;aspect-ratio:1/1.1;display:grid;place-items:center}
+.limg img{width:100%;height:100%;object-fit:contain}
+.lq{font-family:'Bagel Fat One',var(--head);font-size:56px;color:#b8c2cc}
+.lslot b{font-family:var(--head);font-weight:400;font-size:17px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lst{font-family:'Noto Sans KR';font-size:13px;font-weight:700}
+.lslot.ready .lst{color:#1b7a3a}.lslot.off .lst{color:#c0392b}.lslot.empty .lst,.lslot.wait .lst{color:#6b7785}
+.lslot.empty .limg{animation:lpulse 1.4s ease-in-out infinite}
+@keyframes lpulse{50%{opacity:.45}}
+.lmsg{font-family:'Noto Sans KR';font-size:15px;font-weight:700;margin:14px 0 4px;min-height:22px}
+.lbtns{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.lbtns>.btn{font-size:22px;padding:13px}
+.lsub{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.lsub .btn{font-size:17px;padding:10px 6px}
+.btn:disabled{opacity:.55;filter:grayscale(.3)}
 #duelBox{background:#fff;border:3px solid var(--ink);border-radius:16px;padding:12px;text-align:center;box-shadow:0 4px 0 rgba(0,0,0,.2)}
 .nsheet{position:fixed;inset:0;z-index:60;display:none;align-items:flex-start;justify-content:center;background:rgba(18,28,40,.55);padding:calc(var(--sat) + 16px) 14px 0}
 .nsheet.show{display:flex}
@@ -529,6 +551,20 @@ body.touch #joyHint{display:grid}
 </section>
 
 <!-- ===================== CUSTOMIZE ===================== -->
+<section id="lobby" class="screen">
+  <div class="lwrap center">
+    <div class="banner zz">⚔️ 대결장</div>
+    <div class="card lbody">
+      <div id="lobbyVs"></div>
+      <div class="lmsg" id="lobbyMsg"></div>
+      <div id="lobbyShare"></div>
+      <div class="lbtns">
+        <button class="btn green" id="readyBtn">✅ 준비 완료</button>
+        <div class="lsub"><button class="btn sec" id="lobbyCustom">🧑‍⚕️ 다시 꾸미기</button><button class="btn sec" id="lobbyExit">나가기</button></div>
+      </div>
+    </div>
+  </div>
+</section>
 <section id="custom" class="screen">
   <div class="cwrap center">
     <div class="banner zz" id="customBanner">🧑‍⚕️ 캐릭터 선택</div>
@@ -1881,7 +1917,7 @@ function updateHUD(){
   $('#scoreTxt').textContent=G.score;
   $('#tipTxt').textContent=`TIP x${G.tip}`+(G.combo>=2?` · ${G.combo}콤보`:'');
   {const f=document.getElementById('feverT');if(f)f.textContent=G.feverT>0?Math.ceil(G.feverT)+'s':'';}
-  $('#cureTxt').textContent=G.duel?(G.duel.role==='b'?`🎯 ${G.duel.target.toLocaleString()}`:'⚔️ 도전장'):`퇴원 ${G.stats.cured}`;
+  $('#cureTxt').textContent=G.duel?`🆚 ${duelOpp().toLocaleString()}`:`퇴원 ${G.stats.cured}`;
   const escP=G.player.escort;const list=escP&&escP.state==='following'?[escP]:[];
   const tk=$('#tickets');
   const ids=list.map(p=>p.id).join(',');
@@ -2009,7 +2045,7 @@ function renderTitle(){
    SCREENS / FLOW
    ========================================================= */
 function show(id){$$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
-  if(id==='game')resize();if(id==='custom'){buildCustom();rebuildPreview();$('#customBanner').textContent=DUEL?'⚔️ 도전장 · 출근 준비':'🧑‍⚕️ 캐릭터 선택';emojify($('#customBanner'));}if(id==='title')renderTitle();}
+  if(id==='game')resize();if(id==='custom'){buildCustom();rebuildPreview();$('#customBanner').textContent=DUEL?'⚔️ 대결 · 캐릭터 꾸미기':'🧑‍⚕️ 캐릭터 선택';$('#startBtn').textContent=DUEL?'⚔️ 대결장 입장 ▶':'출근하기 ▶';emojify($('#customBanner'));emojify($('#startBtn'));}if(id==='lobby'){renderLobby();}if(id==='title')renderTitle();}
 function startGame(){
   if(isTouch){try{const de=document.documentElement;if(!document.fullscreenElement&&de.requestFullscreen)de.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(e){}}
   newGame();show('game');
@@ -2044,8 +2080,8 @@ function endGame(){
   $('#endMeta').innerHTML=`<span>🔥 최대 콤보 <b>${G.maxCombo}</b></span>`+(G.abil.size?`<span>어빌리티 ${[...G.abil].map(k=>ABIL[k].i).join('')}</span>`:'');
   document.body.classList.remove('fever');
   $('#endRank').innerHTML='🏆 랭킹 집계 중…';boardMsg($('#endTable'),'🏆 랭킹 불러오는 중…');
-  $('#igBox').style.display='none';$('#duelBox').style.display='none';$('.eshare').style.display=duel?'none':'';
-  if(duel)duelFinish(duel,sc,name);
+  $('#igBox').style.display='none';$('#duelBox').style.display='none';$('.eshare').style.display=duel?'none':'';$('.lbd').style.display=duel?'none':'';
+  if(duel)duelFinish(duel,sc);
   // submit to the shared online ranking; fall back to this device's ranking when offline
   const sub=duel?Promise.resolve(null):rpc('submit_score',{p_name:name,p_score:sc,p_av:avatarCfg(),p_device:deviceId()})
     .then(async r=>{const list=await fetchTop();return {r,list};}).catch(()=>null);
@@ -2377,85 +2413,145 @@ async function shareLink(){
 $('#shareBtn').addEventListener('click',shareLink);
 $('#kakaoBtn').addEventListener('click',shareKakao);
 
-/* ---------- 1:1 도전장 대결 (async duel, same patient seed) ---------- */
-let DUEL=null;
-const DUEL_ERR={own:'내가 만든 도전장이에요',not_ready:'아직 도전장이 완성되지 않았어요',done:'이미 결판이 난 도전장이에요',expired:'기한(48시간)이 지난 도전장이에요',taken:'다른 도전자가 지금 플레이 중이에요',missing:'도전장을 찾을 수 없어요'};
+/* ---------- 1:1 도전장 대결 (real-time lobby: both ready → start together, same patient seed) ---------- */
+let DUEL=null, duelTimer=null;
+const DUEL_ERR={taken:'이미 다른 친구가 대결장에 들어왔어요',expired:'기한(24시간)이 지난 도전장이에요',missing:'도전장을 찾을 수 없어요','not allowed':'대결 기록을 저장하지 못했어요'};
 const duelUrl=id=>`${SHARE_URL}?duel=${id}`;
-function duelSheet(html){const s=$('#duelSheet');s.querySelector('.dbox').innerHTML=html;s.classList.add('show');}
+function duelSheet(html){const s=$('#duelSheet');s.querySelector('.dbox').innerHTML=html;s.classList.add('show');emojify(s);}
 function closeDuel(){$('#duelSheet').classList.remove('show');}
-function vsHtml(d){const a=d.a_score,b=d.b_score,win=a>b?'a':b>a?'b':'';
-  const side=(k,n,sc,av)=>`<div class="vside ${win===k?'win':''}">${win===k?'<span class="crown">👑</span>':''}${avatarHtml({av:av||{}})}<b>${esc(n||'익명 실장')}</b><span class="vsc">${sc==null?'대기 중':sc.toLocaleString()+'점'}</span></div>`;
-  return `<div class="vs">${side('a',d.a_name,a,d.a_av)}<div class="vsmid">VS</div>${side('b',d.b_name,b,d.b_av)}</div>`;}
-function duelShareBtns(id,name,score){
+const scoreTxt=(d,k)=>d[k+'_score']!=null?d[k+'_score'].toLocaleString()+'점':d.status==='done'?'기권':d[k+'_live']!=null?d[k+'_live'].toLocaleString()+'점…':'대기 중';
+function vsHtml(d){const done=d.status==='done',a=d.a_score==null?-1:d.a_score,b=d.b_score==null?-1:d.b_score,win=!done?'':a>b?'a':b>a?'b':'';
+  const side=k=>`<div class="vside ${win===k?'win':''}">${win===k?'<span class="crown">👑</span>':''}${d.you===k?'<span class="metag">나</span>':''}${avatarHtml({av:d[k+'_av']||{}})}<b>${esc(d[k+'_name']||'익명 실장')}</b><span class="vsc">${scoreTxt(d,k)}</span></div>`;
+  return `<div class="vs">${side('a')}<div class="vsmid">VS</div>${side('b')}</div>`;}
+function duelResult(d){if(!d.you)return '⚔️ 대결 결과';const me=d[d.you+'_score'],op=d[(d.you==='a'?'b':'a')+'_score'];
+  return me==null?'😢 기권패':op==null||me>op?'🏆 승리!':me===op?'🤝 무승부!':'😢 아쉽게 패배';}
+function duelShareBtns(id){
   const k=KAKAO_JS_KEY&&location.hostname==='physiof5.github.io';
-  return `<div class="dbtns">${k?`<button class="btn kakao" data-dk="${id}"><i class="ktalk"></i>카카오톡으로 도전장</button>`:''}<button class="btn shr" data-dl="${id}">🔗 도전장 보내기</button></div>`;}
+  return `<div class="dbtns">${k?`<button class="btn kakao" data-dk="${id}"><i class="ktalk"></i>카카오톡으로 도전장</button>`:''}<button class="btn shr" data-dl="${id}">🔗 도전장 링크 보내기</button></div>`;}
 async function sendDuel(id,kakao){
-  const name=dispName(), sc=(G&&G.duel&&G.duel.id===id&&G.state==='end')?G.score:null, url=duelUrl(id);
-  const title=`⚔️ ${name}님의 도전장!`, text=sc!=null?`나홀로 실장 ${sc.toLocaleString()}점 · 같은 환자 순서로 이겨 봐!`:'나홀로 실장 1:1 대결 · 같은 환자 순서로 승부!';
+  const name=dispName(), url=duelUrl(id), title=`⚔️ ${name}님의 도전장!`, text='나홀로 실장 1:1 실시간 대결 · 같은 환자, 같은 시간! 누가 더 잘할까?';
   if(kakao){try{const K=await loadKakao();K.Share.sendDefault({objectType:'feed',content:{title,description:text,imageUrl:SHARE_URL+'og.png',imageWidth:1200,imageHeight:630,link:{mobileWebUrl:url,webUrl:url}},
-      buttons:[{title:'도전 수락하기',link:{mobileWebUrl:url,webUrl:url}}]});return;}catch(e){}}
+      buttons:[{title:'대결장 입장하기',link:{mobileWebUrl:url,webUrl:url}}]});return;}catch(e){}}
   if(navigator.share){try{await navigator.share({title,text,url});return;}catch(e){if(e&&e.name==='AbortError')return;}}
   const ok=await copyText(`${title}\n${text}\n${url}`);toast(ok?'🔗 도전장 링크 복사! 카톡·DM에 붙여넣기 하세요':'🔗 '+url,ok?'good':'warn');
 }
-document.addEventListener('click',e=>{const k=e.target.closest('[data-dk]'),l=e.target.closest('[data-dl]');if(k)sendDuel(k.dataset.dk,true);if(l)sendDuel(l.dataset.dl,false);});
+// ---- server sync ----
+async function duelSync(D,extra){const t0=Date.now();
+  const st=await rpc('duel_sync',Object.assign({p_id:D.id,p_device:deviceId()},extra||{}));const t1=Date.now();
+  if(st&&st.now)D.off=Date.parse(st.now)-(t0+t1)/2;onDuelState(D,st);return st;}
+function duelKick(){const D=DUEL;if(!D)return;clearTimeout(duelTimer);if(D.busy){D.kick=true;return;}duelTick();}
+async function duelTick(){const D=DUEL;if(!D||D.done)return;D.busy=true;let iv=1500;
+  const scr=(document.querySelector('.screen.active')||{}).id;
+  try{
+    if(D.finished){showDuelEnd(D,await rpc('get_duel',{p_id:D.id,p_device:deviceId()}));iv=2000;}
+    else if(scr==='game'&&G&&G.duel===D){await duelSync(D,{p_live:G.score});iv=2000;}
+    else if(scr==='lobby'||scr==='custom'||D.started){await duelSync(D,{p_name:dispName().slice(0,10),p_av:avatarCfg(),p_ready:scr==='lobby'&&D.ready});}
+    else iv=3000;
+    D.fails=0;
+  }catch(e){const c=String(e.message||'');
+    if(DUEL===D&&DUEL_ERR[c]&&!D.started){DUEL=null;D.busy=false;closeDuel();toast('😢 '+DUEL_ERR[c],'bad');if(scr==='lobby'||scr==='custom')show('title');return;}
+    if(++D.fails===4&&scr==='lobby')toast('📶 연결이 불안정해요','warn');}
+  D.busy=false;
+  if(DUEL===D&&!D.done){duelTimer=setTimeout(duelTick,D.kick?0:iv);D.kick=false;}
+}
+function onDuelState(D,st){if(DUEL!==D||!st)return;D.st=st;
+  const op=D.role==='a'?'b':'a';
+  if(st.has_b&&!D.oppHere){D.oppHere=true;if(D.role==='a')toast('🙌 친구가 대결장에 들어왔어요!','good'),sfx('coin');}
+  if(st.start_at&&!D.started){D.started=true;D.startAt=Date.parse(st.start_at)-(D.off||0);
+    sfx('rounds');setTimeout(()=>{if(DUEL===D)beginDuelGame(D);},Math.max(0,D.startAt-3800-Date.now()));}
+  if($('#lobby').classList.contains('active'))renderLobby();
+  if(G&&G.duel===D&&G.state!=='end'){const o=st[op+'_live']||0,diff=G.score-o,lead=diff>0?1:diff<0?-1:0;
+    if(D.lead!=null&&lead&&lead!==D.lead&&G.score+o>0)toast(lead>0?'🔥 역전! 내가 앞서고 있어요':'😱 상대가 앞질렀어요',lead>0?'good':'warn');
+    if(lead)D.lead=lead;}
+}
+function beginDuelGame(D){closeDuel();startGame();G.cd=Math.max(-.5,(D.startAt-Date.now())/1000-.6);duelKick();}
+function duelOpp(){const D=G&&G.duel;if(!D||!D.st)return 0;return D.st[(D.role==='a'?'b':'a')+'_live']||0;}
+// ---- lobby screen (대결장) ----
+const LIMG=new Map();
+function lobbyImg(av,flip){const c=cleanAv(av),key=JSON.stringify(c)+flip;
+  if(!LIMG.has(key)){let u='';try{u=portrait(Object.assign({},DEFAULT_CHAR,c,{badge:null,name:''}),{full:true,size:220,yaw:flip?.35:-.35});}catch(e){}LIMG.set(key,u);}return LIMG.get(key);}
+const LST={ready:'✅ 준비 완료',wait:'⏳ 준비 중…',empty:'입장 기다리는 중',off:'📴 연결 끊김'};
+function lobbySlot(name,av,state,me){
+  return `<div class="lslot ${state}">${me?'<span class="metag">나</span>':''}<div class="limg">${av?`<img src="${lobbyImg(av,!me)}" alt="">`:'<span class="lq">?</span>'}</div><b>${esc(name||'익명 실장')}</b><span class="lst">${LST[state]}</span></div>`;}
+function enterLobby(){const D=DUEL;if(!D)return;D.ready=false;show('lobby');duelKick();}
+function renderLobby(){const D=DUEL;if(!D)return;const st=D.st||{},op=D.role==='a'?'b':'a';
+  const opState=!(st.has_b||D.role==='b')?'empty':!st[op+'_on']?'off':st[op+'_ready']?'ready':'wait';
+  const vs=`<div class="lvs">${lobbySlot(dispName(),avatarCfg(),D.ready?'ready':'wait',true)}<div class="vsmid">VS</div>${lobbySlot(opState==='empty'?'???':st[op+'_name'],opState==='empty'?null:st[op+'_av'],opState,false)}</div>`;
+  const el=$('#lobbyVs');if(el.dataset.h!==vs){el.dataset.h=vs;el.innerHTML=vs;emojify(el);}
+  const msg=D.started?'🔥 둘 다 준비 완료! 곧 시작해요':opState==='empty'?'친구에게 도전장 링크를 보내 주세요':opState==='off'?'상대의 연결이 끊겼어요. 잠시 기다려 주세요':D.ready?(opState==='ready'?'곧 시작해요…':'상대가 준비하는 중이에요'):'캐릭터가 마음에 들면 [준비 완료]를 눌러요';
+  if($('#lobbyMsg').textContent!==msg){$('#lobbyMsg').textContent=msg;emojify($('#lobbyMsg'));}
+  const sh=$('#lobbyShare'),want=opState==='empty'?'1':'';if(sh.dataset.on!==want){sh.dataset.on=want;sh.innerHTML=want?duelShareBtns(D.id):'';emojify(sh);}
+  const rb=$('#readyBtn');rb.disabled=D.started;rb.className='btn '+(D.ready?'sec':'green');
+  const rt=D.started?'⚔️ 곧 시작!':D.ready?'↩ 준비 취소':'✅ 준비 완료';if(rb.dataset.t!==rt){rb.dataset.t=rt;rb.textContent=rt;emojify(rb);}
+  $('#lobbyCustom').disabled=D.started;$('#lobbyExit').disabled=D.started;
+}
+// ---- entry points ----
 function openDuelIntro(){
   duelSheet(`<div class="dt">⚔️ 1:1 도전장 대결</div>
-    <ol class="dsteps"><li><b>내가 먼저 한 판</b>으로 도전장을 만들어요</li><li>카톡·DM으로 <b>도전장 링크</b>를 보내요</li><li>친구가 <b>똑같은 환자 순서</b>로 도전! (48시간)</li></ol>
-    <div class="dnote">도전장 판은 월간 랭킹에 기록되지 않아요</div>
-    <div class="dbtns"><button class="btn" id="duelMake">⚔️ 도전장 만들고 출근 준비</button><button class="btn sec" data-close>닫기</button></div>`);
+    <ol class="dsteps"><li>친구에게 <b>도전장 링크</b>를 보내요</li><li>친구가 링크를 열고 들어와요</li><li>각자 <b>캐릭터를 꾸미고</b> 대결장 입장</li><li>둘 다 <b>준비 완료</b>면 동시에 시작!</li></ol>
+    <div class="dnote">같은 환자가 같은 순서로 와요 · 대결 판은 월간 랭킹에 기록되지 않아요</div>
+    <div class="dbtns"><button class="btn" id="duelMake">⚔️ 도전장 보내기</button><button class="btn sec" data-close>닫기</button></div>`);
   $('#duelMake').onclick=async()=>{const b=$('#duelMake');b.disabled=true;b.textContent='도전장 만드는 중…';
-    try{const r=await rpc('create_duel',{p_device:deviceId()});DUEL={id:r.id,seed:r.seed,role:'a'};closeDuel();show('custom');toast('⚔️ 도전장 모드! 이번 판 기록이 도전장이 돼요','good');}
-    catch(e){b.disabled=false;b.textContent='⚔️ 도전장 만들고 출근 준비';toast('😢 도전장을 만들지 못했어요. 인터넷 연결을 확인해 주세요','bad');}};
+    try{const r=await rpc('create_duel',{p_device:deviceId()});const D={id:r.id,seed:r.seed,role:'a',ready:false};DUEL=D;
+      duelSync(D,{p_name:dispName().slice(0,10),p_av:avatarCfg()}).catch(()=>{});
+      duelSheet(`<div class="dt">✉️ 도전장 완성!</div><div class="dnote">친구에게 링크를 보내고, 캐릭터를 꾸민 뒤 대결장에서 기다려요<br>링크는 24시간 동안 열려요</div>${duelShareBtns(D.id)}
+        <div class="dbtns"><button class="btn green" data-duelcustom>🧑‍⚕️ 캐릭터 꾸미고 대결장 가기</button></div>`);
+      duelKick();}
+    catch(e){b.disabled=false;b.textContent='⚔️ 도전장 보내기';toast('😢 도전장을 만들지 못했어요. 인터넷 연결을 확인해 주세요','bad');}};
 }
 async function openDuelLink(id){
   duelSheet('<div class="dt">⚔️ 도전장 불러오는 중…</div>');
   let d;try{d=await rpc('get_duel',{p_id:id,p_device:deviceId()});}catch(e){duelSheet(`<div class="dt">😢 도전장을 불러오지 못했어요</div><div class="dnote">인터넷 연결을 확인해 주세요</div><div class="dbtns"><button class="btn sec" data-close>닫기</button></div>`);return;}
   const close='<button class="btn sec" data-close>닫기</button>', make='<button class="btn" data-newduel>⚔️ 내 도전장 만들기</button>';
-  if(d.status==='missing')return duelSheet(`<div class="dt">🤔 ${DUEL_ERR.missing}</div><div class="dbtns">${make}${close}</div>`);
-  if(d.status==='done'){const me=d.you, res=me?(d[me+'_score']>d[(me==='a'?'b':'a')+'_score']?'🏆 내가 이겼어요!':d.a_score===d.b_score?'🤝 무승부!':'😢 아쉽게 졌어요'):'⚔️ 대결 결과';
-    return duelSheet(`<div class="dt">${res}</div>${vsHtml(d)}<div class="dbtns">${make}${close}</div>`);}
-  if(d.status==='expired')return duelSheet(`<div class="dt">⌛ ${DUEL_ERR.expired}</div>${d.a_score!=null?vsHtml(d):''}<div class="dbtns">${make}${close}</div>`);
-  if(d.you==='a'){
-    if(d.status==='waiting_a')return duelSheet(`<div class="dt">⚔️ 아직 미완성 도전장</div><div class="dnote">출근해서 한 판을 마치면 도전장이 완성돼요</div><div class="dbtns"><button class="btn" id="duelGo">⚔️ 이 도전장으로 출근 준비</button>${close}</div>`,
-      setTimeout(()=>{$('#duelGo').onclick=()=>{DUEL={id:d.id,seed:d.seed,role:'a'};closeDuel();show('custom');};}));
-    return duelSheet(`<div class="dt">⏳ 아직 도전자가 없어요</div>${vsHtml(d)}<div class="dnote">링크를 받은 친구가 도전하면 결과가 여기 떠요 · 48시간</div>${duelShareBtns(d.id)}<div class="dbtns">${close}</div>`);}
-  if(d.status==='waiting_a')return duelSheet(`<div class="dt">⏳ 도전장이 아직 준비 중이에요</div><div class="dnote">보낸 사람이 아직 한 판을 마치지 않았어요. 잠시 후 다시 열어 주세요</div><div class="dbtns">${close}</div>`);
-  if(d.status==='claimed'&&d.you!=='b')return duelSheet(`<div class="dt">🏃 ${DUEL_ERR.taken}</div><div class="dnote">15분 뒤에도 결과가 없으면 다시 도전할 수 있어요</div><div class="dbtns">${make}${close}</div>`);
+  if(d.status==='missing'||d.status==='expired')return duelSheet(`<div class="dt">${d.status==='missing'?'🤔':'⌛'} ${DUEL_ERR[d.status]}</div><div class="dbtns">${make}${close}</div>`);
+  if(d.status==='done')return duelSheet(`<div class="dt">${duelResult(d)}</div>${vsHtml(d)}<div class="dbtns">${make}${close}</div>`);
+  if(d.status==='playing')return duelSheet(`<div class="dt">🏃 대결이 이미 진행 중이에요</div>${vsHtml(d)}<div class="dbtns">${make}${close}</div>`);
+  if(d.you){DUEL={id:d.id,seed:d.seed,role:d.you,ready:false,st:d};closeDuel();enterLobby();return;}
+  if(d.has_b&&d.b_on)return duelSheet(`<div class="dt">🏃 ${DUEL_ERR.taken}</div><div class="dbtns">${make}${close}</div>`);
   duelSheet(`<div class="dt">🔥 ${esc(d.a_name||'익명 실장')}님의 도전장!</div>
-    <div class="dinv">${avatarHtml({av:d.a_av||{}})}<div><b>${(d.a_score||0).toLocaleString()}점</b><span>이 점수를 넘으면 승리!</span></div></div>
-    <div class="dnote">같은 환자가 같은 순서로 와요 · 기회는 한 번!</div>
-    <div class="dbtns"><button class="btn" id="duelAccept">⚔️ 도전 수락 · 출근 준비</button>${close}</div>`);
+    <div class="dinv">${avatarHtml({av:d.a_av||{}})}<div><b>1:1 실시간 대결</b><span>같은 환자, 같은 시간에 누가 더 잘할까?</span></div></div>
+    <div class="dnote">캐릭터를 꾸미고 대결장에 들어가 [준비 완료]를 누르면<br>둘 다 준비됐을 때 동시에 시작해요</div>
+    <div class="dbtns"><button class="btn" id="duelAccept">⚔️ 도전 수락 · 캐릭터 꾸미기</button>${close}</div>`);
   $('#duelAccept').onclick=async()=>{const b=$('#duelAccept');b.disabled=true;
-    try{const r=await rpc('claim_duel_b',{p_id:d.id,p_device:deviceId()});DUEL={id:r.id,seed:r.seed,role:'b',target:r.a_score||0,oppName:r.a_name};closeDuel();show('custom');
-      toast(`🎯 목표 ${(r.a_score||0).toLocaleString()}점! 15분 안에 출근하세요`,'good');}
-    catch(e){b.disabled=false;const code=String(e.message||'');toast('😢 '+(DUEL_ERR[code]||'도전을 시작하지 못했어요'),'bad');}};
+    const D={id:d.id,seed:d.seed,role:'b',ready:false};
+    try{DUEL=D;await duelSync(D,{p_name:dispName().slice(0,10),p_av:avatarCfg()});closeDuel();show('custom');duelKick();toast('⚔️ 캐릭터를 꾸미고 대결장에 입장하세요','good');}
+    catch(e){DUEL=null;b.disabled=false;toast('😢 '+(DUEL_ERR[String(e.message||'')]||'도전을 시작하지 못했어요'),'bad');}};
 }
-async function duelFinish(duel,sc,name){
-  DUEL=null;const box=$('#duelBox');
-  $('#endRank').innerHTML='⚔️ 도전장 결과 집계 중…';boardMsg($('#endTable'),'도전장 판은 월간 랭킹에 기록되지 않아요');
-  try{
-    if(duel.role==='a'){await rpc('finish_duel_a',{p_id:duel.id,p_device:deviceId(),p_name:name,p_score:sc,p_av:avatarCfg()});
-      $('#endRank').innerHTML='⚔️ 도전장 완성!';
-      box.innerHTML=`<div class="dt">⚔️ 도전장이 완성됐어요!</div><div class="dnote">친구에게 보내면 <b>${sc.toLocaleString()}점</b>에 도전해요 · 48시간</div>${duelShareBtns(duel.id)}`;}
-    else{const r=await rpc('finish_duel_b',{p_id:duel.id,p_device:deviceId(),p_name:name,p_score:sc,p_av:avatarCfg()});
-      const res=r.b_score>r.a_score?'🏆 승리!':r.b_score===r.a_score?'🤝 무승부!':'😢 아쉽게 패배';
-      $('#endRank').innerHTML=res;
-      box.innerHTML=`<div class="dt">${res}</div>${vsHtml(r)}<div class="dbtns"><button class="btn" data-newduel>⚔️ 내 도전장 만들기</button></div>`;}
-  }catch(e){box.innerHTML=`<div class="dt">😢 도전장 기록을 저장하지 못했어요</div><div class="dnote">${esc(DUEL_ERR[String(e.message||'')]||'인터넷 연결을 확인해 주세요')}</div>`;$('#endRank').innerHTML='⚔️ 도전장';}
-  emojify(box);
+// ---- result ----
+async function duelFinish(D,sc){
+  D.finished=true;D.ready=false;const box=$('#duelBox');
+  $('#endRank').innerHTML='⚔️ 대결 결과 집계 중…';boardMsg($('#endTable'),'대결 판은 월간 랭킹에 기록되지 않아요');
+  box.innerHTML='<div class="dt">⏳ 기록 저장 중…</div>';
+  let st=null;for(let i=0;i<3&&!st;i++){try{st=await rpc('finish_duel',{p_id:D.id,p_device:deviceId(),p_score:sc});}catch(e){if(String(e.message)==='not allowed')break;await new Promise(r=>setTimeout(r,1200));}}
+  if(DUEL!==D)return;
+  if(!st){box.innerHTML='<div class="dt">😢 대결 기록을 저장하지 못했어요</div><div class="dnote">인터넷 연결을 확인해 주세요</div>';$('#endRank').innerHTML='⚔️ 1:1 대결';emojify(box);D.done=true;return;}
+  showDuelEnd(D,st);duelKick();
 }
-document.addEventListener('click',e=>{if(e.target.closest('[data-close]'))closeDuel();if(e.target.closest('[data-newduel]')){if($('#end').classList.contains('active'))show('title');openDuelIntro();}});
+function showDuelEnd(D,st){if(DUEL!==D||!st||!st.id)return;D.st=st;const box=$('#duelBox');let h;
+  if(st.status==='done'){D.done=true;const res=duelResult(st);$('#endRank').innerHTML=res;
+    h=`<div class="dt">${res}</div>${vsHtml(st)}<div class="dbtns"><button class="btn" data-newduel>⚔️ 새 도전장 보내기</button></div>`;
+    if(box.dataset.h!==h&&res.indexOf('승리')>=0){sfx('coin');buzz([60,40,60]);}}
+  else{$('#endRank').innerHTML='⏳ 상대 근무 중';h=`<div class="dt">⏳ 상대가 아직 근무 중이에요</div>${vsHtml(st)}<div class="dnote">끝나면 결과가 바로 떠요</div>`;}
+  if(box.dataset.h!==h){box.dataset.h=h;box.innerHTML=h;emojify(box);emojify($('#endRank'));}
+}
+document.addEventListener('click',e=>{const k=e.target.closest('[data-dk]'),l=e.target.closest('[data-dl]');if(k)sendDuel(k.dataset.dk,true);if(l)sendDuel(l.dataset.dl,false);
+  if(e.target.closest('[data-close]'))closeDuel();
+  if(e.target.closest('[data-duelcustom]')){closeDuel();show('custom');duelKick();}
+  if(e.target.closest('[data-newduel]')){DUEL=null;if(!$('#title').classList.contains('active'))show('title');openDuelIntro();}});
+$('#readyBtn').onclick=()=>{const D=DUEL;if(!D||D.started)return;D.ready=!D.ready;sfx(D.ready?'coin':'click');renderLobby();duelKick();};
+$('#lobbyCustom').onclick=()=>{const D=DUEL;if(!D||D.started)return;D.ready=false;show('custom');duelKick();};
+$('#lobbyExit').onclick=()=>{const D=DUEL;if(!D||D.started)return;DUEL=null;clearTimeout(duelTimer);rpc('duel_sync',{p_id:D.id,p_device:deviceId(),p_ready:false}).catch(()=>{});show('title');};
 
 /* ---------- buttons ---------- */
 $('#toCustom').onclick=()=>show('custom');
 $('#duelBtn').onclick=()=>openDuelIntro();
-$('#backBtn').onclick=()=>{DUEL=null;show('title');};
-$('#startBtn').onclick=()=>startGame();
-$('#againBtn').onclick=()=>startGame();
+$('#backBtn').onclick=()=>{if(DUEL)enterLobby();else show('title');};
+$('#startBtn').onclick=()=>{if(DUEL)enterLobby();else startGame();};
+$('#againBtn').onclick=()=>{DUEL=null;startGame();};
 $('#end').addEventListener('pointerdown',e=>{if(endAnim&&!endAnim.done&&!e.target.closest('button,input,summary,a'))endAnim.skip=true;});
 $('#abCards').addEventListener('click',e=>{const b=e.target.closest('[data-ab]');if(b)pickAbility(b.dataset.ab);});
 $('#igForm').addEventListener('submit',e=>{e.preventDefault();saveIg();});
-$('#endCustom').onclick=()=>show('custom');
+$('#endCustom').onclick=()=>{DUEL=null;show('custom');};
 $('#endTitle').onclick=()=>{DUEL=null;show('title');};
 $('#resumeBtn').onclick=()=>togglePause();
 $('#quitBtn').onclick=()=>{G.state='end';DUEL=null;$('#pauseOv').classList.remove('show');show('title');};

@@ -943,13 +943,20 @@ function buildFace(cfg,mood){
 }
 const EARLESS_HAIR=new Set(['long','wave','hippieF']);
 // smooth hair sheet laid over the head ellipsoid: azimuth a (0=front, +x side) from a0..a1, from the crown down to thFn(a)
-function hairShell(key,a0,a1,thFn,sFn,nu=28,nv=16){
+function gridGeo(key,nu,nv,fn){ // fn(u,v)->[x,y,z], u,v in 0..1
   if(GC.has(key))return GC.get(key);const pos=[],idx=[];
-  for(let i=0;i<=nu;i++){const a=a0+(a1-a0)*i/nu,te=thFn(a);
-    for(let j=0;j<=nv;j++){const th=te*j/nv,s=sFn(a,th,te);pos.push(Math.sin(th)*Math.sin(a)*HA*s,Math.cos(th)*HB*s,Math.sin(th)*Math.cos(a)*HC*s);}}
+  for(let i=0;i<=nu;i++)for(let j=0;j<=nv;j++)pos.push(...fn(i/nu,j/nv));
   for(let i=0;i<nu;i++)for(let j=0;j<nv;j++){const p=i*(nv+1)+j;idx.push(p,p+1,p+nv+1,p+1,p+nv+2,p+nv+1);}
   const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setIndex(idx);g.computeVertexNormals();
   GC.set(key,g);return g;}
+// sheet over the head ellipsoid: azimuth a (0=front, +x side) a0..a1, polar th from th0Fn(a) down to thFn(a), radius scale sFn
+function hairSheet(key,a0,a1,th0Fn,thFn,sFn,nu=28,nv=16){
+  return gridGeo(key,nu,nv,(u,v)=>{const a=a0+(a1-a0)*u,t0=th0Fn(a),te=thFn(a),th=t0+(te-t0)*v,s=sFn(a,th,te);
+    return [Math.sin(th)*Math.sin(a)*HA*s,Math.cos(th)*HB*s,Math.sin(th)*Math.cos(a)*HC*s];});}
+function hairShell(key,a0,a1,thFn,sFn,nu,nv){return hairSheet(key,a0,a1,()=>0,thFn,sFn,nu,nv);}
+// hair hanging below the head: from y0 down by lenFn(a), radius rFn(a,t) (t: 0 top → 1 tips)
+function hairHang(key,a0,a1,y0,lenFn,rFn,nu=40,nv=22){
+  return gridGeo(key,nu,nv,(u,v)=>{const a=a0+(a1-a0)*u,r=rFn(a,v);return [Math.sin(a)*r,y0-v*lenFn(a),Math.cos(a)*r*HC/HA];});}
 function buildHair(cfg,g){const n0=g.children.length;buildHairParts(cfg,g);
   if(cfg.hat==='straw')for(const c of g.children.slice(n0))if(c.position.y>.15&&c.geometry&&c.geometry.type==='SphereGeometry'&&c.geometry.parameters.thetaLength>3)c.visible=false; // tuck volume under the hat
 }
@@ -985,15 +992,35 @@ function buildHairParts(cfg,g){
     if(h==='side'){sph(g,.1,hc,.07,.25,.13,{mat:hm,sx:1.8,sy:.7,sz:1.4}).rotation.z=-.35;}
     if(h==='pony'){const t=mesh(geo(k3('cap',.08,.2)),hm,g,true);t.position.set(0,-.04,-.34);t.rotation.x=.55;sph(g,.05,'#e53935',0,.07,-.3,{kind:'toon'});}
     if(h==='bun'){sph(g,.13,hc,0,.33,-.06,{mat:hm});}}
-  else if(h==='long'||h==='wave'){ // one continuous shell: crown → sides → back, hanging to the shoulders
-    const W=h==='wave', gap=.82, s=1.07, rt=HA*s, len=W?.56:.48, rb=W?.36:.34, zs=HC/HA;
-    cap(1.3,.3,1.08);hood(gap,PI/2,s);
-    if(W)lathe(gap,rt,rb,len,zs,.045,3.2);else drape(gap,rt,rb,len,zs);
-    for(let j=0;j<=14;j++){const a=gap+j/14*(PI*2-2*gap),r=rb+(W?.045*Math.sin(PI*3.2):0);blob(Math.sin(a)*r*.97,-len,Math.cos(a)*r*zs*.97,.06,{sy:.8});}
-    for(const k of[-1,1]){const x=k*Math.sin(gap)*rt*.98, z=Math.cos(gap)*rt*zs;
-      if(W){for(let i=0;i<5;i++){const t=i/4,bl=blob(x+k*(i%2?.03:0),-.05-t*(len-.08),z+.005,.065*(1-.12*t),{sx:.9,sy:1.55,sz:.85});bl.rotation.z=k*(i%2?-.35:.35);}}
-      else{const l=mesh(geo(k3('cap',.062,.34)),hm,g,true);l.position.set(x,-.25,z-.005);l.rotation.z=k*.04;}}
-    if(W){for(let i=-3;i<=3;i++){const x=i*.05,y=.165-Math.abs(i)*.012,bl=blob(x,y,surfZ(x,y,1.03)+.012,.052,{sx:.8,sy:1.45,sz:.4});bl.rotation.z=-i*.1;}}}
+  else if(h==='long'||h==='wave'){ // smooth layered long hair: centre part, curtain fringe, face-framing locks, shine ring
+    const W=h==='wave', gap=.78, S=1.08, rt=HA*S, PART=0;
+    const sheet=(k,a0,a1,t0,t1,sf,nu,nv,m)=>mesh(hairSheet(h+':'+k,a0,a1,t0,t1,sf,nu,nv),m||hm2,g,true);
+    const hang=(k,a0,a1,y0,lf,rf,nu,nv,m)=>mesh(hairHang(h+':'+k,a0,a1,y0,lf,rf,nu,nv),m||hm2,g,true);
+    // crown + sides/back down to the ear line (fine vertical strand ridges)
+    sheet('crown',0,PI*2,()=>0,a=>.72+.33*Math.pow((1-Math.cos(a))/2,.7),(a,th)=>1.1-.02*th+.004*Math.sin(a*26)*Math.min(1,th*2),40,14);
+    const frEdge=a=>{const u=Math.min(1,Math.abs(a-PART)/1.15);return W?1.22+.32*Math.pow(u,2.2)-.07*Math.pow(Math.abs(Math.sin(a*16)),4):.82+.72*Math.pow(u,1.7);};
+    sheet('hood',.25,PI*2-.25,()=>0,a=>{const aa=Math.min(Math.abs(a),Math.abs(PI*2-a));return aa<gap?Math.min(PI/2,frEdge(aa)-.1):PI/2;},(a,th)=>S+.005*Math.sin(a*26)*Math.min(1,th*2),40,18);
+    sheet('part',PART-.1,PART+.1,()=>0,()=>W?1.2:.8,()=>1.112,6,8);
+    // shine ring (angel ring), broken into soft dashes
+    const shine=M(shade(hc,40),'toon',{side:THREE.DoubleSide});
+    [[-1.55,-.95],[-.75,-.2],[.2,.75],[.95,1.55],[1.8,2.4],[-2.4,-1.8],[2.65,3.63]].forEach(([a0,a1],i)=>sheet('shine'+i,a0,a1,()=>.66,()=>.74,(a,th)=>1.152+.004*Math.sin((a-a0)/(a1-a0)*PI),10,2,shine));
+    // curtain fringe: open at the part, sweeping down past the brows to the cheeks
+    for(const k of[-1,1]){const a0=k<0?-1.15:PART+.02,a1=k<0?PART-.02:1.15;
+      sheet('fr'+k,a0,a1,()=>0,frEdge,
+        (a,th,te)=>{const r=th/te;return 1.125+.05*Math.pow(r,3)+.004*Math.sin(a*30);},30,16);}
+    // back + sides hanging to the shoulders; layered hem with soft points; waves for 'wave'
+    const L=W?.62:.56, rb=W?.35:.39;
+    const wv=(a,t)=>W?.07*Math.pow(t,.7)*(.5+.5*Math.sin(t*PI*2.4+.9*Math.sin(a*2.3))):0;
+    hang('back',gap,PI*2-gap,0,a=>L*(1-.07*Math.pow(Math.abs(Math.sin(a*7)),.6))+.04*(1-Math.cos(a))/2,
+      (a,t)=>rt+(rb-rt)*Math.pow(t,1.3)+.005*Math.sin(a*26)+wv(a,t)+(W?.015*Math.pow(t,8):-.035*Math.pow(t,7)),56,26);
+    // face-framing locks in front of the shoulders, pointed tips
+    for(const k of[-1,1]){const c=k*(gap+.04), hw=.22;
+      const Y0=.15, L2=(W?.6:.54)+Y0, rTop=HA*1.1*Math.sqrt(1-(Y0/(HB*1.1))**2);
+      hang('lock'+k,c-hw,c+hw,Y0,a=>{const u=(a-c)/hw;return L2*(1-.18*u*u);},
+        (a,t)=>{const u=(a-c)/hw,yy=Y0-t*L2,ease=Math.min(1,t/.3),e=ease*ease*(3-2*ease);
+          const full=rt+.014+(rb-rt)*Math.pow(Math.max(0,-yy)/L,1.3)+.022*(1-u*u)+.004*Math.sin(a*30)+wv(a+1.3,Math.max(0,-yy)/L)-.03*Math.pow(t,6);
+          return rTop+(full-rTop)*e;},18,28);}
+  }
   else if(h==='hippieF'){ // big long curly volume, middle part
     const gap=.86, s=1.1, rt=HA*s+.01, len=.58, rb=.4, zs=HC/HA*1.02;
     cap(1.32,.28,1.09);hood(gap,PI/2,s);lathe(gap,rt,rb,len,zs,.03,5);
@@ -1446,7 +1473,7 @@ const DEFAULT_CHAR={name:'',hair:'bald',hairColor:'#1d1d1d',eyes:'dot',brows:'an
   skin:'#f5d9bf',crocs:'#2d2d2d',top:'#1f2f5c',bottom:'#1f2f5c',height:1,bulk:1,
   hat:'none',face:'none',neck:'none',hand:'none',accColor:'#4fc3f7',preset:0};
 let charCfg=Object.assign({},DEFAULT_CHAR,load('alonechief_char_v1',{}));
-{const RETIRED_HAIR={buzz:'bald',short:'side',pony:'long'};if(RETIRED_HAIR[charCfg.hair])charCfg.hair=RETIRED_HAIR[charCfg.hair];}
+{const RETIRED_HAIR={buzz:'bald',short:'side',pony:'long',hippieM:'curly'};if(RETIRED_HAIR[charCfg.hair])charCfg.hair=RETIRED_HAIR[charCfg.hair];}
 if(charCfg.name==='JOHN DOE')charCfg.name='';
 const dispName=()=>(charCfg.name||'').trim()||'익명 실장';
 const badgeText=()=>charCfg.name?'PT - '+charCfg.name.toUpperCase():'PT';
@@ -2060,7 +2087,7 @@ const AV_CACHE=new Map();
 function cleanAv(av){const o={};if(!av||typeof av!=='object')return o;
   if(av.special==='director')o.special='director';
   const pick=(k,ok)=>{if(ok(av[k]))o[k]=av[k];};
-  for(const k of ['hair','eyes','brows','nose','lips','hat','face','neck','hand'])pick(k,v=>typeof v==='string'&&(k==='hair'&&['buzz','short','pony'].includes(v)||OPTS[k]&&OPTS[k][1].some(([x])=>x===v)));
+  for(const k of ['hair','eyes','brows','nose','lips','hat','face','neck','hand'])pick(k,v=>typeof v==='string'&&(k==='hair'&&['buzz','short','pony','hippieM'].includes(v)||OPTS[k]&&OPTS[k][1].some(([x])=>x===v)));
   for(const k of ['hairColor','skin','crocs','top','bottom','accColor'])pick(k,v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v));
   if(typeof av.height==='number'&&av.height>=.82&&av.height<=1.22)o.height=av.height;
   if(typeof av.bulk==='number'&&av.bulk>=.78&&av.bulk<=1.4)o.bulk=av.bulk;return o;}
@@ -2289,7 +2316,7 @@ document.addEventListener('dblclick',e=>e.preventDefault());
    CUSTOMIZATION (roster + tabs + 3D preview)
    ========================================================= */
 const OPTS={
-  hair:['헤어 스타일',[['bald','민머리'],['side','가르마'],['parted','가르마펌'],['curly','곱슬'],['hippieM','히피펌(남)'],['long','긴머리'],['wave','웨이브펌'],['hippieF','히피펌(여)'],['bun','똥머리'],['sides','옆머리']]],
+  hair:['헤어 스타일',[['bald','민머리'],['side','가르마'],['parted','가르마펌'],['curly','곱슬'],['long','긴머리'],['wave','웨이브펌'],['hippieF','히피펌(여)'],['bun','똥머리'],['sides','옆머리']]],
   eyes:['눈',[['dot','점눈'],['round','동글눈'],['sparkle','반짝눈'],['happy','웃는눈'],['sleepy','졸린눈']]],
   brows:['눈썹',[['angry','진지한'],['flat','일자'],['arch','아치'],['thick','짙은']]],
   nose:['코',[['nostril','콧구멍'],['button','동글코'],['pointy','오똑코']]],
@@ -2325,7 +2352,7 @@ const ROSTER=[
   {n:'송 쌤',c:{}},
   {n:'민트쌤',c:{hair:'long',hairColor:'#5a3825',eyes:'sparkle',brows:'arch',nose:'button',lips:'small',top:'#3c8d5a',crocs:'#ff8fd0',hat:'band',accColor:'#66bb6a',hand:'clip'}},
   {n:'근육실장',c:{hair:'bald',eyes:'dot',brows:'thick',lips:'smile',top:'#8b1e3f',bulk:1.38,height:1.1,neck:'towel',accColor:'#ff7043',hand:'candy'}},
-  {n:'새싹인턴',c:{hair:'hippieM',hairColor:'#5a3825',eyes:'round',brows:'flat',nose:'button',lips:'smile',top:'#4dd0e1',height:.86,hat:'sprout',hand:'coffee',crocs:'#3ec46d'}},
+  {n:'새싹인턴',c:{hair:'curly',hairColor:'#5a3825',eyes:'round',brows:'flat',nose:'button',lips:'smile',top:'#4dd0e1',height:.86,hat:'sprout',hand:'coffee',crocs:'#3ec46d'}},
   {n:'왕원장',c:{hair:'sides',hairColor:'#d9d9d9',eyes:'happy',brows:'thick',nose:'button',lips:'smile',face:'mustache',top:'#7b4bb3',hat:'crown',neck:'medal',bulk:1.2}},
   {n:'토끼쌤',c:{hair:'wave',hairColor:'#e75480',eyes:'sparkle',brows:'arch',nose:'button',lips:'smile',top:'#e57373',crocs:'#ffffff',hat:'bunny',neck:'bowtie'}},
   {n:'쿨가이',c:{hair:'side',hairColor:'#1d1d1d',eyes:'dot',brows:'flat',lips:'small',face:'sun',top:'#3a3a3a',hand:'gun',accColor:'#37474f',crocs:'#ff5e5e'}},

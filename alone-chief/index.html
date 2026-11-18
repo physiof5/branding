@@ -622,7 +622,8 @@ let actx=null, muted=load('alonechief_muted',false);
 const SFX={done:[[880,.08],[1320,.14]],ding:[[1046,.12]],angry:[[220,.15,'sawtooth'],[160,.22,'sawtooth']],click:[[660,.05]],
   coin:[[988,.06],[1319,.12]],stun:[[300,.1,'square'],[200,.1,'square'],[120,.25,'square']],start:[[523,.1],[659,.1],[784,.2]],
   bad:[[200,.3,'triangle']],tick:[[1200,.03]],end:[[784,.12],[659,.12],[523,.25]],whoosh:[[420,.06],[520,.06]],
-  pop1:[[660,.04],[990,.1]],pop2:[[784,.04],[1175,.1]],pop3:[[988,.04],[1480,.14]],stamp:[[150,.05,'square'],[75,.22,'triangle']],minus:[[330,.05,'triangle'],[247,.08,'triangle']]};
+  pop1:[[660,.04],[990,.1]],pop2:[[784,.04],[1175,.1]],pop3:[[988,.04],[1480,.14]],stamp:[[150,.05,'square'],[75,.22,'triangle']],minus:[[330,.05,'triangle'],[247,.08,'triangle']],
+  rounds:[[784,.32,'triangle'],[659,.32,'triangle'],[523,.32,'triangle'],[659,.5,'triangle'],[1568,.06],[2093,.12]]};
 function sfx(k){if(muted)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();let t=actx.currentTime;
   for(const [f,d,type] of SFX[k]){const o=actx.createOscillator(),g=actx.createGain();o.type=type||'sine';o.frequency.value=f;
   g.gain.setValueAtTime(.11,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d+.02);t+=d*.9;}}catch(e){}}
@@ -1182,7 +1183,7 @@ function doRounds(){
     particle(p.x,p.y,1.9,'💚',rand(-10,10),1,1.2);
   }
   const b=$('#roundBanner');b.classList.remove('show');void b.offsetWidth;b.classList.add('show');
-  toast('📣 원장님 회진! 모든 환자 마음이 편안해졌어요','good');sfx('coin');buzz([40,30,40]);
+  toast('📣 원장님 회진! 모든 환자 마음이 편안해졌어요','good');sfx('rounds');buzz([40,30,40]);
 }
 function newGame(){
   for(const s of stations)Object.assign(s,{phase:'idle',occ:null,t:0,dur:0,autoList:[],handsList:[],cur:null,neglect:0});

@@ -317,23 +317,62 @@ body.fever #game::after{content:'🔥 FEVER x2';position:absolute;left:50%;botto
 .abhead{font-family:var(--head);font-size:clamp(22px,6vw,34px);color:#fff;background:linear-gradient(#ffb300,#ff8c1a);border:4px solid var(--ink);border-radius:14px;padding:6px 22px;box-shadow:0 6px 0 rgba(0,0,0,.35);animation:cdpop .5s cubic-bezier(.3,1.8,.5,1)}
 .absub{color:#fff;font-family:var(--head);font-size:clamp(17px,4.6vw,24px);text-shadow:0 2px 0 #000;margin-bottom:6px}
 .abcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
-.abc{border:none;background:none;padding:0;perspective:700px;aspect-ratio:3/4.3;min-width:0;opacity:0;animation:abIn .35s ease-out forwards;animation-delay:calc(var(--d)*.12s)}
-@keyframes abIn{from{opacity:0;transform:translateY(30px) scale(.8)}to{opacity:1;transform:none}}
-.abin{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.3,1.5,.5,1);animation:rshake .3s infinite}
-.abc.open .abin{transform:rotateY(180deg);animation:none}
-.abback,.abfront{position:absolute;inset:0;border-radius:16px;border:4px solid var(--ink);backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 6px 0 rgba(0,0,0,.35)}
-.abback{background:repeating-linear-gradient(45deg,#7b4bb3 0 12px,#6a3ea0 12px 24px);color:#ffd23f;font-family:var(--head);font-size:clamp(40px,12vw,70px);text-shadow:0 4px 0 #3d1f66}
-.abfront{transform:rotateY(180deg);background:#fff;padding:8px 6px;gap:4px;text-align:center}
-.abc.r2 .abfront{background:linear-gradient(#e3f2ff,#b3dbff)}.abc.r3 .abfront{background:linear-gradient(#fff5cc,#ffc94a);box-shadow:0 0 26px rgba(255,210,63,.9),0 6px 0 rgba(0,0,0,.35)}
+.abslot{position:relative;aspect-ratio:3/4.3;min-width:0;border-radius:16px;z-index:1}
+.abslot.r3{z-index:0}
+.abslot::before{content:'?';position:absolute;inset:0;border-radius:16px;border:3px dashed rgba(255,255,255,.55);display:grid;place-items:center;
+  font-family:var(--head);font-size:clamp(34px,10vw,58px);color:rgba(255,255,255,.55);background:rgba(255,255,255,.06);
+  animation:slotPulse .9s ease-in-out infinite;animation-delay:calc(var(--d)*.15s);transition:opacity .25s}
+#abilOv.lg .abslot::before{border-color:rgba(255,214,90,.8);color:rgba(255,214,90,.85);box-shadow:0 0 22px rgba(255,200,60,.45),inset 0 0 18px rgba(255,200,60,.3)}
+@keyframes slotPulse{0%,100%{transform:scale(.96);box-shadow:0 0 0 rgba(255,255,255,0)}50%{transform:scale(1.02);box-shadow:0 0 24px rgba(255,255,255,.35)}}
+.abslot.on::before{opacity:0;animation:none}
+.abslot::after{content:'';position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;margin:-15% 0 0 -15%;border-radius:50%;pointer-events:none;opacity:0;z-index:3;
+  background:radial-gradient(circle,#fff 0,rgba(255,255,255,.85) 30%,rgba(255,255,255,0) 70%)}
+.abslot.on::after{animation:abFlash .55s ease-out}
+.abslot.r3.on::after{background:radial-gradient(circle,#fff 0,rgba(255,226,120,.95) 35%,rgba(255,200,60,0) 70%);animation:abFlash .8s ease-out}
+@keyframes abFlash{0%{opacity:1;transform:scale(.3)}100%{opacity:0;transform:scale(5)}}
+.abc{position:absolute;inset:0;border:none;background:none;padding:0;z-index:1;opacity:0;pointer-events:none}
+.abslot.on .abc{animation:abAppear .7s cubic-bezier(.2,.9,.3,1.2) forwards;pointer-events:auto}
+@keyframes abAppear{0%{opacity:0;transform:scale(.55);filter:blur(10px) brightness(3)}55%{opacity:1;transform:scale(1.07);filter:blur(0) brightness(1.5)}100%{opacity:1;transform:none;filter:none}}
+.abfront{position:absolute;inset:0;border-radius:16px;border:4px solid var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  box-shadow:0 6px 0 rgba(0,0,0,.35);background:#fff;padding:8px 6px;gap:4px;text-align:center;z-index:1}
+.abc.r2 .abfront{background:linear-gradient(#e3f2ff,#b3dbff)}
+.abc.r3 .abfront{background:linear-gradient(#fffbe0,#ffd54a 60%,#ffb300);box-shadow:0 0 0 3px #fff3b0,0 0 30px rgba(255,210,63,.95),0 6px 0 rgba(0,0,0,.35)}
+.abc.r3 .abfront::after{content:'';position:absolute;inset:0;border-radius:12px;pointer-events:none;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.75) 45%,transparent 60%);background-size:250% 100%;animation:abShine 2.2s ease-in-out infinite}
+@keyframes abShine{0%{background-position:130% 0}60%,100%{background-position:-60% 0}}
+/* legendary halo: rotating rays + soft glow behind the card */
+.abhalo{display:none}
+.abc.r3 .abhalo{display:block;position:absolute;inset:-26%;z-index:0;pointer-events:none;border-radius:50%;
+  background:repeating-conic-gradient(from 0deg,rgba(255,222,110,.75) 0 9deg,rgba(255,222,110,0) 9deg 24deg);
+  -webkit-mask:radial-gradient(circle,#000 28%,transparent 70%);mask:radial-gradient(circle,#000 28%,transparent 70%);animation:haloSpin 7s linear infinite}
+.abc.r3 .abhalo::after{content:'';position:absolute;inset:14%;border-radius:50%;background:radial-gradient(circle,rgba(255,236,150,.95),rgba(255,190,40,0) 68%);animation:haloPulse 1.4s ease-in-out infinite alternate}
+@keyframes haloSpin{to{transform:rotate(360deg)}}
+@keyframes haloPulse{from{opacity:.55;transform:scale(.9)}to{opacity:1;transform:scale(1.08)}}
 .abr{font-size:11px;font-family:'Noto Sans KR';font-weight:900;color:#fff;background:#8d8d8d;border-radius:999px;padding:0 8px}
-.abc.r2 .abr{background:#1e88e5}.abc.r3 .abr{background:#ff8c1a}
+.abc.r2 .abr{background:#1e88e5}.abc.r3 .abr{background:linear-gradient(90deg,#ff8c1a,#ff4f6d);box-shadow:0 0 8px rgba(255,140,26,.8)}
 .abi{font-size:clamp(30px,9vw,46px);line-height:1.1}
+.abc.r3 .abi{animation:abFloat 1.6s ease-in-out infinite}
+@keyframes abFloat{50%{transform:translateY(-4px) scale(1.06)}}
 .abfront b{font-family:var(--head);font-weight:400;font-size:clamp(14px,4vw,19px);color:var(--ink)}
 .abfront small{font-family:'Noto Sans KR';font-size:clamp(10.5px,2.9vw,13px);line-height:1.35;color:#3d4a57;word-break:keep-all}
 #abilOv:not(.ready) .abc{pointer-events:none}
-#abilOv.ready .abc .abfront{cursor:pointer}
-#abilOv.ready .abc:active .abin{transform:rotateY(180deg) scale(.95)}
-.abc.picked .abin{transform:rotateY(180deg) scale(1.1)}.abc.dim{opacity:.25!important;transition:opacity .3s}
+#abilOv.ready .abc{cursor:pointer}
+#abilOv.ready .abslot.on .abc:active .abfront{transform:scale(.95)}
+#abilOv.ready .abslot.on .abc:hover .abfront{transform:translateY(-4px)}
+.abfront{transition:transform .15s}
+/* choosing */
+.abslot.picked{z-index:4}
+.abslot.picked .abc,.abslot.dim .abc{opacity:1}
+.abslot.picked .abc{animation:abPick .75s cubic-bezier(.2,1.4,.4,1) forwards}
+@keyframes abPick{0%{transform:none;filter:none}30%{transform:scale(.92);filter:brightness(1.6)}65%{transform:translateY(-14px) scale(1.2);filter:brightness(1.25)}100%{transform:translateY(-10px) scale(1.15);filter:none}}
+.abslot.picked .abfront{box-shadow:0 0 0 4px #fff,0 0 36px rgba(255,255,255,.95),0 6px 0 rgba(0,0,0,.35)}
+.abslot.dim .abc{animation:abDrop .55s ease-in forwards}
+@keyframes abDrop{0%{opacity:1;transform:none}100%{opacity:0;transform:translateY(60px) rotate(var(--rot,6deg)) scale(.8);filter:grayscale(1)}}
+.abspark{position:absolute;left:50%;top:45%;width:10px;height:10px;margin:-5px;border-radius:50%;pointer-events:none;z-index:5;animation:spark .8s ease-out forwards}
+.abspark.s{border-radius:0;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);width:16px;height:16px;margin:-8px}
+#abilOv.flash::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle,rgba(255,236,150,.55),rgba(255,200,60,0) 70%);animation:ovFlash .7s ease-out forwards}
+@keyframes ovFlash{from{opacity:1}to{opacity:0}}
+.absub.hint{color:#ffd54a;animation:pulse .45s infinite alternate}
 .emeta{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;font-size:15px;margin:-2px 0 8px}
 .emeta b{font-family:var(--head);font-weight:400;color:#ff5a2e;font-size:18px}
 #roundBanner{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(0);z-index:7;pointer-events:none;font-family:var(--head);font-size:clamp(30px,8vw,52px);color:#fff;
@@ -1541,32 +1580,59 @@ function accTick(dt){
 function drawAbilities(){const pool=Object.keys(ABIL).filter(k=>!G.abil.has(k)),out=[];
   while(out.length<3&&pool.length){let tot=0;for(const k of pool)tot+=RW[ABIL[k].r];let r=G.rngA()*tot;
     for(let i=0;i<pool.length;i++){r-=RW[ABIL[pool[i]].r];if(r<=0){out.push(pool.splice(i,1)[0]);break;}}}return out;}
+function abBurst(slot,legend){const cols=legend?['#ffd23f','#fff59d','#ffb300','#ffffff','#ff8c1a']:['#ffd23f','#4fc3f7','#ff6b9a','#3ec46d','#ffffff'];
+  for(let i=0;i<(legend?22:14);i++){const sp=document.createElement('i');sp.className='abspark'+(i%3===0?' s':'');const a=i/(legend?22:14)*Math.PI*2+Math.random()*.3,d=60+Math.random()*(legend?70:45);
+    sp.style.setProperty('--dx',(Math.cos(a)*d).toFixed(1)+'px');sp.style.setProperty('--dy',(Math.sin(a)*d).toFixed(1)+'px');sp.style.background=cols[i%cols.length];
+    slot.appendChild(sp);setTimeout(()=>sp.remove(),850);}}
 function openAbility(){
   G.state='ability';G.abStep++;for(const k in keys)keys[k]=false;joyEnd();closeChart();
   const ov=$('#abilOv'),cards=drawAbilities();G.abChoices=cards;G.abReady=false;
+  const hasLegend=cards.some(k=>ABIL[k].r===3), step=G.abStep, alive=()=>G.state==='ability'&&G.abStep===step;
   $('#abHead').textContent=`⬆️ 레벨 ${G.abStep+1}로 업그레이드!`;
-  $('#abCards').innerHTML=cards.map((k,i)=>{const a=ABIL[k];return `<button class="abc r${a.r}" data-ab="${k}" style="--d:${i}"><div class="abin"><div class="abback">?</div>
-    <div class="abfront"><span class="abr">${RARITY[a.r]}</span><span class="abi">${a.i}</span><b>${a.n}</b><small>${a.d}</small></div></div></button>`;}).join('');
-  ov.classList.remove('ready');ov.classList.add('show');sfx('start');buzz(30);
-  const els=$$('#abCards .abc');
-  [500,900,1300].forEach(t=>setTimeout(()=>{if(G.state==='ability')sfx('tick');},t));
-  els.forEach((el,i)=>setTimeout(()=>{el.classList.add('open');sfx('pop'+(i+1));buzz(15);},1700+i*300));
-  setTimeout(()=>{ov.classList.add('ready');G.abReady=true;},1700+3*300);
+  const sub=$('.absub');sub.textContent='두근두근… 어빌리티를 준비하는 중';sub.classList.remove('hint');
+  $('#abCards').innerHTML=cards.map((k,i)=>{const a=ABIL[k];return `<div class="abslot r${a.r}" style="--d:${i}"><button class="abc r${a.r}" data-ab="${k}"><div class="abhalo"></div>
+    <div class="abfront"><span class="abr">${RARITY[a.r]}</span><span class="abi">${a.i}</span><b>${a.n}</b><small>${a.d}</small></div></button></div>`;}).join('');
+  ov.classList.remove('ready','lg','flash');ov.classList.add('show');sfx('start');buzz(30);
+  // suspense (~2.4s): pulsing empty slots, rising charge, heartbeat ticks
+  setTimeout(()=>{if(alive())sweepSfx(180,760,2,'triangle',.06);},250);
+  [650,1250,1750,2100].forEach((t,i)=>setTimeout(()=>{if(alive()){sfx('tick');if(i>1)buzz(12);}},t));
+  if(hasLegend)setTimeout(()=>{if(!alive())return;ov.classList.add('lg');sub.textContent='✨ 전설의 기운이…!';sub.classList.add('hint');playTones([[1319,.08],[1568,.08],[2093,.16]]);},1500);
+  // reveal one by one (appear effect)
+  const slots=$$('#abCards .abslot');let t=2400;
+  slots.forEach((sl,i)=>{const r=ABIL[cards[i]].r;if(r===3)t+=250;
+    setTimeout(()=>{if(!alive())return;sl.classList.add('on');
+      if(r===3){playTones([[784,.09,'triangle'],[988,.09,'triangle'],[1175,.09,'triangle'],[1568,.4,'triangle']]);sweepSfx(900,2400,.5,'sine',.04);
+        ov.classList.remove('flash');void ov.offsetWidth;ov.classList.add('flash');abBurst(sl,true);buzz([40,30,80]);}
+      else if(r===2){playTones([[988,.07],[1319,.16]]);buzz(18);}
+      else{sfx('pop'+(i+1));buzz(12);}},t);
+    t+=r===3?650:430;});
+  setTimeout(()=>{if(!alive())return;ov.classList.add('ready');G.abReady=true;sub.classList.remove('hint');sub.textContent='새로운 어빌리티를 선택하세요!';},t);
 }
 function pickAbility(k){
   if(!G||G.state!=='ability'||!G.abReady||!ABIL[k])return;G.abReady=false;
-  const a=ABIL[k];G.abil.add(k);
-  $$('#abCards .abc').forEach(el=>el.classList.add(el.dataset.ab===k?'picked':'dim'));sfx('coin');buzz([40,30,60]);
+  const a=ABIL[k];G.abil.add(k);$('#abilOv').classList.remove('ready');
+  $$('#abCards .abslot').forEach((sl,i)=>{const me=sl.querySelector('.abc').dataset.ab===k;sl.classList.add(me?'picked':'dim');if(!me)sl.style.setProperty('--rot',(i===0?-8:8)+'deg');
+    if(me)setTimeout(()=>abBurst(sl,a.r===3),220);});
+  // power-up chime (bigger for rarer cards)
+  sweepSfx(300,1200,.28,'sawtooth',.035);
+  setTimeout(()=>playTones(a.r===3?[[523,.07,'square'],[659,.07,'square'],[784,.07,'square'],[1047,.1,'square'],[1319,.1,'triangle'],[1568,.36,'triangle']]
+    :a.r===2?[[587,.07,'square'],[740,.07,'square'],[880,.08,'square'],[1175,.26,'triangle']]:[[523,.07,'square'],[659,.07,'square'],[784,.22,'triangle']]),180);
+  buzz(a.r===3?[50,30,50,30,90]:[40,30,60]);
   if(k==='fast')G.player.speed*=1.5;
   if(k==='music')for(const p of G.patients){p.patMax*=1.5;p.patience*=1.5;}
   if(k==='fever'){G.feverT=20;document.body.classList.add('fever');}
   if(k==='overtime')G.time+=20;
   renderAbIcons();
-  setTimeout(()=>{$('#abilOv').classList.remove('show','ready');const el=$('#countdown');el.className='sign';el.textContent=`${a.i} ${a.n}!`;
+  setTimeout(()=>{$('#abilOv').classList.remove('show','ready','lg','flash');const el=$('#countdown');el.className='sign';el.textContent=`${a.i} ${a.n}!`;
     el.style.animation='none';void el.offsetWidth;el.style.animation='';$('#cdOv').classList.add('show');
-    setTimeout(()=>{$('#cdOv').classList.remove('show');if(G.state==='ability')G.state='play';},850);},900);
+    setTimeout(()=>{$('#cdOv').classList.remove('show');if(G.state==='ability')G.state='play';},850);},1150);
 }
-function renderAbIcons(){const box=$('#abIcons');box.innerHTML=[...G.abil].map(k=>`<span class="abchip r${ABIL[k].r}" title="${ABIL[k].n}">${ABIL[k].i}${k==='fever'?'<small id="feverT"></small>':''}</span>`).join('');}
+function placeAbIcons(){const box=$('#abIcons'),ib=$('.ibtns'),gm=$('#game');if(!ib||!gm||!ib.offsetParent)return;box.style.top=Math.round(ib.getBoundingClientRect().bottom-gm.getBoundingClientRect().top+8)+'px';}
+window.addEventListener('resize',()=>setTimeout(placeAbIcons,50));
+function renderAbIcons(){const box=$('#abIcons');setTimeout(placeAbIcons,0);box.innerHTML=[...G.abil].map(k=>`<span class="abchip r${ABIL[k].r}" title="${ABIL[k].n}">${ABIL[k].i}${k==='fever'?'<small id="feverT"></small>':''}</span>`).join('');}
+function sweepSfx(f0,f1,dur,type='triangle',vol=.08){if(muted)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==='suspended')actx.resume();
+  const t=actx.currentTime,o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+dur*.85);g.gain.exponentialRampToValueAtTime(.0001,t+dur+.08);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+dur+.1);}catch(e){}}
 function playTones(list){if(muted)return;try{actx=actx||new (window.AudioContext||window.webkitAudioContext)();let t=actx.currentTime;
   for(const [f,d,type] of list){const o=actx.createOscillator(),g=actx.createGain();o.type=type||'sine';o.frequency.value=f;
     g.gain.setValueAtTime(.12,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(actx.destination);o.start(t);o.stop(t+d+.02);t+=d*.85;}}catch(e){}}

@@ -293,6 +293,11 @@ body.touch .hint b{display:none}
 .hintx{font-family:'Noto Sans KR';font-size:13px;color:#7a5b4a;margin-top:8px}
 #countdown{font-family:var(--head);font-size:clamp(90px,22vw,170px);color:#fff;-webkit-text-stroke:5px var(--ink);text-shadow:0 10px 0 var(--ink);pointer-events:none;animation:cdpop .5s cubic-bezier(.3,1.8,.5,1)}
 #countdown.sign{font-size:clamp(56px,12vw,104px);background:#45c35a;border:6px solid #fff;outline:5px solid var(--ink);border-radius:26px;padding:6px 44px 14px;-webkit-text-stroke:0;text-shadow:0 6px 0 #1f7a2e;transform:rotate(-3deg);box-shadow:0 14px 0 rgba(0,0,0,.3)}
+#countdown.sign.absign{white-space:nowrap;font-size:clamp(28px,8.4vw,60px);line-height:1.15;padding:8px 22px 12px;border-width:5px;outline-width:4px;border-radius:20px;
+  transform:rotate(-2deg);-webkit-text-stroke:.09em var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 var(--ink);display:inline-flex;align-items:center;gap:.25em;max-width:none}
+#countdown.sign.absign img.em{height:1.05em;vertical-align:0}
+#countdown.sign.absign.r2{background:#2f8ee0}
+#countdown.sign.absign.r3{background:linear-gradient(#ffcf3f,#ff8c1a);box-shadow:0 0 0 6px rgba(255,214,90,.45),0 0 40px rgba(255,200,60,.9),0 12px 0 rgba(0,0,0,.3)}
 #countdown.sign.end{background:#ff8c1a;text-shadow:0 6px 0 #a34e00}
 @keyframes cdpop{from{transform:scale(.3) rotate(-10deg);opacity:0}}
 #cdOv{pointer-events:none}
@@ -1621,9 +1626,10 @@ function pickAbility(k){
   if(k==='fever'){G.feverT=20;document.body.classList.add('fever');}
   if(k==='overtime')G.time+=20;
   renderAbIcons();
-  setTimeout(()=>{$('#abilOv').classList.remove('show','ready','lg','flash');const el=$('#countdown');el.className='sign';el.textContent=`${a.i} ${a.n}!`;
+  setTimeout(()=>{$('#abilOv').classList.remove('show','ready','lg','flash');const el=$('#countdown');el.className='sign absign r'+a.r;el.style.fontSize='';el.textContent=`${a.i} ${a.n}!`;emojify(el);
     el.style.animation='none';void el.offsetWidth;el.style.animation='';$('#cdOv').classList.add('show');
-    setTimeout(()=>{$('#cdOv').classList.remove('show');if(G.state==='ability')G.state='play';},850);},1150);
+    {const maxW=Math.min(innerWidth,document.documentElement.clientWidth)*.9,w=el.offsetWidth;if(w>maxW)el.style.fontSize=(parseFloat(getComputedStyle(el).fontSize)*maxW/w).toFixed(1)+'px';}
+    setTimeout(()=>{$('#cdOv').classList.remove('show');el.style.fontSize='';if(G.state==='ability')G.state='play';},1300);},1150);
 }
 function placeAbIcons(){const box=$('#abIcons'),ib=$('.ibtns'),gm=$('#game');if(!ib||!gm||!ib.offsetParent)return;box.style.top=Math.round(ib.getBoundingClientRect().bottom-gm.getBoundingClientRect().top+8)+'px';}
 window.addEventListener('resize',()=>setTimeout(placeAbIcons,50));
@@ -1836,7 +1842,7 @@ function update(dt){
   const P=G.player;
   if(G.state==='countdown'){
     G.cd-=dt;const n=Math.max(0,Math.ceil(G.cd-0.2));
-    if(n!==G.lastCd){G.lastCd=n;const el=$('#countdown');el.className=n>0?'':'sign';el.textContent=n>0?n:'시작!';
+    if(n!==G.lastCd){G.lastCd=n;const el=$('#countdown');el.className=n>0?'':'sign';el.style.fontSize='';el.textContent=n>0?n:'시작!';
       el.style.animation='none';void el.offsetWidth;el.style.animation='';sfx(n>0?'tick':'start');}
     if(G.cd<=-.6){G.state='play';$('#cdOv').classList.remove('show');}
     return;

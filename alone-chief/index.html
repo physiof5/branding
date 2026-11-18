@@ -7,6 +7,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>나홀로 실장</title>
+<meta name="description" content="물리치료실 실장님은 단 한 명! 3분 동안 몰려드는 환자를 치료하라">
+<meta property="og:type" content="website">
+<meta property="og:title" content="나홀로 실장!">
+<meta property="og:description" content="3분 동안 몰려드는 환자를 치료하라 🏥 너도 도전해 봐!">
+<meta property="og:url" content="https://physiof5.github.io/branding/alone-chief/">
+<meta property="og:image" content="https://physiof5.github.io/branding/alone-chief/og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Black+Han+Sans&family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
@@ -297,6 +305,11 @@ body.touch #joyHint{display:grid}
 .ebtns{display:flex;justify-content:center;gap:10px;margin-top:16px;flex-wrap:wrap}
 .eshare{display:grid;grid-template-columns:1fr;gap:8px}
 .eshare .btn{padding:10px 6px;font-size:17px;white-space:nowrap}
+.btn.kakao{background:#fee500;color:#191919;text-shadow:none;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.ktalk{width:22px;height:20px;background:#191919;border-radius:50%/45%;position:relative;display:inline-block}
+.ktalk::after{content:'';position:absolute;left:4px;bottom:-4px;border:4px solid transparent;border-top:6px solid #191919;transform:rotate(25deg)}
+.eshare.two{grid-template-columns:1fr 1fr}
+.eshare.two .btn.shr{background:#fff}
 .btn.shr{background:#ffd23f;color:var(--ink);text-shadow:none}
 @media (max-width:700px){
   #end{padding:max(10px,var(--sat)) max(10px,var(--sar)) 0 max(10px,var(--sal))}
@@ -476,6 +489,7 @@ body.touch #joyHint{display:grid}
             <div class="total"><span>합계</span><b id="endScore">0</b></div>
           </div>
           <div class="eshare">
+            <button class="btn kakao" id="kakaoBtn" type="button" style="display:none"><i class="ktalk"></i>카카오톡 공유</button>
             <button class="btn shr" id="shareBtn" type="button">💬 친구에게 공유</button>
           </div>
           <div id="igBox">
@@ -1907,6 +1921,24 @@ function renderPreview(dt){
 const SHARE_URL='https://physiof5.github.io/branding/alone-chief/';
 async function copyText(t){try{await navigator.clipboard.writeText(t);return true;}catch(e){}
   try{const ta=document.createElement('textarea');ta.value=t;ta.setAttribute('readonly','');ta.style.cssText='position:fixed;top:-100px;opacity:0';document.body.appendChild(ta);ta.select();const ok=document.execCommand('copy');ta.remove();return ok;}catch(e){return false;}}
+// ---- KakaoTalk share (official Kakao JS SDK). Paste the app's JavaScript key here to enable it. ----
+const KAKAO_JS_KEY='';
+const KAKAO_SDK=['https://t1.kakaocdn.net/kakao_js_sdk/2.7.4/kakao.min.js','https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js'];
+let kakaoReady=null;
+function loadKakao(){if(kakaoReady)return kakaoReady;
+  kakaoReady=new Promise((res,rej)=>{let i=0;const next=()=>{if(i>=KAKAO_SDK.length){rej(new Error('sdk'));return;}
+    const sc=document.createElement('script');sc.src=KAKAO_SDK[i++];sc.crossOrigin='anonymous';
+    sc.onload=()=>{try{if(!Kakao.isInitialized())Kakao.init(KAKAO_JS_KEY);res(Kakao);}catch(e){rej(e);}};sc.onerror=()=>{sc.remove();next();};document.head.appendChild(sc);};next();});
+  kakaoReady.catch(()=>{kakaoReady=null;});return kakaoReady;}
+async function shareKakao(){
+  const sc=G?G.score:0;
+  try{const K=await loadKakao();K.Share.sendDefault({objectType:'feed',
+      content:{title:'나홀로 실장!',description:`3분 동안 몰려드는 환자를 치료하라 🏥\n내 점수 ${sc.toLocaleString()}점 · 너도 도전해 봐!`,
+        imageUrl:SHARE_URL+'og.png',imageWidth:1200,imageHeight:630,link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}},
+      buttons:[{title:'게임 하러 가기',link:{mobileWebUrl:SHARE_URL,webUrl:SHARE_URL}}]});}
+  catch(e){shareLink();}
+}
+if(KAKAO_JS_KEY){$('#kakaoBtn').style.display='';$('.eshare').classList.add('two');setTimeout(()=>loadKakao().catch(()=>{}),1500);}
 async function shareLink(){
   const sc=G?G.score:0, text=`🏥 나홀로 실장! 3분 동안 몰려드는 환자를 치료하라\n내 점수 ${sc.toLocaleString()}점 · 너도 도전해 봐!`;
   if(navigator.share){try{await navigator.share({title:'나홀로 실장!',text,url:SHARE_URL});return;}catch(e){if(e&&e.name==='AbortError')return;}}
@@ -1914,6 +1946,7 @@ async function shareLink(){
   toast(ok?'🔗 링크 복사 완료! 카톡·DM에 붙여넣기 하세요':'🔗 '+SHARE_URL,ok?'good':'warn');
 }
 $('#shareBtn').addEventListener('click',shareLink);
+$('#kakaoBtn').addEventListener('click',shareKakao);
 
 /* ---------- buttons ---------- */
 $('#toCustom').onclick=()=>show('custom');

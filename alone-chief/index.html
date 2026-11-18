@@ -1592,6 +1592,8 @@ function monthPrize(mk){if(PRIZE_OVERRIDE[mk])return PRIZE_OVERRIDE[mk];const r=
 function loadLB(){const lb=load(LB_KEY,{});const keep=[monthKey(),prevMonthKey()];let ch=false;
   // records saved before avatars existed were played with the default character (송 쌤): give them that costume
   for(const k of Object.keys(lb))for(const e of (lb[k]||[]))if(e&&!e.av){e.av={};ch=true;}
+  // one-time cleanup (2026-11-18): drop the owner's nameless test runs ('익명 실장')
+  if(!load('alonechief_clean_anon1',false)){for(const k of Object.keys(lb)){const n=(lb[k]||[]).length;lb[k]=(lb[k]||[]).filter(e=>e&&e.name!=='익명 실장');if(lb[k].length!==n)ch=true;}store('alonechief_clean_anon1',true);}
   for(const k of Object.keys(lb))if(!keep.includes(k)){delete lb[k];ch=true;}if(ch)store(LB_KEY,lb);return lb;}
 function board(mk){const lb=loadLB();return (lb[mk]||[]).slice().sort((a,b)=>b.score-a.score);}
 function saveScore(entry){const lb=loadLB();const mk=monthKey();(lb[mk]=lb[mk]||[]).push(entry);lb[mk].sort((a,b)=>b.score-a.score);lb[mk]=lb[mk].slice(0,30);store(LB_KEY,lb);}

@@ -322,7 +322,6 @@ body.fever #game::after{content:'🔥 FEVER x2';position:absolute;left:50%;botto
 .abslot::before{content:'?';position:absolute;inset:0;border-radius:16px;border:3px dashed rgba(255,255,255,.55);display:grid;place-items:center;
   font-family:var(--head);font-size:clamp(34px,10vw,58px);color:rgba(255,255,255,.55);background:rgba(255,255,255,.06);
   animation:slotPulse .9s ease-in-out infinite;animation-delay:calc(var(--d)*.15s);transition:opacity .25s}
-#abilOv.lg .abslot::before{border-color:rgba(255,214,90,.8);color:rgba(255,214,90,.85);box-shadow:0 0 22px rgba(255,200,60,.45),inset 0 0 18px rgba(255,200,60,.3)}
 @keyframes slotPulse{0%,100%{transform:scale(.96);box-shadow:0 0 0 rgba(255,255,255,0)}50%{transform:scale(1.02);box-shadow:0 0 24px rgba(255,255,255,.35)}}
 .abslot.on::before{opacity:0;animation:none}
 .abslot::after{content:'';position:absolute;left:50%;top:50%;width:30%;aspect-ratio:1;margin:-15% 0 0 -15%;border-radius:50%;pointer-events:none;opacity:0;z-index:3;
@@ -1587,7 +1586,7 @@ function abBurst(slot,legend){const cols=legend?['#ffd23f','#fff59d','#ffb300','
 function openAbility(){
   G.state='ability';G.abStep++;for(const k in keys)keys[k]=false;joyEnd();closeChart();
   const ov=$('#abilOv'),cards=drawAbilities();G.abChoices=cards;G.abReady=false;
-  const hasLegend=cards.some(k=>ABIL[k].r===3), step=G.abStep, alive=()=>G.state==='ability'&&G.abStep===step;
+  const step=G.abStep, alive=()=>G.state==='ability'&&G.abStep===step;
   $('#abHead').textContent=`⬆️ 레벨 ${G.abStep+1}로 업그레이드!`;
   const sub=$('.absub');sub.textContent='두근두근… 어빌리티를 준비하는 중';sub.classList.remove('hint');
   $('#abCards').innerHTML=cards.map((k,i)=>{const a=ABIL[k];return `<div class="abslot r${a.r}" style="--d:${i}"><button class="abc r${a.r}" data-ab="${k}"><div class="abhalo"></div>
@@ -1596,7 +1595,6 @@ function openAbility(){
   // suspense (~2.4s): pulsing empty slots, rising charge, heartbeat ticks
   setTimeout(()=>{if(alive())sweepSfx(180,760,2,'triangle',.06);},250);
   [650,1250,1750,2100].forEach((t,i)=>setTimeout(()=>{if(alive()){sfx('tick');if(i>1)buzz(12);}},t));
-  if(hasLegend)setTimeout(()=>{if(!alive())return;ov.classList.add('lg');sub.textContent='✨ 전설의 기운이…!';sub.classList.add('hint');playTones([[1319,.08],[1568,.08],[2093,.16]]);},1500);
   // reveal one by one (appear effect)
   const slots=$$('#abCards .abslot');let t=2400;
   slots.forEach((sl,i)=>{const r=ABIL[cards[i]].r;if(r===3)t+=250;

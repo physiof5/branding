@@ -381,7 +381,13 @@ body.touch #joyHint{display:grid}
   #title .wrap{grid-template-columns:minmax(0,1fr)}
   .logo{margin-bottom:6px}
   .sub{font-size:17.5px}
-  .hero .btns{flex-direction:column}
+  .hero .btns{flex-direction:column;margin-top:10px}
+  #title .logo{font-size:clamp(46px,13.5vw,74px)}
+  #title .sub{margin:8px 0 10px}
+  .howto{padding:12px 14px}.howto h3{font-size:19px;margin-bottom:6px}
+  .steps{gap:5px}.steps li{column-gap:9px;grid-template-columns:26px 1fr}
+  .steps li::before{width:26px;height:26px;font-size:14px}
+  .steps b{font-size:15.5px}.steps span{font-size:13px;line-height:1.35}
   .hero .btns .btn{width:100%}
   #custom{padding:0}
   #custom>.center{margin:0}
@@ -447,7 +453,6 @@ body.touch #joyHint{display:grid}
           <li><b>🔊💥💆 직접 치료</b><span>US·ESWT·도수는 끝까지 곁에<br>US는 초음파 치료기를 끌고 가요</span></li>
           <li class="warn"><b>😡 방치 금지</b><span>20초 방치 → 돌진! 부딪히면 3초 기절</span></li>
           <li><b>💖 팁 보너스</b><span>연속 만족 퇴원하면 팁 UP</span></li>
-          <li><b>🎒 악세서리</b><span>캐릭터 꾸미기에서 능력 1개 장착</span></li>
         </ol>
       </div>
       <div class="btns">

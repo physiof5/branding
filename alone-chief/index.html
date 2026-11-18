@@ -2784,9 +2784,11 @@ function lunchRender(dt,t){const P=G.player,L=G.lunch;
   for(const s of stations){s.lampMat.color.setHex(LAMP.idle);s.lamp.scale.setScalar(.12);if(s.irMat){s.irMat.emissive.setHex(0);s.irLight.intensity=0;}s.hl.visible=false;}
   R.screenMat.color.setHex(0x4dd0e1);
   camUpdate(dt,false);R.renderer.render(R.scene,R.camera);}
+// name tag spot: above the head when standing/sitting, at the foot of the bed when lying (keeps the face visible)
+function tagAt(bed,x,y){const s=bed&&stById(bed);if(!s)return [x,y,2.35];if(s.lie==='sit')return [s.seat.x,s.seat.y,2.15];return [s.seat.x,s.irect.y+s.irect.h+.12*T,.35];}
 function lunchOverlays(t){const L=G.lunch,P=G.player;
-  for(const p of L.peers.values()){if(!p.ready)continue;ov('ln'+p.sid,'lname',esc(p.n),p.x,p.y,p.bed?1.25:2.35);}
-  ov('ln-me','lname me','나',P.x,P.y,P.bed?1.25:2.35);
+  for(const p of L.peers.values()){if(!p.ready)continue;const [x,y,h]=tagAt(p.bed,p.x,p.y);ov('ln'+p.sid,'lname',esc(p.n),x,y,h);}
+  {const [x,y,h]=tagAt(P.bed,P.x,P.y);ov('ln-me','lname me','나',x,y,h);}
   for(const it of L.items||[])ov('li'+it.k,'litem',`<span>${ACC_INFO[it.k].i}</span>`,it.x,it.y,.55+Math.sin(t*3+it.x)*.08,'center');
   const c=G.cand;if(c){const a=c.at;ov('hint','hint',`<b>E</b>${c.icon} ${esc(c.label)}`,a.x,a.y,a.h+.35+Math.sin(t*6)*.04);}}
 let shotBlob=null,shotUrl='';
@@ -2800,8 +2802,8 @@ function lunchShot(){if(!G||!G.lunch)return;const L=G.lunch,P=G.player;
     c.fillStyle='#fff';c.textAlign='center';c.textBaseline='middle';c.fillText(txt,s.x*k,Y+hh/2+k);};
   for(const it of L.items||[]){const s=proj(it.x,it.y,.55);if(!s.ok)continue;const im=emoImage(ACC_INFO[it.k].i),sz=30*k;
     if(im&&im.complete)c.drawImage(im,s.x*k-sz/2,s.y*k-sz/2,sz,sz);else{c.font=`${sz}px sans-serif`;c.textAlign='center';c.textBaseline='middle';c.fillText(ACC_INFO[it.k].i,s.x*k,s.y*k);}}
-  for(const p of L.peers.values())if(p.ready)tag(p.n,p.x,p.y,p.bed?1.25:2.35,'rgba(31,47,92,.9)');
-  tag(dispName(),P.x,P.y,P.bed?1.25:2.35,'rgba(255,93,143,.95)');
+  for(const p of L.peers.values())if(p.ready)tag(p.n,...tagAt(p.bed,p.x,p.y),'rgba(31,47,92,.9)');
+  tag(dispName(),...tagAt(P.bed,P.x,P.y),'rgba(255,93,143,.95)');
   const g=c.createLinearGradient(0,src.height,0,out.height);g.addColorStop(0,'#ff8fb1');g.addColorStop(1,'#ff5d8f');c.fillStyle=g;c.fillRect(0,src.height,out.width,band);
   c.fillStyle='#fff';c.textBaseline='middle';c.textAlign='center';
   const fit=(txt,px,y,font)=>{let f=px;c.font=`${f}px ${font}`;while(c.measureText(txt).width>out.width*.92&&f>8){f--;c.font=`${f}px ${font}`;}c.fillText(txt,out.width/2,y);};

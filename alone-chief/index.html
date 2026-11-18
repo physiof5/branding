@@ -497,7 +497,7 @@ body.touch #joyHint{display:grid}
             <div class="igd">상품 안내용 <b>인스타그램 아이디</b>를 남겨주세요</div>
             <form class="igrow" id="igForm" autocomplete="off"><span class="at">@</span><input id="igIn" maxlength="31" placeholder="instagram_id" inputmode="url" autocapitalize="off" spellcheck="false"><button class="btn" id="igSave" type="submit">등록</button></form>
             <div class="igmsg" id="igMsg"></div>
-            <div class="ign">※ 선택 사항 · 이 기기의 랭킹에만 저장돼요</div>
+            <div class="ign">※ 선택 사항 · 상품 안내에만 쓰이고 랭킹에는 공개되지 않아요</div>
           </div>
           <details class="lbd"><summary>🏆 이번 달 랭킹 보기</summary><table class="lbtable" id="endTable"></table></details>
         </div>
@@ -1606,10 +1606,20 @@ function avatarImg(av){if(!av)return '';const key=JSON.stringify(av);
   if(!AV_CACHE.has(key)){let url='';try{url=portrait(Object.assign({},DEFAULT_CHAR,av,{badge:null,name:''}),{size:96,yaw:-.2});}catch(e){}AV_CACHE.set(key,url);}
   return AV_CACHE.get(key);}
 function avatarHtml(e){const u=avatarImg(e.av);return `<span class="lbav">${u?`<img src="${u}" alt="">`:'🧑‍⚕️'}</span>`;}
-function renderBoard(el,hlId,limit=10){
-  const b=board(monthKey()).slice(0,limit);
+// ================= ONLINE RANKING (Supabase) =================
+const SB_URL='https://dfirszwwiyyatjykjqyg.supabase.co', SB_KEY='sb_publishable_Gb7-1LECDz9bt921-Zcy9A_9te9GGRX';
+function deviceId(){let d=load('alonechief_device','');if(typeof d!=='string'||d.length<8){
+  d=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));store('alonechief_device',d);}return d;}
+async function rpc(fn,args,timeout=8000){const ctl=new AbortController();const t=setTimeout(()=>ctl.abort(),timeout);
+  try{const r=await fetch(`${SB_URL}/rest/v1/rpc/${fn}`,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(args||{}),signal:ctl.signal});
+    const j=await r.json().catch(()=>null);if(!r.ok)throw new Error((j&&j.message)||('HTTP '+r.status));return j;}finally{clearTimeout(t);}}
+let onlineTop=null;
+async function fetchTop(){try{const rows=await rpc('top_scores',{p_limit:50});onlineTop=(rows||[]).map(r=>({id:r.id,name:r.name,score:r.score,av:r.av||{},rank:+r.rank}));return onlineTop;}catch(e){return null;}}
+function boardMsg(el,t){el.innerHTML=`<tr><td style="text-align:center;color:#7a6a6a;padding:14px 4px">${t}</td></tr>`;}
+function renderBoard(el,hlId,limit=10,list){
+  const b=(list||board(monthKey())).slice(0,limit);
   if(!b.length){el.innerHTML='<tr><td style="text-align:center;color:#7a6a6a;padding:14px 4px">아직 기록이 없어요 · 첫 1위에 도전하세요! 🏆</td></tr>';return;}
-  el.innerHTML=b.map((e,i)=>`<tr class="${e.id&&e.id===hlId?'me':''}"><td class="r">${['🥇','🥈','🥉'][i]||(i+1)}</td><td><span class="lbn">${avatarHtml(e)}<span class="lbnm">${esc(e.name)}</span></span>${e.npc?'<span class="npc">NPC</span>':''}${e.ig?`<span class="igtag">@${esc(e.ig)}</span>`:''}</td><td class="s">${e.score.toLocaleString()}</td></tr>`).join('');
+  el.innerHTML=b.map((e,i)=>{const r=e.rank||i+1;return `<tr class="${e.id&&e.id===hlId?'me':''}"><td class="r">${['🥇','🥈','🥉'][r-1]||r}</td><td><span class="lbn">${avatarHtml(e)}<span class="lbnm">${esc(e.name)}</span></span>${e.npc?'<span class="npc">NPC</span>':''}${e.ig?`<span class="igtag">@${esc(e.ig)}</span>`:''}</td><td class="s">${e.score.toLocaleString()}</td></tr>`;}).join('');
 }
 // ---- Instagram ID for top-10 finishers (stored only in this browser) ----
 const IG_RE=/^(?!.*\.\.)(?!\.)[A-Za-z0-9._]{1,30}(?<!\.)$/;
@@ -1620,9 +1630,15 @@ function showIgBox(id,rank){
   const inp=$('#igIn');inp.value=load('alonechief_ig','');inp.disabled=false;$('#igSave').disabled=false;
   $('#igSave').textContent='등록';
 }
-function saveIg(){
+let igOnline=false;
+async function saveIg(){
   const raw=$('#igIn').value.trim().replace(/^@+/,''), msg=$('#igMsg');
   if(!IG_RE.test(raw)){msg.textContent='영문·숫자·.·_ 만, 30자 이내';msg.className='igmsg bad';sfx('bad');return;}
+  if(igOnline){$('#igSave').disabled=true;msg.textContent='등록 중…';msg.className='igmsg';
+    try{await rpc('set_instagram',{p_score_id:igEntryId,p_device:deviceId(),p_ig:raw});}
+    catch(e){$('#igSave').disabled=false;msg.textContent='😢 등록하지 못했어요. 잠시 후 다시 눌러 주세요';msg.className='igmsg bad';return;}
+    $('#igSave').disabled=false;store('alonechief_ig',raw);
+    msg.textContent=`✅ @${raw} 등록 완료! 상품 안내는 이 아이디로 드려요`;msg.className='igmsg good';$('#igSave').textContent='수정';sfx('coin');return;}
   const lb=loadLB(),list=lb[monthKey()]||[],e=list.find(x=>x.id===igEntryId);
   if(!e){msg.textContent='기록을 찾지 못했어요.';msg.className='igmsg bad';return;}
   e.ig=raw;store(LB_KEY,lb);store('alonechief_ig',raw);
@@ -1635,8 +1651,12 @@ function renderTitle(){
   const b=board(mk), top=b[0], prev=board(prevMonthKey())[0];
   $('#prizeText').textContent=`🎁 ${m}월 1위 상품: ${monthPrize(mk)}   ·   `+(top?`👑 현재 1위 ${top.name} ${top.score.toLocaleString()}점`:'👑 1위 자리가 비어 있어요! 지금 도전하세요')+(prev?`   ·   🎉 ${pm}월 우승 ${prev.name}님 축하해요!`:'');
   $('#lbTitle').textContent=`🏆 ${m}월 월간 랭킹`;
-  $('#lbMeta').textContent=`D-${daysToReset()} 후 초기화 · 기록은 이 기기에 저장`;
-  renderBoard($('#lbTable'));
+  $('#lbMeta').textContent=`D-${daysToReset()} 후 초기화 · 전국 실장님 실시간 랭킹`;
+  boardMsg($('#lbTable'),'🏆 랭킹 불러오는 중…');
+  fetchTop().then(list=>{
+    if(!list){$('#lbMeta').textContent=`D-${daysToReset()} 후 초기화 · 오프라인: 이 기기 기록만 보여요`;renderBoard($('#lbTable'));return;}
+    if(!list.length)boardMsg($('#lbTable'),'아직 기록이 없어요 · 첫 1위에 도전하세요! 🏆');else renderBoard($('#lbTable'),null,10,list);
+    const t=list[0];$('#prizeText').textContent=`🎁 ${m}월 1위 상품: ${monthPrize(mk)}   ·   `+(t?`👑 현재 1위 ${t.name} ${t.score.toLocaleString()}점`:'👑 1위 자리가 비어 있어요! 지금 도전하세요');});
 }
 
 /* =========================================================
@@ -1674,11 +1694,20 @@ function endGame(){
   const rows=[['완료된 치료',st.treat,st.treatPts,1],['만족 퇴원 팁',st.cured,st.tipPts,1],['화난 환자 충돌',st.stuns,-(st.revPts+st.penPts),0]];
   $('#endRows').innerHTML=rows.map(([n,c,v,pos])=>`<tr class="${pos?'':'neg'}"><td>${n} × ${c}</td><td class="v">${v>0?'+':v<0?'−':''}${Math.abs(v).toLocaleString()}</td></tr>`).join('');
   $('#endScore').textContent='0';
-  $('#endRank').innerHTML=rank===1?'👑 이번 달 1위!':`🏆 이번 달 ${rank}위 / ${b.length}명`;
-  renderBoard($('#endTable'),id,10);
+  $('#endRank').innerHTML='🏆 랭킹 집계 중…';boardMsg($('#endTable'),'🏆 랭킹 불러오는 중…');
   $('#igBox').style.display='none';
-  const igOk=rank>=1&&rank<=10&&sc>=STAR_T[0];
-  setTimeout(()=>{$('#cdOv').classList.remove('show');show('end');animateEnd(sc,grade,stars,rows,()=>{if(igOk)showIgBox(id,rank);});},1200);
+  // submit to the shared online ranking; fall back to this device's ranking when offline
+  const sub=rpc('submit_score',{p_name:name,p_score:sc,p_av:avatarCfg(),p_device:deviceId()})
+    .then(async r=>{const list=await fetchTop();return {r,list};}).catch(()=>null);
+  sub.then(o=>{
+    if(o&&o.r){const {r,list}=o;
+      $('#endRank').innerHTML=r.rank===1?'👑 전체 1위!':`🏆 전체 ${r.rank}위 / ${r.total}명`;
+      if(list&&list.length)renderBoard($('#endTable'),r.id,10,list);else boardMsg($('#endTable'),'랭킹을 불러오지 못했어요');}
+    else{$('#endRank').innerHTML=(rank===1?'👑 이 기기 1위!':`🏆 이 기기 ${rank}위 / ${b.length}명`)+' <small>(오프라인)</small>';renderBoard($('#endTable'),id,10);}});
+  setTimeout(()=>{$('#cdOv').classList.remove('show');show('end');animateEnd(sc,grade,stars,rows,async()=>{
+    const o=await sub;
+    if(o&&o.r){igOnline=true;if(o.r.best===sc&&o.r.rank<=10&&sc>=STAR_T[0])showIgBox(o.r.id,o.r.rank);}
+    else{igOnline=false;if(rank>=1&&rank<=10&&sc>=STAR_T[0])showIgBox(id,rank);}});},1200);
 }
 let endAnim=null;
 function burst(el){const cols=['#ffd23f','#ff8c1a','#fff59d','#4fc3f7','#ff6b9a','#3ec46d'];

@@ -102,10 +102,10 @@ tr.me .lbav{border-color:var(--accent)}
 .roster .rnd .dleft{position:absolute;right:3px;bottom:2px;font-size:11px;line-height:16px;min-width:16px;padding:0 3px;border-radius:8px;background:var(--ink);color:#fff;font-family:'Noto Sans KR';font-weight:700}
 #randBtn small{font-size:12px;opacity:.75;margin-left:2px}
 .acch{font-family:'Noto Sans KR';font-size:12px;color:#7a6a6a;margin-left:4px}
-.accgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:7px}
-.accb{border:3px solid var(--ink);border-radius:14px;background:#fff;padding:7px 2px 6px;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 3px 0 rgba(0,0,0,.2);transition:transform .08s}
+.accgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.accb{border:2.5px solid var(--ink);border-radius:11px;background:#fff;padding:5px 1px 4px;min-width:0;display:flex;flex-direction:column;align-items:center;gap:3px;box-shadow:0 3px 0 rgba(0,0,0,.2);transition:transform .08s}
 .accb:active{transform:translateY(2px)}
-.accb .ai{font-size:28px;line-height:1}.accb .an{font-size:12.5px;line-height:1.15;text-align:center}
+.accb .ai{font-size:22px;line-height:1}.accb .an{font-size:11px;line-height:1.15;text-align:center;word-break:keep-all;letter-spacing:-.3px}
 .accb.on{background:linear-gradient(#fff3c4,#ffc65c);outline:3px solid var(--accent);outline-offset:1px}
 .accdesc{margin:0 0 10px;display:flex;gap:10px;align-items:center;background:var(--navy);color:#fff;border:3px solid var(--ink);border-radius:14px;padding:10px 12px;font-size:14.5px;line-height:1.45;box-shadow:0 4px 0 rgba(0,0,0,.25)}
 .accdesc b{color:var(--gold);font-family:var(--head);font-weight:400;font-size:16px}
@@ -2052,7 +2052,7 @@ const COLORS={
   crocs:['크록스 색',['#2d2d2d','#ff5e5e','#ffd23f','#3ec46d','#3a7bd5','#ff8fd0','#ffffff','#ff8c1a']],
   accColor:['소품 색',['#4fc3f7','#ff7043','#ffd23f','#66bb6a','#ab47bc','#ec407a','#ffffff','#37474f']],
 };
-const TABS=[['face','😊 얼굴',['eyes','brows','nose','lips','skin']],['hair','💇 헤어',['hair','hairColor']],['acc','🎁 소품',['hat','face','neck','accColor']],['gear','🎒 악세서리',['hand']],
+const TABS=[['gear','🎒 악세서리',['hand']],['face','😊 얼굴',['eyes','brows','nose','lips','skin']],['hair','💇 헤어',['hair','hairColor']],['acc','🎁 소품',['hat','face','neck','accColor']],
   ['outfit','🥼 옷·신발',['top','crocs']],['body','📏 체형',['_h','_b']]];
 const ACC_INFO={
   none:{i:'🚫',n:'없음',d:'능력 없이 출근해요'},
@@ -2082,7 +2082,7 @@ const ROSTER=[
   {n:'사탕요정',c:{hair:'bun',hairColor:'#7e57c2',eyes:'sparkle',brows:'arch',nose:'button',lips:'smile',hand:'candy',accColor:'#ec407a',top:'#7b4bb3',bulk:.85}},
 ];
 if(!ACC_INFO[charCfg.hand])charCfg.hand='none';
-let curTab='acc', pvView='spin', pvT=0, pvYaw=0, pvDrag=null, rosterImgs=null;
+let curTab='gear', pvView='spin', pvT=0, pvYaw=0, pvDrag=null, rosterImgs=null;
 function accDescHtml(v){const a=ACC_INFO[v]||ACC_INFO.none;return `<span class="adi">${a.i}</span><span><b>${a.n}</b><br>${a.d}</span>`;}
 function ctrlHtml(k){
   if(k==='hand'){const cur=ACC_INFO[charCfg.hand]?charCfg.hand:'none';

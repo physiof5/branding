@@ -99,6 +99,23 @@ tr.me .lbav{border-color:var(--accent)}
 .roster button.on{outline:4px solid var(--accent);outline-offset:1px;background:linear-gradient(#fff3c4,#ffc65c)}
 .roster button span{position:absolute;bottom:0;left:0;right:0;font-size:10px;background:rgba(255,255,255,.88);white-space:nowrap;overflow:hidden;line-height:15px}
 .roster .rnd{display:grid;place-items:center;font-size:26px;background:#fff}
+.roster .rnd .dleft{position:absolute;right:3px;bottom:2px;font-size:11px;line-height:16px;min-width:16px;padding:0 3px;border-radius:8px;background:var(--ink);color:#fff;font-family:'Noto Sans KR';font-weight:700}
+#randBtn small{font-size:12px;opacity:.75;margin-left:2px}
+.dircard{background:linear-gradient(135deg,#fff8e1,#ffe0b2);border:3px solid var(--ink);border-radius:16px;padding:12px 14px;box-shadow:0 4px 0 rgba(0,0,0,.2)}
+.dircard .dt{font-family:var(--head);font-size:20px;margin-bottom:6px}
+.dircard .dd{font-size:15px;line-height:1.5}
+.dircard .dn{font-size:12px;color:#7a6a6a;margin-top:8px;font-family:'Noto Sans KR'}
+.rareov{position:fixed;inset:0;z-index:90;display:none;align-items:center;justify-content:center;background:rgba(10,14,30,.8)}
+.rareov.show{display:flex}
+.rarebox{perspective:900px}
+.rcard{width:220px;height:300px;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.3,1.5,.5,1);animation:rshake .35s infinite}
+.rareov.open .rcard{transform:rotateY(180deg) scale(1.08);animation:none}
+.rback,.rfront{position:absolute;inset:0;border-radius:22px;border:5px solid #fff;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 40px rgba(255,210,63,.75)}
+.rback{background:repeating-linear-gradient(45deg,#7b4bb3 0 16px,#6a3ea0 16px 32px);color:#ffd23f;font-family:var(--head);font-size:110px;text-shadow:0 6px 0 #3d1f66}
+.rfront{transform:rotateY(180deg);background:radial-gradient(circle at 50% 35%,#fff7cf,#ffb300);color:var(--ink);gap:6px}
+.rfront .rl{font-family:var(--head);font-size:20px}.rfront .rn{font-family:'Bagel Fat One',var(--head);font-size:54px;color:#fff;-webkit-text-stroke:.12em var(--ink);paint-order:stroke fill}
+.rfront .rs{font-size:16px;background:#fff;border:3px solid var(--ink);border-radius:12px;padding:3px 10px}
+@keyframes rshake{25%{transform:rotate(-3deg) scale(1.02)}75%{transform:rotate(3deg) scale(1.02)}}
 .cmain{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px}
 .pv{align-self:start;position:sticky;top:0;background:radial-gradient(circle at 50% 70%,#fffbe6,#9fdcf2 75%);border:3px solid var(--ink);border-radius:18px;display:flex;flex-direction:column;align-items:center;padding:8px;z-index:3}
 #preview{width:100%;max-width:320px;aspect-ratio:320/360;touch-action:none;cursor:grab;display:block}
@@ -217,6 +234,10 @@ body.touch .hint b{display:none}
 #cdOv{pointer-events:none}
 #pauseOv{background:rgba(0,0,0,.35)} #pauseOv .card{text-align:center}
 #tip{position:fixed;pointer-events:none;background:var(--paper);border:3px solid var(--ink);border-radius:10px;padding:6px 10px;font-size:14px;display:none;z-index:50;box-shadow:0 4px 0 rgba(0,0,0,.3);max-width:260px}
+#roundBanner{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%) scale(0);z-index:7;pointer-events:none;font-family:var(--head);font-size:clamp(30px,8vw,52px);color:#fff;
+  background:#3ec46d;border:5px solid #fff;outline:4px solid var(--ink);border-radius:22px;padding:6px 26px 10px;text-shadow:0 4px 0 #1f7a2e;white-space:nowrap;opacity:0}
+#roundBanner.show{animation:roundIn 1.6s ease-out}
+@keyframes roundIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-8deg)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.08) rotate(-3deg)}75%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-3deg)}100%{opacity:0;transform:translate(-50%,-60%) scale(1) rotate(-3deg)}}
 #help{position:absolute;bottom:calc(var(--sab) + 8px);left:calc(var(--sal) + 12px);color:#fff;font-size:13px;opacity:.8;text-shadow:0 1px 0 #000;font-family:'Noto Sans KR';pointer-events:none;z-index:3}
 body.touch #help{display:none}
 
@@ -453,6 +474,7 @@ body.touch #joyHint{display:grid}
     </div>
   </div>
   <div id="help">WASD/방향키 이동 · E/Space 상호작용 · P 일시정지 · 마우스 휠 확대/축소 · 환자에 마우스를 올리면 처방 확인</div>
+  <div id="roundBanner">📣 원장님 회진!</div>
   <div id="joyHint">드래그해서<br>이동</div>
   <div id="joyBase"><div id="joyKnob"></div></div>
   <div id="actWrap"><div id="actLbl">-</div><button id="actBtn" aria-label="상호작용">✋</button></div>
@@ -514,6 +536,9 @@ body.touch #joyHint{display:grid}
   <div class="nprev">PT - <b id="namePrev" class="ph">닉네임</b></div>
   <input id="nameIn2" maxlength="10" placeholder="닉네임 입력 (최대 10자)" autocomplete="off" spellcheck="false" enterkeyhint="done">
   <div class="nrow"><span id="nameCnt">0 / 10</span><button type="button" class="btn green" id="nameOk">완료</button></div>
+</div></div>
+<div id="rareOv" class="rareov"><div class="rarebox">
+  <div class="rcard"><div class="rback">?</div><div class="rfront"><div class="rl">✨ 희귀 캐릭터 ✨</div><div class="rn">원장님</div><div class="rs">📣 원장님 회진</div></div></div>
 </div></div>
 <div id="toasts"></div>
 <div id="tip"></div>
@@ -696,6 +721,7 @@ function geo(k){
     case 'tor':g=new THREE.TorusGeometry(n[0],n[1],8,18,n[2]);break;
     case 'cone':g=new THREE.ConeGeometry(1,1,14);break;
     case 'ring':g=new THREE.RingGeometry(n[0],n[1],40);break;
+    case 'rtor':g=new THREE.TorusGeometry(n[0],n[1],6,4);g.rotateZ(PI/4);break;
     case 'tri':{const s=new THREE.Shape();s.moveTo(-.5,0);s.lineTo(.5,0);s.lineTo(0,-1);s.closePath();g=new THREE.ShapeGeometry(s);break;}
     case 'plane':g=new THREE.PlaneGeometry(1,1);break;
   }
@@ -813,7 +839,12 @@ function buildAcc(o,cfg,head,body){
   }
   const EX=.105,EY=-.005;
   const fadd=(m,x,y,dz,tilt,sx,sy,sz)=>{m.scale.set(sx,sy,sz);onFace(m,x,y,dz,tilt);o.faceAcc.add(m);return m;};
+  if(cfg.special==='director'){ // gray temples + side-swept volume
+    {const v=sph(H,1,cfg.hairColor,.05,.27,.08,{kind:'toon',sx:.2,sy:.09,sz:.17});v.rotation.z=-.25;}
+    for(const k of[-1,1])sph(H,1,'#9a9a9a',k*.262,.05,-.02,{kind:'toon',sx:.05,sy:.1,sz:.11});}
   switch(cfg.face){
+    case 'dirGlasses':for(const k of[-1,1]){const fr=fadd(fm(k3('rtor',.07,.008),'#b8bcc2'),k*EX,EY,.03,0,1,1,1);fr.scale.set(1.18,.78,1);}
+      fadd(fm('box','#b8bcc2'),0,EY+.01,.045,0,.05,.01,.01);for(const k of[-1,1])fadd(fm('box','#b8bcc2'),k*.205,EY+.01,.0,0,.07,.01,.01);break;
     case 'glasses':for(const k of[-1,1])fadd(fm(k3('tor',.062,.012,PI*2),'#3a3a3a'),k*EX,EY,.03,0,1,1,1);fadd(fm('box','#3a3a3a'),0,EY,.045,0,.06,.012,.01);break;
     case 'sun':for(const k of[-1,1])fadd(fm('sph','#151515','toon'),k*EX,EY,.025,0,.075,.058,.02);fadd(fm('box','#151515'),0,EY+.01,.045,0,.08,.014,.01);break;
     case 'mask':{const m=mesh(geo('sph'),M('#bfe8f7','toon'),null,false);m.scale.set(.22,.13,.11);m.position.set(0,-.13,faceZ(0,-.13)-.06);o.faceAcc.add(m);
@@ -823,6 +854,10 @@ function buildAcc(o,cfg,head,body){
   // neck
   const ny=body.ny, nz=body.nz, cz=body.chestZ;
   switch(cfg.neck){
+    case 'tie':{const z=nz+.03;
+      const sh=mesh(geo('tri'),M('#bcd6f0','toon'),o.pose);sh.scale.set(.2,.19,1);sh.position.set(0,ny-.035,z-.008);sh.rotation.x=-.3; // light-blue shirt
+      const t=mesh(geo('tri'),M('#23376b','toon'),o.pose);t.scale.set(.09,.24,1);t.position.set(0,ny-.085,z+.006);t.rotation.x=-.3;   // navy tie
+      const k=box(o.pose,.06,.04,.02,'#1b2c58',0,ny-.1,z+.004,{kind:'toon',cast:false});k.rotation.x=-.3;break;}
     case 'towel':{const t=mesh(geo(k3('tor',body.ringR,.06,PI*2)),M('#ffffff','toon'),o.pose,true);t.rotation.x=PI/2;t.position.y=ny;t.scale.y=.86;
       for(const k of[-1,1]){const e=box(o.pose,.08,.2,.04,'#ffffff',k*.09,ny-.21,cz,{kind:'toon'});e.rotation.x=-.15;box(o.pose,.082,.03,.042,ac,k*.09,ny-.17,cz+.002,{kind:'toon',cast:false}).rotation.x=-.15;}break;}
     case 'bowtie':{for(const k of[-1,1]){const w=sph(o.pose,1,'#e53935',k*.055,ny-.03,nz,{kind:'toon',sx:.06,sy:.045,sz:.03});w.rotation.z=k*.2;}sph(o.pose,.028,'#b71c1c',0,ny-.03,nz+.01,{kind:'toon'});break;}
@@ -835,6 +870,7 @@ function buildAcc(o,cfg,head,body){
   const hand=o.arms[1], hp=o.handPos;
   const g=new THREE.Group();g.position.set(hp.x,hp.y,hp.z+.05);hand.add(g);
   switch(cfg.hand){
+    case 'tablet':{const t=box(g,.2,.27,.025,'#8e9399',0,-.13,.04,{kind:'toon'});t.rotation.x=-.25;const sc=box(g,.17,.23,.006,'#2b3440',0,-.13,.055,{kind:'basic',cast:false});sc.rotation.x=-.25;break;}
     case 'roller':{const r=mesh(geo(k3('cyl',.065,.065,16)),am,g,true);r.scale.y=.34;r.rotation.x=PI/2;r.position.z=.04;break;}
     case 'gun':{box(g,.05,.13,.05,'#333333',0,-.06,0,{kind:'toon'});const b=box(g,.08,.08,.2,ac,0,-.01,.05,{kind:'toon'});sph(g,.045,'#9e9e9e',0,.03,.17,{kind:'toon'});break;}
     case 'clip':{const c=box(g,.2,.27,.025,'#8d6e63',0,-.13,.04,{kind:'toon'});c.rotation.x=-.25;const pp=box(g,.17,.21,.01,'#ffffff',0,-.14,.06,{kind:'basic',cast:false});pp.rotation.x=-.25;box(g,.07,.03,.03,'#9e9e9e',0,.0,.03,{kind:'toon'});break;}
@@ -855,7 +891,11 @@ function bodyGeo(B,Hh){const key=k3('bodyL',B,Hh);if(GC.has(key))return GC.get(k
   pts.push(new THREE.Vector2(0,h));
   const g=new THREE.LatheGeometry(pts,28);g.computeVertexNormals();GC.set(key,g);return g;}
 const HSX=1.4, HSY=1.22, HSZ=1.3; // head scale: wide, round, big
+// hidden rare character: 원장님 (director) — fixed costume, only from the dice
+const DIRECTOR_PARTS={hair:'short',hairColor:'#161616',skin:'#f1c8a3',eyes:'dot',brows:'thick',nose:'button',lips:'smile',
+  top:'#f7f6f0',bottom:'#4a4a50',crocs:'#151515',hat:'none',face:'dirGlasses',neck:'tie',hand:'tablet',accColor:'#9aa0a6',height:1.06,bulk:1.02,extra:null};
 function makeChar(cfg){
+  if(cfg.special==='director')cfg=Object.assign({},cfg,DIRECTOR_PARTS);
   const Hh=cfg.height||1, B=cfg.bulk||1;
   const root=new THREE.Group(), pose=new THREE.Group();root.add(pose);
   const tm=c=>M(c,'toon');
@@ -864,7 +904,7 @@ function makeChar(cfg){
   for(const k of[-1,1]){const f=new THREE.Group();f.position.set(k*.13*Math.min(1.2,B),0,.05);pose.add(f);
     cyl(f,.06,.065,.1,cfg.bottom,0,.06,-.02,{kind:'toon'});
     const cr=sph(f,1,cfg.crocs,0,.065,.04,{kind:'toon',sx:.11,sy:.07,sz:.16});outline(cr,1.12);
-    for(const s2 of[-1,1])sph(f,.016,'#ffffff',s2*.042,.125,.1,{kind:'basic',cast:false});
+    if(cfg.special!=='director')for(const s2 of[-1,1])sph(f,.016,'#ffffff',s2*.042,.125,.1,{kind:'basic',cast:false});
     sph(f,.03,shade(cfg.crocs,-40),k*.1,.08,-.03,{kind:'toon',cast:false}); // heel strap
     f.userData.base={x:f.position.x,z:f.position.z};o.legs.push(f);}
   // --- body ---
@@ -876,7 +916,7 @@ function makeChar(cfg){
   // V-neck collar
   const vy=top-.13;
   const vl=mesh(geo('tri'),tm(shade(cfg.top,-35)),pose);vl.scale.set(.24,.2,1);vl.position.set(0,vy+.02,rt*.88+.03);vl.rotation.x=-.3;
-  const vn=mesh(geo('tri'),tm(cfg.skin),pose);vn.scale.set(.18,.15,1);vn.position.set(0,vy+.015,rt*.88+.034);vn.rotation.x=-.3;
+  const vn=mesh(geo('tri'),tm(cfg.special==='director'?'#bcd6f0':cfg.skin),pose);vn.scale.set(.18,.15,1);vn.position.set(0,vy+.015,rt*.88+.034);vn.rotation.x=-.3;
   // name badge (right chest) + pocket with pen (left chest)
   const bx=.11*B, bz=Math.sqrt(Math.max(0,chestR*chestR-bx*bx))*.88+.006, ry=Math.atan2(bx,bz);
   if(cfg.badge){o.badgeTex=badgeTex(cfg.badge);const bg=mesh(geo('plane'),new THREE.MeshBasicMaterial({map:o.badgeTex}),pose);
@@ -1130,6 +1170,20 @@ const keys={};
 let joyVec={x:0,y:0};
 
 function playerCfg(){return Object.assign({},charCfg,{badge:badgeText(),extra:null});}
+function doRounds(){
+  for(const p of G.patients){
+    if(p.state==='leaving'||p.state==='gone')continue;
+    if(p.state==='chase'){ // calm down and go back to the waiting room
+      p.angry=0;p.mood=null;p.speed=p.type.speed;p.patience=p.patMax=75;
+      const ci=chairs.findIndex(c=>!c.occ);
+      if(ci>=0){const ch=chairs[ci];ch.occ=p;p.chair=ci;p.state='toChair';p.wp=[...pathFrom(tileOfFree(p.x,p.y),ch.access.x,ch.access.y).slice(1),{x:ch.x,y:ch.y}];}
+      else sendToExit(p);
+    }else{p.patience=p.patMax;if(p.station&&p.station.occ===p&&p.station.phase==='autoDone'){p.station.neglect=0;}p.angry=0;if(p.mood==='angry')p.mood=null;}
+    particle(p.x,p.y,1.9,'💚',rand(-10,10),1,1.2);
+  }
+  const b=$('#roundBanner');b.classList.remove('show');void b.offsetWidth;b.classList.add('show');
+  toast('📣 원장님 회진! 모든 환자 마음이 편안해졌어요','good');sfx('coin');buzz([40,30,40]);
+}
 function newGame(){
   for(const s of stations)Object.assign(s,{phase:'idle',occ:null,t:0,dur:0,autoList:[],handsList:[],cur:null,neglect:0});
   for(const ch of chairs)ch.occ=null;
@@ -1137,6 +1191,7 @@ function newGame(){
   if(R.playerObj)disposeChar(R.playerObj);
   G={state:'countdown',cd:3.2,time:GAME_TIME,score:0,tip:1,patients:[],particles:[],nextId:1,pid:1,spawnT:.6,elapsed:0,
     stats:{cured:0,lost:0,treat:0,stuns:0,treatPts:0,tipPts:0,penPts:0,revPts:0},modal:false,lastTick:-1,hudT:0,lastCd:null,activeHands:null,cand:null,
+    director:charCfg.special==='director',roundT:0,
     player:{x:12*T,y:12*T,dir:'down',face:0,walk:0,moving:false,stunT:0,escort:null,trail:[],speed:235},
     cart:{x:2.5*T,y:10.5*T,face:0,walk:0,moving:false,held:false}};
   R.playerObj=makeChar(playerCfg());R.playerObj.root.scale.setScalar(1.18);R.scene.add(R.playerObj.root);
@@ -1328,6 +1383,7 @@ function update(dt){
   if(G.time<=10&&Math.ceil(G.time)!==G.lastTick){G.lastTick=Math.ceil(G.time);sfx('tick');}
   if(G.time<=0){G.time=0;endGame();return;}
 
+  if(G.director){G.roundT+=dt;if(G.roundT>=30){G.roundT-=30;doRounds();}}
   G.spawnT-=dt;
   if(G.spawnT<=0){const ok=spawnPatient();const base=Math.max(6,11-G.elapsed*0.035);G.spawnT=ok?base+rand(0,3):2;}
 
@@ -1599,11 +1655,12 @@ function board(mk){const lb=loadLB();return (lb[mk]||[]).slice().sort((a,b)=>b.s
 function saveScore(entry){const lb=loadLB();const mk=monthKey();(lb[mk]=lb[mk]||[]).push(entry);lb[mk].sort((a,b)=>b.score-a.score);lb[mk]=lb[mk].slice(0,30);store(LB_KEY,lb);}
 function daysToReset(){const d=new Date();const n=new Date(d.getFullYear(),d.getMonth()+1,1);return Math.ceil((n-d)/86400000);}
 // ---- ranking avatars: the player's own customized character, rendered without any name text ----
-const AV_KEYS=['hair','hairColor','eyes','brows','nose','lips','skin','crocs','top','bottom','height','bulk','hat','face','neck','hand','accColor'];
+const AV_KEYS=['special','hair','hairColor','eyes','brows','nose','lips','skin','crocs','top','bottom','height','bulk','hat','face','neck','hand','accColor'];
 function avatarCfg(){const o={};for(const k of AV_KEYS)if(charCfg[k]!=null)o[k]=charCfg[k];return o;}
 const AV_CACHE=new Map();
 // other players' avatar data comes from the network: keep only known keys and sane values
 function cleanAv(av){const o={};if(!av||typeof av!=='object')return o;
+  if(av.special==='director')o.special='director';
   const pick=(k,ok)=>{if(ok(av[k]))o[k]=av[k];};
   for(const k of ['hair','eyes','brows','nose','lips','hat','face','neck','hand'])pick(k,v=>typeof v==='string'&&OPTS[k]&&OPTS[k][1].some(([x])=>x===v));
   for(const k of ['hairColor','skin','crocs','top','bottom','accColor'])pick(k,v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v));
@@ -1877,11 +1934,15 @@ function buildCustom(){
   if($('#hSl'))syncSl();
   syncName();
   buildRoster();
+  if(charCfg.special==='director'){$('#optGroups').innerHTML=`<div class="dircard"><div class="dt">✨ 희귀 캐릭터 · 원장님</div>
+    <div class="dd"><b>📣 원장님 회진</b><br>30초마다 모든 환자의 인내심이 가득 차고,<br>화난 환자도 진정해요.</div>
+    <div class="dn">원장님 코스튬은 바꿀 수 없어요 · 다른 캐릭터를 고르면 원장님이 사라져요</div></div>`;}
 }
 function buildRoster(){
   if(!rosterImgs)rosterImgs=ROSTER.map(r=>portrait(presetCfg(r)));
   $('#roster').innerHTML=ROSTER.map((r,i)=>`<button data-r="${i}" class="${charCfg.preset===i?'on':''}" aria-label="${r.n}"><img src="${rosterImgs[i]}" alt=""><span>${r.n}</span></button>`).join('')
-    +`<button class="rnd" data-r="rand" aria-label="랜덤">🎲</button>`;
+    +`<button class="rnd" data-r="rand" aria-label="랜덤">🎲<b class="dleft">${diceLeft()}</b></button>`;
+  $('#randBtn').innerHTML=`🎲 랜덤 <small>${diceLeft()}/${DICE_MAX}</small>`;emojify($('#randBtn'));
 }
 function presetCfg(r){return Object.assign({},DEFAULT_CHAR,r.c,{badge:'PT',name:charCfg.name});}
 function syncSl(){if($('#hOut'))$('#hOut').textContent=Math.round(150+(charCfg.height-.82)/.4*45)+'cm';if($('#bOut'))$('#bOut').textContent=['슬림','보통','탄탄','벌크'][clamp(Math.floor((charCfg.bulk-.78)/.62*4),0,3)];}
@@ -1893,13 +1954,36 @@ function syncName(skip){const n=charCfg.name||'';for(const id of ['nameIn','name
   pv.textContent=n?n.toUpperCase():'닉네임';pv.classList.toggle('ph',!n);$('#nameCnt').textContent=`${[...n].length} / 10`;}
 function openNameSheet(){syncName();$('#nameSheet').classList.add('show');const i=$('#nameIn2');i.focus({preventScroll:true});try{i.setSelectionRange(i.value.length,i.value.length);}catch(e){}}
 function closeNameSheet(){const i=$('#nameIn2');i.blur();charCfg.name=(charCfg.name||'').trim();saveChar();syncName();$('#nameSheet').classList.remove('show');clearTimeout(pvRebuildT);rebuildPreview();}
-function randomize(){for(const [k,[,list]] of Object.entries(OPTS))charCfg[k]=pick(list)[0];
+const DICE_MAX=10, DIRECTOR_RATE=.03;
+function todayKey(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();}
+function diceLeft(){const v=load('alonechief_dice',null);return v&&v.d===todayKey()?v.n:DICE_MAX;}
+function useDice(){const n=diceLeft()-1;store('alonechief_dice',{d:todayKey(),n});const t=$('#roster .dleft');if(t)t.textContent=n;$('#randBtn').innerHTML=`🎲 랜덤 <small>${n}/${DICE_MAX}</small>`;emojify($('#randBtn'));return n;}
+let armT=0;
+function confirmLeaveDirector(){if(charCfg.special!=='director')return true;
+  if(performance.now()-armT<3000){armT=0;return true;}
+  armT=performance.now();toast('👔 원장님이 사라져요! 바꾸려면 한 번 더 누르세요','warn');sfx('bad');return false;}
+function rollDice(){
+  if(diceLeft()<=0){toast('🎲 오늘 주사위를 모두 썼어요 · 내일 다시 굴려 보세요!','warn');sfx('bad');return;}
+  if(!confirmLeaveDirector())return;
+  useDice();
+  if(Math.random()<DIRECTOR_RATE){revealDirector();return;}
+  randomize();
+}
+function revealDirector(){
+  const ov=$('#rareOv');ov.classList.remove('show','open');void ov.offsetWidth;ov.classList.add('show');sfx('tick');buzz([30,60,30]);
+  setTimeout(()=>sfx('tick'),500);setTimeout(()=>sfx('tick'),900);
+  setTimeout(()=>{ov.classList.add('open');sfx('start');buzz([80,40,120]);
+    const n=charCfg.name;charCfg=Object.assign({},DEFAULT_CHAR,DIRECTOR_PARTS,{name:n,preset:null,special:'director'});buildCustom();changed();},1400);
+  setTimeout(()=>ov.classList.remove('show','open'),3400);
+}
+function randomize(){charCfg.special=null;for(const [k,[,list]] of Object.entries(OPTS))charCfg[k]=pick(list)[0];
   for(const [k,[,list]] of Object.entries(COLORS))charCfg[k]=pick(list);charCfg.bottom=charCfg.top;
   charCfg.height=+rand(.84,1.2).toFixed(2);charCfg.bulk=+rand(.8,1.35).toFixed(2);charCfg.preset=null;buildCustom();changed();sfx('whoosh');}
 $('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;curTab=b.dataset.tab;buildCustom();sfx('click');});
 $('#roster').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(!b)return;
-  if(b.dataset.r==='rand'){randomize();return;}
-  const i=+b.dataset.r,n=charCfg.name;charCfg=Object.assign({},DEFAULT_CHAR,ROSTER[i].c,{name:n,preset:i});charCfg.bottom=charCfg.top;
+  if(b.dataset.r==='rand'){rollDice();return;}
+  if(!confirmLeaveDirector())return;
+  const i=+b.dataset.r,n=charCfg.name;charCfg=Object.assign({},DEFAULT_CHAR,ROSTER[i].c,{name:n,preset:i,special:null});charCfg.bottom=charCfg.top;
   buildCustom();changed();sfx('ding');});
 $('#optGroups').addEventListener('click',e=>{const b=e.target.closest('[data-k]');if(!b)return;const k=b.dataset.k;charCfg[k]=b.dataset.v;if(k==='top')charCfg.bottom=b.dataset.v;
   charCfg.preset=null;$$('#roster button.on').forEach(x=>x.classList.remove('on'));
@@ -1925,7 +2009,7 @@ function updLand(){let land;try{land=screen.orientation&&screen.orientation.type
   if(!isTouch)land=innerWidth>innerHeight;document.body.classList.toggle('land',land);}
 updLand();addEventListener('orientationchange',()=>setTimeout(updLand,200));addEventListener('resize',updLand);
 $('#viewBtns').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;pvView=b.dataset.v;$$('#viewBtns button').forEach(x=>x.classList.toggle('on',x===b));});
-$('#randBtn').addEventListener('click',randomize);
+$('#randBtn').addEventListener('click',rollDice);
 const pv=$('#preview');const PV={};
 function initPreview(){
   PV.r=new THREE.WebGLRenderer({canvas:pv,antialias:true,alpha:true});PV.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));

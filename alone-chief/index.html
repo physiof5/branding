@@ -24,13 +24,13 @@
   --sat:env(safe-area-inset-top,0px); --sar:env(safe-area-inset-right,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;background:
+html,body{margin:0;height:100%;overflow:hidden;max-width:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;background:
   radial-gradient(circle at 20% 15%,rgba(255,255,255,.18) 0 2px,transparent 3px) 0 0/34px 34px,
   linear-gradient(160deg,var(--sky1),var(--sky2));
   font-family:'Jua','Noto Sans KR',system-ui,sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none;overscroll-behavior:none;-webkit-touch-callout:none}
 body,button,input{word-break:keep-all;overflow-wrap:break-word;line-break:strict}
 button{font-family:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
-.screen{position:fixed;inset:0;display:none;overflow:auto;-webkit-overflow-scrolling:touch;
+.screen{position:fixed;inset:0;display:none;overflow-x:hidden;overflow-x:clip;overflow-y:auto;overscroll-behavior-x:none;-webkit-overflow-scrolling:touch;
   padding:max(16px,var(--sat)) max(16px,var(--sar)) max(16px,var(--sab)) max(16px,var(--sal))}
 .screen.active{display:flex}
 .screen>.center{margin:auto}
@@ -174,7 +174,10 @@ input::placeholder{color:#b9bfc7;opacity:1}
 .nrow .btn{padding:8px 26px;font-size:18px}
 body.kb .cfoot,body.kb .ebtns{position:static}
 .cfoot{display:grid;grid-template-columns:1fr 2fr;gap:10px;position:sticky;bottom:-16px;background:var(--paper);padding:10px 0 4px;z-index:4;border-top:3px solid var(--ink)}
-.cfoot .btn{width:100%;white-space:nowrap}
+.cfoot .btn{width:100%;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.cwrap,.cbody,.cmain,.cmain>*,.opts,.pv,.cfoot>*,.accgrid>*,.ewrap,.egrid>*{min-width:0;max-width:100%}
+#custom,#end,#title{touch-action:pan-y}
+#preview{max-width:100%}
 
 /* ---------- Game ---------- */
 #game{padding:0;background:#1a100b;touch-action:none}
@@ -1231,7 +1234,9 @@ window.addEventListener('resize',()=>{if(R.renderer)resize();});
 const CAM={x:16,z:9,dist:40,zoom:load('alonechief_zoom',1)};
 const ELEV=49*PI/180;
 const ZOOMS=[1.4,1,.72];
-function viewWidth(){const portrait=R.h>R.w;let vw=isTouch?(portrait?10:16):(R.w<1100?14:17);return vw*ZOOMS[CAM.zoom];}
+function viewWidth(){const portrait=R.h>R.w, asp=R.w/R.h;let vw=isTouch?(portrait?10:16):(R.w<1100?14:17);
+  // wide/landscape screens: keep at least ~14 rows of depth visible (waiting room + beds), not just a thin strip
+  vw=Math.max(vw,asp*15.5*Math.sin(ELEV));return Math.min(34,vw*ZOOMS[CAM.zoom]);}
 function camUpdate(dt,overview,snap){
   const asp=R.w/R.h, tan=Math.tan(R.camera.fov/2*PI/180);
   const vw=overview?Math.max(33,20*asp):viewWidth();
@@ -1239,7 +1244,7 @@ function camUpdate(dt,overview,snap){
   let tx=16,tz=9.4;
   if(!overview&&G){tx=G.player.x/T;tz=G.player.y/T;
     const halfW=vw/2, halfD=visH/2/Math.sin(ELEV);
-    tx=halfW>=16.3?16:clamp(tx,halfW-.7,32.7-halfW);
+    tx=halfW>=17.5?16:clamp(tx,halfW-2,34-halfW);
     tz=halfD>=9.2?9.4:clamp(tz,halfD-.9,18.5-halfD);}
   const k=snap?1:1-Math.exp(-dt*(overview?2.5:5));
   CAM.x+=(tx-CAM.x)*k;CAM.z+=(tz-CAM.z)*k;CAM.dist+=(d-CAM.dist)*k;
@@ -2137,7 +2142,8 @@ function revealDirector(){
 function randomize(){charCfg.special=null;for(const [k,[,list]] of Object.entries(OPTS))charCfg[k]=pick(list)[0];
   for(const [k,[,list]] of Object.entries(COLORS))charCfg[k]=pick(list);charCfg.bottom=charCfg.top;
   charCfg.height=+rand(.84,1.2).toFixed(2);charCfg.bulk=+rand(.8,1.35).toFixed(2);charCfg.preset=null;buildCustom();changed();sfx('whoosh');}
-$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;curTab=b.dataset.tab;buildCustom();sfx('click');});
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;const tl=$('#tabs').scrollLeft;curTab=b.dataset.tab;buildCustom();$('#tabs').scrollLeft=tl;$('#custom').scrollLeft=0;sfx('click');});
+$('#custom').addEventListener('scroll',e=>{if(e.target.scrollLeft)e.target.scrollLeft=0;});
 $('#roster').addEventListener('click',e=>{const b=e.target.closest('[data-r]');if(!b)return;
   if(b.dataset.r==='rand'){rollDice();return;}
   if(!confirmLeaveDirector())return;

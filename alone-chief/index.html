@@ -196,7 +196,7 @@ body.touch .hint b{display:none}
 @keyframes pulse{to{transform:scale(1.06)}}
 .ibtns{display:flex;flex-direction:column;gap:6px}
 .ib{width:40px;height:40px;border-radius:12px;border:3px solid var(--ink);background:#fff;font-size:18px;box-shadow:0 3px 0 rgba(0,0,0,.35);padding:0;display:grid;place-items:center}
-#toasts{position:absolute;top:calc(var(--sat) + 122px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:5;width:min(92vw,560px)}
+#toasts{position:fixed;top:calc(var(--sat) + 122px);left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;z-index:80;width:min(92vw,560px)}
 .toast{background:var(--paper);border:3px solid var(--ink);border-radius:12px;padding:5px 14px;font-size:16px;box-shadow:0 4px 0 rgba(0,0,0,.35);animation:tin .25s ease-out;text-align:center}
 .toast.bad{background:#ffd6d6}.toast.good{background:#d6ffe0}.toast.warn{background:#fff1b8}
 @keyframes tin{from{transform:scale(.6);opacity:0}}
@@ -452,7 +452,6 @@ body.touch #joyHint{display:grid}
       <div class="ibtns"><button class="ib" id="pauseBtn" aria-label="일시정지">⏸</button><button class="ib" id="zoomBtn" aria-label="확대/축소">🔍</button><button class="ib" id="muteBtn" aria-label="소리">🔊</button></div>
     </div>
   </div>
-  <div id="toasts"></div>
   <div id="help">WASD/방향키 이동 · E/Space 상호작용 · P 일시정지 · 마우스 휠 확대/축소 · 환자에 마우스를 올리면 처방 확인</div>
   <div id="joyHint">드래그해서<br>이동</div>
   <div id="joyBase"><div id="joyKnob"></div></div>
@@ -516,6 +515,7 @@ body.touch #joyHint{display:grid}
   <input id="nameIn2" maxlength="10" placeholder="닉네임 입력 (최대 10자)" autocomplete="off" spellcheck="false" enterkeyhint="done">
   <div class="nrow"><span id="nameCnt">0 / 10</span><button type="button" class="btn green" id="nameOk">완료</button></div>
 </div></div>
+<div id="toasts"></div>
 <div id="tip"></div>
 
 <script>
@@ -1602,7 +1602,14 @@ function daysToReset(){const d=new Date();const n=new Date(d.getFullYear(),d.get
 const AV_KEYS=['hair','hairColor','eyes','brows','nose','lips','skin','crocs','top','bottom','height','bulk','hat','face','neck','hand','accColor'];
 function avatarCfg(){const o={};for(const k of AV_KEYS)if(charCfg[k]!=null)o[k]=charCfg[k];return o;}
 const AV_CACHE=new Map();
-function avatarImg(av){if(!av)return '';const key=JSON.stringify(av);
+// other players' avatar data comes from the network: keep only known keys and sane values
+function cleanAv(av){const o={};if(!av||typeof av!=='object')return o;
+  const pick=(k,ok)=>{if(ok(av[k]))o[k]=av[k];};
+  for(const k of ['hair','eyes','brows','nose','lips','hat','face','neck','hand'])pick(k,v=>typeof v==='string'&&OPTS[k]&&OPTS[k][1].some(([x])=>x===v));
+  for(const k of ['hairColor','skin','crocs','top','bottom','accColor'])pick(k,v=>typeof v==='string'&&/^#[0-9a-fA-F]{6}$/.test(v));
+  if(typeof av.height==='number'&&av.height>=.82&&av.height<=1.22)o.height=av.height;
+  if(typeof av.bulk==='number'&&av.bulk>=.78&&av.bulk<=1.4)o.bulk=av.bulk;return o;}
+function avatarImg(av){if(!av)return '';av=cleanAv(av);const key=JSON.stringify(av);
   if(!AV_CACHE.has(key)){let url='';try{url=portrait(Object.assign({},DEFAULT_CHAR,av,{badge:null,name:''}),{size:96,yaw:-.2});}catch(e){}AV_CACHE.set(key,url);}
   return AV_CACHE.get(key);}
 function avatarHtml(e){const u=avatarImg(e.av);return `<span class="lbav">${u?`<img src="${u}" alt="">`:'🧑‍⚕️'}</span>`;}
@@ -1622,7 +1629,7 @@ function renderBoard(el,hlId,limit=10,list){
   el.innerHTML=b.map((e,i)=>{const r=e.rank||i+1;return `<tr class="${e.id&&e.id===hlId?'me':''}"><td class="r">${['🥇','🥈','🥉'][r-1]||r}</td><td><span class="lbn">${avatarHtml(e)}<span class="lbnm">${esc(e.name)}</span></span>${e.npc?'<span class="npc">NPC</span>':''}${e.ig?`<span class="igtag">@${esc(e.ig)}</span>`:''}</td><td class="s">${e.score.toLocaleString()}</td></tr>`;}).join('');
 }
 // ---- Instagram ID for top-10 finishers (stored only in this browser) ----
-const IG_RE=/^(?!.*\.\.)(?!\.)[A-Za-z0-9._]{1,30}(?<!\.)$/;
+const IG_RE={test:v=>/^[A-Za-z0-9._]{1,30}$/.test(v)&&v.indexOf('..')<0&&v[0]!=='.'&&v[v.length-1]!=='.'}; // no regex lookbehind: older iOS Safari can't parse it
 let igEntryId=null;
 function showIgBox(id,rank){
   igEntryId=id;const box=$('#igBox');box.style.display='block';
@@ -1701,7 +1708,7 @@ function endGame(){
     .then(async r=>{const list=await fetchTop();return {r,list};}).catch(()=>null);
   sub.then(o=>{
     if(o&&o.r){const {r,list}=o;
-      $('#endRank').innerHTML=r.rank===1?'👑 전체 1위!':`🏆 전체 ${r.rank}위 / ${r.total}명`;
+      $('#endRank').innerHTML=(r.rank===1?'👑 전체 1위!':`🏆 전체 ${r.rank}위 / ${r.total}명`)+(r.best>sc?` <small>(내 최고 ${r.best.toLocaleString()}점 기준)</small>`:'');
       if(list&&list.length)renderBoard($('#endTable'),r.id,10,list);else boardMsg($('#endTable'),'랭킹을 불러오지 못했어요');}
     else{$('#endRank').innerHTML=(rank===1?'👑 이 기기 1위!':`🏆 이 기기 ${rank}위 / ${b.length}명`)+' <small>(오프라인)</small>';renderBoard($('#endTable'),id,10);}});
   setTimeout(()=>{$('#cdOv').classList.remove('show');show('end');animateEnd(sc,grade,stars,rows,async()=>{

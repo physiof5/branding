@@ -302,8 +302,8 @@ body.touch .hint b{display:none}
 @keyframes scoreDrop{20%{transform:translateX(-4px);color:#ff5a5a}40%{transform:translateX(4px);color:#ff5a5a}60%{transform:translateX(-2px)}}
 body.final10 #game::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:3;box-shadow:inset 0 0 70px 10px rgba(255,40,40,.55);animation:vig 1s ease-in-out infinite}
 @keyframes vig{50%{box-shadow:inset 0 0 40px 2px rgba(255,40,40,.25)}}
-#actLbl.pop{animation:lblPop .3s cubic-bezier(.3,1.8,.5,1)}
-@keyframes lblPop{0%{transform:scale(.6);opacity:.4}100%{transform:none;opacity:1}}
+#actLbl.lpop{animation:lblPop .25s ease-out}
+@keyframes lblPop{0%{opacity:.35;translate:0 6px}100%{opacity:1;translate:0 0}}
 #timerBox.low{background:#b3261e;animation:pulse .6s infinite alternate}
 @keyframes pulse{to{transform:scale(1.06)}}
 .ibtns{display:flex;flex-direction:column;gap:6px}
@@ -2131,7 +2131,7 @@ function ticketStatus(p){
   if(s.phase==='next')return ['➡️ 다음 치료',p.patience<12?'alert':'ready'];
   return ['',''];
 }
-function popLbl(el,t){if(el._t!==t&&t){el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');}}
+function popLbl(el,t){const n=performance.now();if(el._t!==t&&t&&!(n-(el._pt||0)<400)){el._pt=n;el.classList.remove('lpop');void el.offsetWidth;el.classList.add('lpop');}}
 function setT(el,t){if(el._t!==t){el.textContent=t;el._t=t;}}
 function updateHUD(){
   if(G.lunch){lunchHUD();return;}

@@ -64,7 +64,42 @@ body.lunchmode #scoreBox,body.lunchmode #abIcons,body.lunchmode #tickets{display
 
 /* ---------- Title ---------- */
 #title .wrap>*{min-width:0}
-#title .wrap{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:22px;max-width:1100px;width:100%}
+#title .wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;max-width:560px;width:100%}
+#title{overflow:hidden!important;touch-action:none;align-items:center}
+#title .hero{zoom:var(--tz,1)}
+.subrow{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.subrow .sub{flex:1;min-width:0}
+.rankbtn{flex:none;width:64px;height:64px;border-radius:18px;border:3px solid var(--ink);background:linear-gradient(#fff3c4,#ffc65c);box-shadow:0 4px 0 var(--ink);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:0;animation:rkbob 2.4s ease-in-out infinite}
+.rankbtn span{font-size:30px;line-height:1}.rankbtn small{font-family:var(--head);font-size:12px;color:var(--ink);margin-top:1px}
+.rankbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+@keyframes rkbob{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg) translateY(-2px)}}
+.rsheet{position:fixed;inset:0;z-index:66;display:none;align-items:center;justify-content:center;background:rgba(18,28,40,.62);padding:16px;touch-action:pan-y}
+.rsheet.show{display:flex}
+.pigart{position:relative;width:132px;height:124px;flex:none}
+.pig3d{position:absolute;left:-14px;top:-14px;width:160px;height:150px;pointer-events:none}
+.pigart.g3 .coin{display:none}
+#piggyBox{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;background:radial-gradient(circle at 30% 40%,#5a4314 0,#2a1f0b 55%,#15110a 100%);border:3px solid var(--ink);border-radius:16px;padding:8px 14px 8px 8px;box-shadow:0 4px 0 rgba(0,0,0,.25),inset 0 0 30px rgba(255,200,80,.25);color:#fff}
+#pigSvg svg{position:absolute;left:0;bottom:0;width:116px;height:98px;filter:drop-shadow(0 0 10px rgba(255,205,90,.55))}
+.pigart.bump #pigSvg svg{animation:pigBump .35s cubic-bezier(.3,1.8,.5,1)}
+@keyframes pigBump{40%{transform:scale(1.06,.94) translateY(3px)}}
+#piggyBox .pigt{color:#ffe7a3}#piggyBox .pign{color:#d9c08a;font-size:11.5px;line-height:1.35;word-break:keep-all}
+.pigamt{text-shadow:0 0 12px rgba(255,200,60,.6)}
+.piggoal{margin-top:4px;height:7px;border-radius:999px;background:rgba(255,255,255,.15);overflow:hidden;width:100%}
+.piggoal i{display:block;height:100%;background:linear-gradient(90deg,#ffd23f,#ffb300);border-radius:999px;transition:width .6s}
+.coin{position:absolute;left:47px;top:-40px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6b8,#ffd23f 45%,#d48f17);border:2.5px solid #8a5a10;
+  color:#8a5a10;font:900 12px/17px 'Noto Sans KR',sans-serif;font-style:normal;text-align:center;opacity:0;z-index:2}
+.pigart.go .c1{animation:coinDrop .75s cubic-bezier(.45,0,.9,.55) forwards}
+.pigart.go .c2{animation:coinDrop .75s cubic-bezier(.45,0,.9,.55) .42s forwards}
+@keyframes coinDrop{0%{opacity:1;transform:translateY(0) rotateY(0)}80%{opacity:1;transform:translateY(54px) rotateY(540deg) scaleX(.9)}100%{opacity:0;transform:translateY(62px) rotateY(720deg) scale(.4,.2)}}
+.pigtxt{flex:1;min-width:0}
+.pigt{font-family:var(--head);font-size:16px;white-space:nowrap}
+.pigamt{font-family:var(--head);font-size:clamp(22px,6.6vw,30px);color:#ffd23f;line-height:1.1;white-space:nowrap}
+.pigamt.tick{animation:bump .3s}
+.pign{font-family:'Noto Sans KR';font-size:12px;color:#7a6a5a;font-weight:700}
+.rsheet .lb .prize{margin-right:40px}
+.rsheet .lb{position:relative;width:min(480px,100%);max-height:calc(100% - 8px);overflow-y:auto;overscroll-behavior:contain;animation:tin .2s ease-out}
+.rclose{position:absolute;right:10px;top:10px;width:34px;height:34px;border-radius:50%;border:2.5px solid var(--ink);background:#fff;font-size:16px;font-weight:900;padding:0;z-index:2}
 .logo{font-family:'Bagel Fat One',var(--head);font-weight:400;font-size:clamp(58px,11.5vw,108px);line-height:1.12;margin:0 0 4px;letter-spacing:1px}
 .logo span{display:inline-block;-webkit-text-stroke:.13em var(--ink);paint-order:stroke fill;
   text-shadow:0 .04em 0 var(--ink),0 .08em 0 var(--ink),0 .12em 0 #101b26,0 .2em .22em rgba(10,30,50,.45);animation:logoIn .7s cubic-bezier(.25,1.6,.45,1) both}
@@ -241,7 +276,7 @@ body.kb .cfoot,body.kb .ebtns{position:static}
 .cfoot{display:grid;grid-template-columns:1fr 2fr;gap:10px;position:sticky;bottom:-16px;background:var(--paper);padding:10px 0 4px;z-index:4;border-top:3px solid var(--ink)}
 .cfoot .btn{width:100%;white-space:nowrap;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .cwrap,.cbody,.cmain,.cmain>*,.opts,.pv,.cfoot>*,.accgrid>*,.ewrap,.egrid>*{min-width:0;max-width:100%}
-#custom,#end,#title{touch-action:pan-y}
+#custom,#end{touch-action:pan-y}
 #preview{max-width:100%}
 
 /* ---------- Game ---------- */
@@ -598,7 +633,8 @@ body.touch #joyHint{display:grid}
   <div class="wrap center">
     <div class="hero">
       <h1 class="logo" aria-label="나홀로 실장!"><span class="w1">나홀로</span> <span class="w2">실장<b>!</b></span></h1>
-      <div class="sub">실장님은 단 한 명!<br>3분 동안 몰려드는 환자를 치료하라</div>
+      <div class="subrow"><div class="sub">실장님은 단 한 명!<br>3분 동안 몰려드는 환자를 치료하라</div>
+        <button class="rankbtn" id="rankBtn" aria-label="월간 랭킹"><span>🏆</span><small>랭킹</small></button></div>
       <div class="card howto">
         <h3>근무 수칙</h3>
         <ol class="steps">
@@ -615,14 +651,16 @@ body.touch #joyHint{display:grid}
         <button class="btn green" id="toCustom">🧑‍⚕️ 출근 준비</button>
       </div>
     </div>
-    <div class="card lb">
+  </div>
+</section>
+<div id="rankSheet" class="rsheet">
+  <div class="card lb"><button class="rclose" data-rclose aria-label="닫기">✕</button>
       <div class="prize"><span id="prizeText"></span></div>
       <h2 id="lbTitle">🏆 월간 랭킹</h2>
       <div class="meta" id="lbMeta"></div>
       <table class="lbtable" id="lbTable"></table>
     </div>
-  </div>
-</section>
+</div>
 
 <!-- ===================== CUSTOMIZE ===================== -->
 <section id="lobby" class="screen">
@@ -721,6 +759,8 @@ body.touch #joyHint{display:grid}
             <table class="rows" id="endRows"></table>
             <div class="total"><span>합계</span><b id="endScore">0</b></div>
           </div>
+          <div id="piggyBox" style="display:none"><div class="pigart"><div id="pigSvg"></div><i class="coin c1">₩</i><i class="coin c2">₩</i></div>
+            <div class="pigtxt"><div class="pigt">🐷 후원 저금통</div><div class="pigamt" id="pigAmt">₩0</div><div class="pign" id="pigNote">게임 한 판마다 2원씩 모여요</div><div class="piggoal"><i id="pigGoal"></i></div><div class="pign" id="pigGoalT"></div></div></div>
           <div id="duelBox" style="display:none"></div>
           <div class="eshare">
             <button class="btn kakao" id="kakaoBtn" type="button" style="display:none"><i class="ktalk"></i>카카오톡 공유</button>
@@ -2254,7 +2294,15 @@ async function saveIg(){
   $('#igSave').textContent='수정';sfx('coin');
   renderBoard($('#endTable'),igEntryId,10);$('#endTable').closest('details').open=true;
 }
-function renderTitle(){
+function openRank(){renderTitle();$('#rankSheet').classList.add('show');sfx('click');}
+$('#rankBtn').onclick=openRank;
+$('#rankSheet').addEventListener('click',e=>{if(e.target.id==='rankSheet'||e.target.closest('[data-rclose]'))$('#rankSheet').classList.remove('show');});
+function fitTitle(){const t=$('#title'),h=t&&t.querySelector('.hero');if(!h||!t.classList.contains('active'))return;
+  h.style.setProperty('--tz',1);const cs=getComputedStyle(t),avail=t.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-4;
+  const need=h.getBoundingClientRect().height;const z=need>avail?Math.max(.55,avail/need):1;h.style.setProperty('--tz',z.toFixed(3));}
+addEventListener('resize',()=>setTimeout(fitTitle,60));addEventListener('orientationchange',()=>setTimeout(fitTitle,250));
+if(document.fonts&&document.fonts.ready)document.fonts.ready.then(()=>setTimeout(fitTitle,50));
+function renderTitle(){setTimeout(fitTitle,0);
   updLunchBtn();
   const mk=monthKey(), m=+mk.slice(5), pm=+prevMonthKey().slice(5);
   const b=board(mk), top=b[0], prev=board(prevMonthKey())[0];
@@ -2313,12 +2361,14 @@ function endGame(){
   // submit to the shared online ranking; fall back to this device's ranking when offline
   const sub=duel?Promise.resolve(null):rpc('submit_score',{p_name:name,p_score:sc,p_av:avatarCfg(),p_device:deviceId()})
     .then(async r=>{const list=await fetchTop();return {r,list};}).catch(()=>null);
+  const pigP=sub.then(o=>o&&o.r?rpc('piggy_total',{p_id:PIGGY_ID}).catch(()=>null):null);$('#piggyBox').style.display='none';
   sub.then(o=>{if(duel)return;
     if(o&&o.r){const {r,list}=o;
       $('#endRank').innerHTML=(r.rank===1?'👑 전체 1위!':`🏆 전체 ${r.rank}위 / ${r.total}명`)+(r.best>sc?` <small>(내 최고 ${r.best.toLocaleString()}점 기준)</small>`:'');
       if(list&&list.length)renderBoard($('#endTable'),r.id,10,list);else boardMsg($('#endTable'),'랭킹을 불러오지 못했어요');}
     else{$('#endRank').innerHTML=(rank===1?'👑 이 기기 1위!':`🏆 이 기기 ${rank}위 / ${b.length}명`)+' <small>(오프라인)</small>';renderBoard($('#endTable'),id,10);}});
   setTimeout(()=>{$('#cdOv').classList.remove('show');show('end');animateEnd(sc,grade,stars,rows,async()=>{if(duel){$('#duelBox').style.display='';return;}
+    pigP.then(t=>piggyShow(t));
     const o=await sub;
     if(o&&o.r){igOnline=true;if(o.r.best===sc&&o.r.rank<=10&&sc>=STAR_T[0])showIgBox(o.r.id,o.r.rank);}
     else{igOnline=false;if(rank>=1&&rank<=10&&sc>=STAR_T[0])showIgBox(id,rank);}});},1200);
@@ -2328,6 +2378,101 @@ function burst(el){const cols=['#ffd23f','#ff8c1a','#fff59d','#4fc3f7','#ff6b9a'
   for(let i=0;i<12;i++){const sp=document.createElement('i');sp.className='spark'+(i%3===0?' s':'');const a=i/12*Math.PI*2+Math.random()*.4,d=36+Math.random()*30;
     sp.style.setProperty('--dx',(Math.cos(a)*d).toFixed(1)+'px');sp.style.setProperty('--dy',(Math.sin(a)*d).toFixed(1)+'px');sp.style.background=cols[i%cols.length];
     el.appendChild(sp);setTimeout(()=>sp.remove(),720);}}
+const PIGGY_ID='mvp', PIGGY_ON=true;
+const PIG_GOALS=[1000,5000,10000,30000,50000,100000,300000,500000,1000000];
+const pigGoal=t=>PIG_GOALS.find(g=>g>t)||Math.ceil((t+1)/1e6)*1e6;
+function pigSvg(fill){fill=Math.max(0,Math.min(1,fill));let r=7,bills='';const rnd=()=>{r=(r*16807)%2147483647;return r/2147483647;};
+  const top=96-fill*70; // money surface y (body spans ~26..96)
+  for(let y=96;y>top-4;y-=4.2)for(let x=18;x<112;x+=9){const w=11+rnd()*5,h=5+rnd()*2.5,ang=(rnd()-.5)*50,c=rnd()<.82?(rnd()<.5?'#e8c766':'#d9b04c'):'#f6e29b';
+    bills+=`<rect x="${(x+rnd()*5).toFixed(1)}" y="${(y-rnd()*3).toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${c}" stroke="#8a6a1e" stroke-width=".6" transform="rotate(${ang.toFixed(0)} ${x} ${y})"/>`;}
+  for(let i=0;i<7;i++){const x=24+rnd()*80,y=Math.max(top+2,30)+rnd()*Math.max(4,96-top-6);bills+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="#ffd23f" stroke="#a06d10" stroke-width=".8"/>`;}
+  return `<svg viewBox="0 0 132 112" aria-hidden="true"><defs>
+    <radialGradient id="pgGl" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff3c2" stop-opacity=".55"/><stop offset=".55" stop-color="#ffc94a" stop-opacity=".28"/><stop offset="1" stop-color="#b9780f" stop-opacity=".55"/></radialGradient>
+    <clipPath id="pgClip"><ellipse cx="66" cy="60" rx="50" ry="40"/></clipPath></defs>
+    <rect x="38" y="92" width="12" height="14" rx="4" fill="#d9a23a" stroke="#7a5212" stroke-width="2"/><rect x="82" y="92" width="12" height="14" rx="4" fill="#d9a23a" stroke="#7a5212" stroke-width="2"/>
+    <path d="M32 34 L36 14 L52 26 Z" fill="#ffd56b" fill-opacity=".55" stroke="#c98a1a" stroke-width="2.5" stroke-linejoin="round"/>
+    <g clip-path="url(#pgClip)">${bills}</g>
+    <ellipse cx="66" cy="60" rx="50" ry="40" fill="url(#pgGl)" stroke="#e0a83a" stroke-width="3"/>
+    <ellipse cx="66" cy="60" rx="50" ry="40" fill="none" stroke="#fff2b8" stroke-width="1" stroke-opacity=".6" transform="translate(-1.5 -1.5)"/>
+    <circle cx="20" cy="60" r="14" fill="#ffd56b" fill-opacity=".45" stroke="#e0a83a" stroke-width="3"/><ellipse cx="16" cy="60" rx="2.6" ry="4" fill="#7a5212"/><ellipse cx="24" cy="60" rx="2.6" ry="4" fill="#7a5212"/>
+    <circle cx="40" cy="46" r="3.2" fill="#3a2a0a"/><rect x="56" y="18" width="22" height="5" rx="2.5" fill="#5a3c08" stroke="#e0a83a" stroke-width="1.5"/>
+    <path d="M114 58 q12 -6 9 6 q-3 7 -9 1" fill="none" stroke="#e0a83a" stroke-width="2.5"/>
+    <ellipse cx="50" cy="36" rx="16" ry="6" fill="#fff" fill-opacity=".45" transform="rotate(-18 50 36)"/><ellipse cx="96" cy="78" rx="5" ry="10" fill="#fff" fill-opacity=".18" transform="rotate(30 96 78)"/></svg>`;}
+/* ---- 3D hanging glass piggy bank (live on the results card) ---- */
+const PG={};
+function pigInit(){if(PG.ok!=null)return PG.ok;
+  try{const c=document.createElement('canvas');c.className='pig3d';const r=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.setSize(160,150,false);
+    PG.r=r;PG.c=c;}catch(e){PG.ok=false;return false;}
+  const S=PG.s=new THREE.Scene();
+  S.add(new THREE.AmbientLight(0xffe3a8,.55));
+  const k1=new THREE.PointLight(0xffd36b,1.2,12);k1.position.set(-1.6,1.8,3.2);S.add(k1);
+  const k2=new THREE.PointLight(0xfff4d6,.8,10);k2.position.set(2.2,.6,2.4);S.add(k2);
+  const d=new THREE.DirectionalLight(0xffffff,.55);d.position.set(0,4,2);S.add(d);
+  PG.cam=new THREE.PerspectiveCamera(30,160/150,.1,40);PG.cam.position.set(0,.45,6.9);PG.cam.lookAt(0,.15,0);
+  const pig=PG.pig=new THREE.Group();S.add(pig);const body=new THREE.Group();pig.add(body);PG.body=body;
+  const glass=new THREE.MeshPhongMaterial({color:0xffd98a,emissive:0x2a1a00,specular:0xffffff,shininess:160,transparent:true,opacity:.16,side:THREE.DoubleSide,depthWrite:false});
+  const rimM=new THREE.MeshBasicMaterial({color:0xffc44a,transparent:true,opacity:.26,side:THREE.BackSide,depthWrite:false,blending:THREE.AdditiveBlending});
+  const edgeM=new THREE.MeshPhongMaterial({color:0xf3b23c,emissive:0x5a3600,specular:0xfff2c2,shininess:90,transparent:true,opacity:.7});
+  // money first (drawn behind the glass)
+  const billG=new THREE.BoxGeometry(.36,.075,.17),billM=new THREE.MeshLambertMaterial({color:0xffffff,emissive:0x1a1100});
+  const N=320,bills=new THREE.InstancedMesh(billG,billM,N);bills.count=0;body.add(bills);PG.bills=bills;
+  const tmp=new THREE.Object3D(),col=new THREE.Color(),pos=[];let seed=11;const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  for(let i=0;i<N;i++){const y=-.86+Math.pow(i/N,.92)*1.55;const ry=Math.sqrt(Math.max(0,1-(y/1)**2)),a=rnd()*Math.PI*2,rr=Math.sqrt(rnd())*ry*.8;
+    pos.push([Math.cos(a)*rr*1.12,y+(rnd()-.5)*.05,Math.sin(a)*rr*.95,rnd()*Math.PI,(rnd()-.5)*.6,(rnd()-.5)*.5,rnd()]);}
+  pos.sort((a,b)=>a[1]-b[1]);
+  pos.forEach((q,i)=>{tmp.position.set(q[0],q[1],q[2]);tmp.rotation.set(q[4],q[3],q[5]);tmp.updateMatrix();bills.setMatrixAt(i,tmp.matrix);
+    col.setHex(q[6]<.15?0xf0e2b0:q[6]<.45?0xd8be78:q[6]<.8?0xc4a560:0xa98d4a);bills.setColorAt(i,col);});
+  bills.instanceMatrix.needsUpdate=true;if(bills.instanceColor)bills.instanceColor.needsUpdate=true;
+  {const bandG=new THREE.BoxGeometry(.06,.08,.175),band=new THREE.InstancedMesh(bandG,new THREE.MeshLambertMaterial({color:0xf6f0dc,emissive:0x1a1100}),N);band.count=0;
+    for(let i=0;i<N;i++){bills.getMatrixAt(i,tmp.matrix);band.setMatrixAt(i,tmp.matrix);}band.instanceMatrix.needsUpdate=true;body.add(band);PG.band=band;}
+  // glossy highlight streaks on the glass
+  {const hl=new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.35,depthWrite:false});
+    const h1=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),hl);h1.scale.set(.28,.12,.04);h1.position.set(-.55,.58,.72);h1.rotation.z=.6;body.add(h1);
+    const h2=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),hl);h2.scale.set(.1,.32,.03);h2.position.set(.82,-.15,.62);h2.rotation.z=-.3;h2.material=hl.clone();h2.material.opacity=.18;body.add(h2);}
+  const coinG=new THREE.CylinderGeometry(.075,.075,.02,20),coinM=new THREE.MeshPhongMaterial({color:0xffd23f,emissive:0x5a3a00,shininess:110,specular:0xffffff});
+  // glass body + glowing rim
+  const bodyG=new THREE.SphereGeometry(1,48,32);const gb=new THREE.Mesh(bodyG,glass);gb.scale.set(1.15,1,1);body.add(gb);
+  const rim=new THREE.Mesh(bodyG,rimM);rim.scale.set(1.19,1.04,1.04);body.add(rim);
+  // snout (round disc with two nostril rings), facing the viewer
+  const sn=new THREE.Group();sn.position.set(-.1,-.02,1.0);body.add(sn);
+  const snD=new THREE.Mesh(new THREE.CylinderGeometry(.4,.42,.2,40),glass);snD.rotation.x=Math.PI/2;sn.add(snD);
+  const snR=new THREE.Mesh(new THREE.TorusGeometry(.41,.035,12,48),edgeM);sn.add(snR);snR.position.z=.1;
+  for(const k of[-1,1]){const n=new THREE.Mesh(new THREE.TorusGeometry(.09,.03,10,28),edgeM);n.position.set(k*.15,0,.11);n.scale.y=1.35;sn.add(n);
+    const h=new THREE.Mesh(new THREE.CircleGeometry(.07,24),new THREE.MeshBasicMaterial({color:0x2a1800,transparent:true,opacity:.55}));h.position.set(k*.15,0,.105);h.scale.y=1.35;sn.add(h);}
+  // ears, legs, coin slot, tail
+  for(const k of[-1,1]){const e=new THREE.Mesh(new THREE.ConeGeometry(.24,.42,24,1,true),glass);e.position.set(k*.55,.82,.35);e.rotation.set(.35,0,-k*.35);body.add(e);
+    const er=new THREE.Mesh(new THREE.TorusGeometry(.2,.02,8,30),edgeM);er.position.set(k*.6,.65,.42);er.rotation.set(Math.PI/2+.35,0,-k*.35);body.add(er);}
+  for(const [x,z] of [[-.55,.45],[.55,.45],[-.55,-.45],[.55,-.45]]){const l=new THREE.Mesh(new THREE.CylinderGeometry(.14,.16,.32,20,1,true),glass);l.position.set(x,-.95,z);body.add(l);
+    const lr=new THREE.Mesh(new THREE.TorusGeometry(.155,.02,8,24),edgeM);lr.rotation.x=Math.PI/2;lr.position.set(x,-1.1,z);body.add(lr);}
+  const slot=new THREE.Mesh(new THREE.BoxGeometry(.5,.06,.1),new THREE.MeshPhongMaterial({color:0x3a2600,emissive:0x110800}));slot.position.set(0,.995,0);body.add(slot);
+  const slotR=new THREE.Mesh(new THREE.BoxGeometry(.6,.03,.18),edgeM);slotR.position.set(0,.985,0);body.add(slotR);
+  {const pts=[];for(let i=0;i<=24;i++){const t=i/24,a=t*Math.PI*3.2;pts.push(new THREE.Vector3(1.12+t*.12+Math.cos(a)*.06*t,.15+Math.sin(a)*.08*(.4+t),-.25-t*.08));}
+    body.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),30,.03,8,false),edgeM));}
+  // hanging cables + clamps
+  const cabM=new THREE.MeshPhongMaterial({color:0x8a6a3a,shininess:60});
+  for(const [x,z] of [[-.7,.55],[.7,.55],[-.7,-.55],[.7,-.55]]){const y0=Math.sqrt(Math.max(0,1-(x/1.15)**2-(z/1)**2))*1;
+    const cb=new THREE.Mesh(new THREE.CylinderGeometry(.012,.012,4,6),cabM);cb.position.set(x*1.02,y0+2,z);pig.add(cb);
+    const cl=new THREE.Mesh(new THREE.SphereGeometry(.05,10,8),edgeM);cl.position.set(x*1.02,y0,z);pig.add(cl);}
+  pig.rotation.y=-.42;
+  // falling coins
+  PG.coins=[0,1].map(()=>{const m=new THREE.Mesh(coinG,coinM);m.visible=false;pig.add(m);return m;});
+  PG.drops=[];PG.t=0;PG.ok=true;return true;}
+function pigSetFill(f){if(!PG.ok)return;PG.bills.count=Math.max(6,Math.round(PG.bills.instanceMatrix.count*Math.max(0,Math.min(1,f))));PG.band.count=PG.bills.count;}
+function pigDropCoin(i){if(!PG.ok)return;PG.drops.push({m:PG.coins[i],t:0});}
+function pigRender(dt){if(!PG.ok||!PG.c.isConnected)return;PG.t+=dt;const t=PG.t;
+  PG.pig.rotation.z=Math.sin(t*1.1)*.035;PG.pig.rotation.y=-.42+Math.sin(t*.55)*.12;PG.pig.position.y=Math.sin(t*1.6)*.02;
+  for(const d of PG.drops){d.t+=dt;const u=Math.min(1,d.t/.7),m=d.m;m.visible=u<1;m.position.set(0,2.4-u*u*1.9,0);m.rotation.set(Math.PI/2*(u>.8?1:.3),d.t*14,0);m.scale.setScalar(u>.85?(1-u)/.15:1);}
+  PG.drops=PG.drops.filter(d=>d.t<.75);
+  if(PG.bump>0){PG.bump-=dt;const k=1+Math.sin((.3-PG.bump)/.3*Math.PI)*.05;PG.body.scale.set(k,2-k,k);}else PG.body.scale.set(1,1,1);
+  PG.r.render(PG.s,PG.cam);}
+function pigDraw(total){const g=pigGoal(total),f=.12+.86*total/g;if(pigInit()){const h=$('#pigSvg');if(!PG.c.isConnected){h.innerHTML='';h.appendChild(PG.c);}pigSetFill(f);}else $('#pigSvg').innerHTML=pigSvg(f);$('#pigGoal').style.width=(total/g*100).toFixed(1)+'%';$('#pigGoalT').textContent=`다음 목표 ₩${g.toLocaleString()}`;}
+function coinClink(){playTones([[1760,.04,'triangle'],[2349,.08,'sine'],[1976,.14,'sine']]);}
+function piggyShow(total){const box=$('#piggyBox');if(total==null||isNaN(+total)){box.style.display='none';return;}total=+total;
+  const amt=$('#pigAmt'),art=box.querySelector('.pigart'),fmt=v=>'₩'+v.toLocaleString();let v=PIGGY_ON?Math.max(0,total-2):total;
+  amt.textContent=fmt(v);pigDraw(v);$('#pigNote').textContent='게임 한 판마다 2원씩 모여요';box.style.display='';emojify(box);
+  art.classList.remove('go','bump');void art.offsetWidth;art.classList.add(PG.ok?'g3':'go');if(PG.ok){setTimeout(()=>pigDropCoin(0),10);setTimeout(()=>pigDropCoin(1),430);}
+  [650,1080].forEach(ms=>setTimeout(()=>{coinClink();buzz(12);PG.bump=.3;if(!PG.ok){art.classList.remove('bump');void art.offsetWidth;art.classList.add('bump');}
+    if(PIGGY_ON){v=Math.min(total,v+1);amt.textContent=fmt(v);pigDraw(v);amt.classList.remove('tick');void amt.offsetWidth;amt.classList.add('tick');}},ms));}
 function animateEnd(sc,grade,stars,rows,onDone){
   const tok={dead:false,skip:false,done:false};if(endAnim)endAnim.dead=true;endAnim=tok;
   const rowEls=$$('#endRows tr'), starEls=$$('#endStars .st'), scoreEl=$('#endScore'), g=$('#endGrade'), card=$('.echar');
@@ -3010,6 +3155,7 @@ function loop(now){
     render3D(dt,t);renderOverlays(t);
   }
   if($('#custom').classList.contains('active'))renderPreview(dt);
+  if($('#end').classList.contains('active')&&PG.ok)pigRender(dt);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

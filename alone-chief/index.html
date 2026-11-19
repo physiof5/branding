@@ -2492,7 +2492,7 @@ function accDescHtml(v){const a=ACC_INFO[v]||ACC_INFO.none,st=accState(v);
   return `<span class="adi">${a.i}</span><span><b>${a.n}</b><br>${a.d}</span>`;}
 function ctrlHtml(k){
   if(k==='hand'){const cur=effHand();
-    return `<div class="grp"><label class="t">🎒 악세서리 <small class="acch">1개만 장착 · ❓는 점심시간 휴게실에서 찾아요</small></label>
+    return `<div class="grp"><label class="t">🎒 악세서리 <small class="acch">점심시간(오후1~2시)에 찾을 수 있어요.</small></label>
     <div class="accdesc" id="accDesc">${accDescHtml(cur)}</div>
     <div class="accgrid">${OPTS.hand[1].map(([v])=>{const a=ACC_INFO[v],st=accState(v);return `<button class="accb ${cur===v?'on':''} ${st}" data-k="hand" data-v="${v}"><span class="ai">${st==='lock'?'❓':a.i}</span><span class="an">${st==='lock'?'???':a.n}</span>${st==='got'?'<i class="accgot">2시~</i>':''}</button>`;}).join('')}</div></div>`;}
   if(OPTS[k]){const [lab,list]=OPTS[k];return `<div class="grp"><label class="t">${lab}</label><div class="chips">${list.map(([v,n])=>`<button class="chip ${charCfg[k]===v?'on':''}" data-k="${k}" data-v="${v}">${n}</button>`).join('')}</div></div>`;}

@@ -85,6 +85,17 @@ body.lunchmode #scoreBox,body.lunchmode #abIcons,body.lunchmode #tickets{display
 @keyframes pigBump{40%{transform:scale(1.06,.94) translateY(3px)}}
 #piggyBox .pigt{color:#ffe7a3}#piggyBox .pign{color:#d9c08a;font-size:11.5px;line-height:1.35;word-break:keep-all}
 .pigamt{text-shadow:0 0 12px rgba(255,200,60,.6)}
+#pigNote{white-space:nowrap;letter-spacing:-.3px}
+#pigOv{position:fixed;inset:0;z-index:85;display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px;background:rgba(10,8,4,.9);text-align:center}
+#pigOv.show{display:flex;animation:fadeIn .25s ease-out}
+@keyframes fadeIn{from{opacity:0}}
+.pigph{font-family:var(--head);font-size:clamp(22px,6.4vw,30px);color:#ffe28a;text-shadow:0 3px 0 rgba(0,0,0,.5);word-break:keep-all;animation:tin .4s cubic-bezier(.2,1.6,.4,1)}
+.pigph small{display:block;font-family:'Noto Sans KR';font-size:14px;font-weight:800;color:#f3e2b8;text-shadow:none;margin-top:4px}
+#pigOv .pigart{zoom:1.12}#pigOv .pigamt{font-size:32px}#pigOv .pigt{font-size:18px}
+#pigOv #piggyBox{width:min(360px,100%);animation:pigPop .55s cubic-bezier(.2,1.5,.4,1);box-shadow:0 0 40px rgba(255,200,60,.45),inset 0 0 30px rgba(255,200,80,.25)}
+@keyframes pigPop{from{transform:scale(.3) translateY(40px);opacity:0}}
+.pigdev{font-family:'Noto Sans KR';font-size:13px;font-weight:700;color:#3a2a10;background:#fff3c4;border:2.5px solid var(--ink);border-radius:14px;padding:8px 14px;line-height:1.55;word-break:keep-all;max-width:330px}
+.pigtap{font-family:'Noto Sans KR';font-size:12px;font-weight:700;color:#cbb98f;animation:lpulse 1.4s ease-in-out infinite}
 .piggoal{margin-top:4px;height:7px;border-radius:999px;background:rgba(255,255,255,.15);overflow:hidden;width:100%}
 .piggoal i{display:block;height:100%;background:linear-gradient(90deg,#ffd23f,#ffb300);border-radius:999px;transition:width .6s}
 .coin{position:absolute;left:47px;top:-40px;width:22px;height:22px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff6b8,#ffd23f 45%,#d48f17);border:2.5px solid #8a5a10;
@@ -738,6 +749,7 @@ body.touch #joyHint{display:grid}
 </section>
 
 <!-- ===================== END ===================== -->
+<div id="pigOv"><div class="pigph">🎉 기부금이 쌓였어요!<small>오늘 플레이로 2원이 기부금 저금통에 들어갔어요</small></div><div id="pigOvBox"></div><div class="pigdev">🛠️ 연 구독·월 구독 후원 기능은 지금 개발 중이에요.<br>조금만 기다려 주세요!</div><div class="pigtap">화면을 누르면 닫혀요</div></div>
 <section id="end" class="screen">
   <div class="ewrap center">
     <div class="banner zz">🏥 퇴근! 근무 평가</div>
@@ -760,8 +772,8 @@ body.touch #joyHint{display:grid}
             <div class="total"><span>합계</span><b id="endScore">0</b></div>
           </div>
           <div id="piggyBox" style="display:none"><div class="pigart"><div id="pigSvg"></div><i class="coin c1">₩</i><i class="coin c2">₩</i></div>
-            <div class="pigtxt"><div class="pigt">🐷 후원 저금통</div><div class="pigamt" id="pigAmt">₩0</div><div class="pign" id="pigNote">게임 한 판마다 2원씩 모여요</div><div class="piggoal"><i id="pigGoal"></i></div><div class="pign" id="pigGoalT"></div></div></div>
-          <div id="duelBox" style="display:none"></div>
+            <div class="pigtxt"><div class="pigt">기부금 저금통</div><div class="pigamt" id="pigAmt">₩0</div><div class="pign" id="pigNote">플레이 시 2원씩<br>기부금이 적립돼요.</div><div class="piggoal"><i id="pigGoal"></i></div><div class="pign" id="pigGoalT"></div></div></div>
+          <div id="pigSlot"></div><div id="duelBox" style="display:none"></div>
           <div class="eshare">
             <button class="btn kakao" id="kakaoBtn" type="button" style="display:none"><i class="ktalk"></i>카카오톡 공유</button>
             <button class="btn shr" id="shareBtn" type="button">💬 친구에게 공유</button>
@@ -2368,7 +2380,7 @@ function endGame(){
       if(list&&list.length)renderBoard($('#endTable'),r.id,10,list);else boardMsg($('#endTable'),'랭킹을 불러오지 못했어요');}
     else{$('#endRank').innerHTML=(rank===1?'👑 이 기기 1위!':`🏆 이 기기 ${rank}위 / ${b.length}명`)+' <small>(오프라인)</small>';renderBoard($('#endTable'),id,10);}});
   setTimeout(()=>{$('#cdOv').classList.remove('show');show('end');animateEnd(sc,grade,stars,rows,async()=>{if(duel){$('#duelBox').style.display='';return;}
-    pigP.then(t=>piggyShow(t));
+    pigP.then(t=>piggyPop(t));
     const o=await sub;
     if(o&&o.r){igOnline=true;if(o.r.best===sc&&o.r.rank<=10&&sc>=STAR_T[0])showIgBox(o.r.id,o.r.rank);}
     else{igOnline=false;if(rank>=1&&rank<=10&&sc>=STAR_T[0])showIgBox(id,rank);}});},1200);
@@ -2401,7 +2413,7 @@ function pigSvg(fill){fill=Math.max(0,Math.min(1,fill));let r=7,bills='';const r
 /* ---- 3D hanging glass piggy bank (live on the results card) ---- */
 const PG={};
 function pigInit(){if(PG.ok!=null)return PG.ok;
-  try{const c=document.createElement('canvas');c.className='pig3d';const r=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.setSize(160,150,false);
+  try{const c=document.createElement('canvas');c.className='pig3d';const r=new THREE.WebGLRenderer({canvas:c,antialias:true,alpha:true});r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));r.setSize(240,225,false);
     PG.r=r;PG.c=c;}catch(e){PG.ok=false;return false;}
   const S=PG.s=new THREE.Scene();
   S.add(new THREE.AmbientLight(0xffe3a8,.55));
@@ -2467,9 +2479,14 @@ function pigRender(dt){if(!PG.ok||!PG.c.isConnected)return;PG.t+=dt;const t=PG.t
   PG.r.render(PG.s,PG.cam);}
 function pigDraw(total){const g=pigGoal(total),f=.12+.86*total/g;if(pigInit()){const h=$('#pigSvg');if(!PG.c.isConnected){h.innerHTML='';h.appendChild(PG.c);}pigSetFill(f);}else $('#pigSvg').innerHTML=pigSvg(f);$('#pigGoal').style.width=(total/g*100).toFixed(1)+'%';$('#pigGoalT').textContent=`다음 목표 ₩${g.toLocaleString()}`;}
 function coinClink(){playTones([[1760,.04,'triangle'],[2349,.08,'sine'],[1976,.14,'sine']]);}
+// after the score, stars and grade stamp: the donation piggy pops up front and centre, then docks back into the results card
+function piggyPop(total){if(total==null||isNaN(+total))return;const ov=$('#pigOv'),box=$('#piggyBox');if(!ov)return piggyShow(total);
+  $('#pigOvBox').appendChild(box);ov.classList.add('show');ov.dataset.at=Date.now();emojify(ov);sweepSfx(300,1200,.35,'sine',.05);setTimeout(()=>piggyShow(total),250);}
+function piggyDock(){const ov=$('#pigOv');if(!ov||!ov.classList.contains('show'))return;if(Date.now()-(+ov.dataset.at||0)<1400)return;
+  ov.classList.remove('show');$('#pigSlot').appendChild($('#piggyBox'));sfx('click');}
 function piggyShow(total){const box=$('#piggyBox');if(total==null||isNaN(+total)){box.style.display='none';return;}total=+total;
   const amt=$('#pigAmt'),art=box.querySelector('.pigart'),fmt=v=>'₩'+v.toLocaleString();let v=PIGGY_ON?Math.max(0,total-2):total;
-  amt.textContent=fmt(v);pigDraw(v);$('#pigNote').textContent='게임 한 판마다 2원씩 모여요';box.style.display='';emojify(box);
+  amt.textContent=fmt(v);pigDraw(v);$('#pigNote').innerHTML='플레이 시 2원씩<br>기부금이 적립돼요.';box.style.display='';emojify(box);
   art.classList.remove('go','bump');void art.offsetWidth;art.classList.add(PG.ok?'g3':'go');if(PG.ok){setTimeout(()=>pigDropCoin(0),10);setTimeout(()=>pigDropCoin(1),430);}
   [650,1080].forEach(ms=>setTimeout(()=>{coinClink();buzz(12);PG.bump=.3;if(!PG.ok){art.classList.remove('bump');void art.offsetWidth;art.classList.add('bump');}
     if(PIGGY_ON){v=Math.min(total,v+1);amt.textContent=fmt(v);pigDraw(v);amt.classList.remove('tick');void amt.offsetWidth;amt.classList.add('tick');}},ms));}
@@ -3159,6 +3176,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+$('#pigOv').addEventListener('click',piggyDock);
 window.__AC={get G(){return G;},stations,chairs,interact,startGame,CAM,step(sec){for(let i=0;i<sec*30;i++)update(1/30);}};
 })();
 </script>

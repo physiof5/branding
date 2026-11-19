@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#2b1d16">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="나홀로 실장">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <title>나홀로 실장</title>
 <meta name="description" content="물리치료실 실장님은 단 한 명! 3분 동안 몰려드는 환자를 치료하라">
 <meta property="og:type" content="website">
@@ -71,6 +76,16 @@ body.lunchmode #scoreBox,body.lunchmode #abIcons,body.lunchmode #tickets{display
 .subrow .sub{flex:1;min-width:0}
 .rankbtn{flex:none;width:64px;height:64px;border-radius:18px;border:3px solid var(--ink);background:linear-gradient(#fff3c4,#ffc65c);box-shadow:0 4px 0 var(--ink);
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:0;animation:rkbob 2.4s ease-in-out infinite}
+.instbtn{background:linear-gradient(#e3fbf2,#8fe3c3)}.subrow .instbtn{margin-left:-4px}
+.instbox{position:relative;width:min(400px,100%);padding:16px 16px 14px;text-align:left;animation:tin .2s ease-out;font-family:'Noto Sans KR'}
+.instbox h3{margin:0 0 4px;font-family:var(--head);font-weight:400;font-size:22px;color:var(--ink);text-align:center}
+.instbox .ins{font-size:13px;color:#5a6672;text-align:center;margin:0 0 10px;line-height:1.5;word-break:keep-all}
+.instbox ol{margin:0 0 10px;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px;counter-reset:st}
+.instbox li{position:relative;padding:9px 10px 9px 42px;background:#f4f8fb;border:2px solid #d9e3ec;border-radius:12px;font-size:14.5px;font-weight:700;color:var(--ink);line-height:1.45;word-break:keep-all}
+.instbox li::before{counter-increment:st;content:counter(st);position:absolute;left:10px;top:50%;transform:translateY(-50%);width:23px;height:23px;border-radius:50%;background:var(--accent);color:#fff;font-family:var(--head);font-size:14px;display:grid;place-items:center}
+.instbox li i{font-style:normal;display:inline-block;background:#fff;border:1.5px solid #b9c6d2;border-radius:6px;padding:0 5px;margin:0 2px}
+.instbox .inote{font-size:12px;color:#7a8794;line-height:1.5;word-break:keep-all;margin-bottom:10px}
+.instbox .btn{width:100%;font-size:17px;padding:10px;margin-top:6px}
 .rankbtn span{font-size:30px;line-height:1}.rankbtn small{font-family:var(--head);font-size:12px;color:var(--ink);margin-top:1px}
 .rankbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
 @keyframes rkbob{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg) translateY(-2px)}}
@@ -645,7 +660,7 @@ body.touch #joyHint{display:grid}
     <div class="hero">
       <h1 class="logo" aria-label="나홀로 실장!"><span class="w1">나홀로</span> <span class="w2">실장<b>!</b></span></h1>
       <div class="subrow"><div class="sub">실장님은 단 한 명!<br>3분 동안 몰려드는 환자를 치료하라</div>
-        <button class="rankbtn" id="rankBtn" aria-label="월간 랭킹"><span>🏆</span><small>랭킹</small></button></div>
+        <button class="rankbtn" id="rankBtn" aria-label="월간 랭킹"><span>🏆</span><small>랭킹</small></button><button class="rankbtn instbtn" id="instBtn" aria-label="앱으로 설치"><span>📲</span><small>앱 설치</small></button></div>
       <div class="card howto">
         <h3>근무 수칙</h3>
         <ol class="steps">
@@ -749,7 +764,8 @@ body.touch #joyHint{display:grid}
 </section>
 
 <!-- ===================== END ===================== -->
-<div id="pigOv"><div class="pigph">🎉 기부금이 쌓였어요!<small>오늘 플레이로 2원이 기부금 저금통에 들어갔어요</small></div><div id="pigOvBox"></div><div class="pigdev">🛠️ 연 구독·월 구독 후원 기능은 지금 개발 중이에요.<br>조금만 기다려 주세요!</div><div class="pigtap">화면을 누르면 닫혀요</div></div>
+<div id="instSheet" class="rsheet"><div class="card instbox" id="instBox"></div></div>
+<div id="pigOv"><div class="pigph">🎉 기부금이 쌓였어요!<small>오늘 플레이로 2원이 기부금 저금통에 들어갔어요</small></div><div id="pigOvBox"></div><div class="pigdev">💝 2026년 12월 31일까지 적립된 기부금으로<br>기부하겠습니다.</div><div class="pigtap">화면을 누르면 닫혀요</div></div>
 <section id="end" class="screen">
   <div class="ewrap center">
     <div class="banner zz">🏥 퇴근! 근무 평가</div>
@@ -2308,6 +2324,31 @@ async function saveIg(){
 }
 function openRank(){renderTitle();$('#rankSheet').classList.add('show');sfx('click');}
 $('#rankBtn').onclick=openRank;
+// 📲 install as a home-screen web app (Android: native prompt · iPhone/in-app browsers: step-by-step guide)
+let instEvt=null;
+const isStandalone=()=>matchMedia('(display-mode: standalone)').matches||matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();instEvt=e;});
+addEventListener('appinstalled',()=>{instEvt=null;$('#instBtn').style.display='none';$('#instSheet').classList.remove('show');toast('📲 홈 화면에 설치됐어요!','good');setTimeout(fitTitle,0);});
+if(isStandalone())$('#instBtn').style.display='none';
+function openInstall(){const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&'ontouchend' in document),and=/Android/i.test(ua),
+    kakao=/KAKAOTALK/i.test(ua),inapp=kakao||/Instagram|FBAN|FBAV|NAVER\(|; wv\)|Line\//i.test(ua),box=$('#instBox');let h='<h3>📲 앱으로 설치하기</h3>';
+  if(inapp){h+=`<p class="ins">카카오톡·인스타그램 안의 브라우저에서는 설치할 수 없어요.<br>먼저 ${ios?'Safari':'Chrome'}에서 열어 주세요.</p>
+      <ol>${kakao?'<li>아래 <i>🌐 외부 브라우저로 열기</i>를 눌러요</li>':`<li>오른쪽 위 <i>⋯</i> 메뉴를 눌러요</li><li><i>${ios?'Safari로 열기':'다른 브라우저로 열기'}</i>를 눌러요</li>`}<li>열린 화면에서 <i>📲 앱 설치</i>를 다시 눌러요</li></ol>
+      ${kakao?'<button class="btn green" id="instExt">🌐 외부 브라우저로 열기</button>':''}<button class="btn sec" id="instCopy">🔗 주소 복사하기</button>`;}
+  else if(ios)h+=`<p class="ins">Safari에서 홈 화면에 추가하면 앱처럼 바로 실행돼요</p>
+      <ol><li>화면 아래(또는 위)의 공유 버튼 <i>⬆️</i>을 눌러요</li><li>목록을 올려 <i>➕ 홈 화면에 추가</i>를 눌러요</li><li>오른쪽 위 <i>추가</i>를 누르면 끝!</li></ol>
+      <div class="inote">※ iPhone은 Safari에서 설치하는 게 가장 확실해요. 홈 화면의 <b>나홀로 실장</b> 아이콘으로 실행하세요.</div>`;
+  else if(and)h+=`<p class="ins">Chrome에서 설치하면 앱처럼 바로 실행돼요</p>
+      <ol><li>오른쪽 위 메뉴 <i>⋮</i>를 눌러요</li><li><i>앱 설치</i> 또는 <i>홈 화면에 추가</i>를 눌러요</li><li><i>설치</i>를 누르면 끝!</li></ol>
+      <div class="inote">※ 삼성 인터넷: 아래 메뉴 <b>≡</b> → <b>현재 페이지 추가</b> → <b>홈 화면</b></div>`;
+  else h+=`<p class="ins">PC에서는 Chrome·Edge 주소창 오른쪽의 <b>설치 아이콘(⊕)</b>을 누르면 앱으로 설치돼요.<br>휴대폰에서는 이 화면을 열고 <b>📲 앱 설치</b>를 눌러 주세요.</p><button class="btn sec" id="instCopy">🔗 주소 복사하기</button>`;
+  h+='<button class="btn" id="instClose">닫기</button>';box.innerHTML=h;emojify(box);$('#instSheet').classList.add('show');
+  const ex=$('#instExt');if(ex)ex.onclick=()=>{location.href='kakaotalk://web/openExternal?url='+encodeURIComponent(SHARE_URL);};
+  const cp=$('#instCopy');if(cp)cp.onclick=async()=>{const ok=await copyText(SHARE_URL);toast(ok?'🔗 주소를 복사했어요 · 브라우저 주소창에 붙여넣어 주세요':'🔗 '+SHARE_URL,ok?'good':'warn');};
+  $('#instClose').onclick=()=>$('#instSheet').classList.remove('show');}
+$('#instSheet').addEventListener('click',e=>{if(e.target.id==='instSheet')$('#instSheet').classList.remove('show');});
+$('#instBtn').onclick=async()=>{sfx('click');if(instEvt){const ev=instEvt;instEvt=null;try{ev.prompt();const r=await ev.userChoice;if(r&&r.outcome==='accepted')return;}catch(e){}return;}openInstall();};
+if('serviceWorker' in navigator&&location.protocol==='https:')addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
 $('#rankSheet').addEventListener('click',e=>{if(e.target.id==='rankSheet'||e.target.closest('[data-rclose]'))$('#rankSheet').classList.remove('show');});
 function fitTitle(){const t=$('#title'),h=t&&t.querySelector('.hero');if(!h||!t.classList.contains('active'))return;
   h.style.setProperty('--tz',1);const cs=getComputedStyle(t),avail=t.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-4;

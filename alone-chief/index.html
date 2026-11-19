@@ -2332,7 +2332,7 @@ addEventListener('appinstalled',()=>{instEvt=null;$('#instBtn').style.display='n
 if(isStandalone())$('#instBtn').style.display='none';
 function openInstall(){const ua=navigator.userAgent,ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&'ontouchend' in document),and=/Android/i.test(ua),
     kakao=/KAKAOTALK/i.test(ua),inapp=kakao||/Instagram|FBAN|FBAV|NAVER\(|; wv\)|Line\//i.test(ua),box=$('#instBox');let h='<h3>📲 앱으로 설치하기</h3>';
-  if(inapp){h+=`<p class="ins">카카오톡·인스타그램 안의 브라우저에서는 설치할 수 없어요.<br>먼저 ${ios?'Safari':'Chrome'}에서 열어 주세요.</p>
+  if(inapp){h+=`<p class="ins">카카오톡·인스타그램 안에서는 설치할 수 없어요.<br>먼저 ${ios?'Safari':'Chrome'}에서 열어 주세요.</p>
       <ol>${kakao?'<li>아래 <i>🌐 외부 브라우저로 열기</i>를 눌러요</li>':`<li>오른쪽 위 <i>⋯</i> 메뉴를 눌러요</li><li><i>${ios?'Safari로 열기':'다른 브라우저로 열기'}</i>를 눌러요</li>`}<li>열린 화면에서 <i>📲 앱 설치</i>를 다시 눌러요</li></ol>
       ${kakao?'<button class="btn green" id="instExt">🌐 외부 브라우저로 열기</button>':''}<button class="btn sec" id="instCopy">🔗 주소 복사하기</button>`;}
   else if(ios)h+=`<p class="ins">Safari에서 홈 화면에 추가하면 앱처럼 바로 실행돼요</p>

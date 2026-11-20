@@ -206,6 +206,7 @@ export async function fetchSecForm4Disclosures({
           reporter: `${parsed.ownerName} (${parsed.role})`,
           action: code === 'P' ? 'BUY' : 'SELL',
           price,
+          priceBasis: 'REPORTED',
           shares: Math.round(shares),
           summary: `Form 4 ${code === 'P' ? '장내 매수(P)' : '장내 매도(S)'} ${Math.round(shares).toLocaleString('en-US')}주 @ $${price.toFixed(2)} · ${parsed.role} · 신고일 ${f.filingDate}`,
         });

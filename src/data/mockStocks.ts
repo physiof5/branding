@@ -125,6 +125,7 @@ function generateMockStock(cfg: MockSeed): MockStock {
       reporter,
       action,
       price,
+      priceBasis: isKr ? 'CLOSE_ESTIMATE' : 'REPORTED',
       shares,
       summary: isKr
         ? `[샘플] ${reporter} ${action === 'BUY' ? '장내매수' : '장내매도'} ${shares.toLocaleString('ko-KR')}주 (지분 공시 이벤트)`

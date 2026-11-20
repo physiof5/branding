@@ -168,8 +168,9 @@ export async function fetchDartOwnershipDisclosures({
       reporter,
       action,
       price,
+      priceBasis: 'CLOSE_ESTIMATE',
       shares: Math.abs(delta),
-      summary: `${item.report_nm.trim()} — ${action === 'BUY' ? '보유 증가' : '보유 감소'} ${Math.abs(delta).toLocaleString('ko-KR')}주${detail} (단가는 공시일 종가 기준 추정)`,
+      summary: `${item.report_nm.trim()} — ${action === 'BUY' ? '보유 증가' : '보유 감소'} ${Math.abs(delta).toLocaleString('ko-KR')}주${detail}`,
     });
   }
 

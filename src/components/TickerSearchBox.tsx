@@ -10,40 +10,68 @@ interface Props {
   onSelect: (item: SearchItem) => void;
 }
 
+/** 일반 입력 디바운스 */
+const DEBOUNCE_MS = 180;
+/** 한글 조합 중에는 자모마다 요청하지 않도록 더 길게 대기 */
+const COMPOSING_DEBOUNCE_MS = 350;
+
 export default function TickerSearchBox({ market, onSelect }: Props) {
+  /** 입력창에 보이는 값 (조합 중 자모 포함) */
+  const [input, setInput] = useState('');
+  /** 검색 트리거 값 — 바뀔 때마다 디바운스 후 요청 */
   const [query, setQuery] = useState('');
+  /** compositionend 시 디바운스 없이 즉시 요청하기 위한 신호 */
+  const [flushTick, setFlushTick] = useState(0);
   const [scope, setScope] = useState<Scope>('ALL');
   const [items, setItems] = useState<SearchItem[]>([]);
+  /** 입력이 바뀐 순간부터 해당 입력의 응답이 도착할 때까지 true — '결과 없음' 깜빡임 방지 */
+  const [isSearching, setIsSearching] = useState(false);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // 180ms 디바운스 + AbortController 로 이전 요청 취소
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const composingRef = useRef(false);
+  const flushRef = useRef(false);
+  /** 마지막으로 결과를 받은 요청 키 — 같은 키 중복 호출 방지 */
+  const lastFetchedKeyRef = useRef<string | null>(null);
+
+  const scopeParam = scope === 'ALL' ? 'ALL' : market;
+
+  // 디바운스 + AbortController 로 이전 요청 취소
   useEffect(() => {
     const q = query.trim();
-    if (!q) return; // 빈 검색어일 때 드롭다운은 query 조건으로 숨겨짐
+    if (!q) return;
+    const key = `${scopeParam}|${q}`;
     const controller = new AbortController();
+    const delay = flushRef.current ? 0 : composingRef.current ? COMPOSING_DEBOUNCE_MS : DEBOUNCE_MS;
+    flushRef.current = false;
+
     const timer = setTimeout(async () => {
-      setLoading(true);
+      // compositionend 직후 같은 값으로 onChange 가 한 번 더 오는 브라우저(iOS Safari 등) 대응
+      if (key === lastFetchedKeyRef.current) {
+        setIsSearching(false);
+        return;
+      }
       try {
-        const params = new URLSearchParams({ q, market: scope === 'ALL' ? 'ALL' : market });
+        const params = new URLSearchParams({ q, market: scopeParam });
         const res = await fetch(`/api/search?${params.toString()}`, { signal: controller.signal });
         const json = (await res.json()) as { items?: SearchItem[] };
+        lastFetchedKeyRef.current = key;
         setItems(json.items ?? []);
         setActiveIndex(-1);
-        setOpen(true);
       } catch (err) {
-        if ((err as Error).name !== 'AbortError') setItems([]);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if ((err as Error).name === 'AbortError') return; // 다음 입력이 이어받음 — 검색 중 유지
+        lastFetchedKeyRef.current = null;
+        setItems([]);
       }
-    }, 180);
+      setIsSearching(false);
+    }, delay);
+
     return () => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query, scope, market]);
+  }, [query, scopeParam, flushTick]);
 
   // 외부 클릭 시 드롭다운 닫기
   useEffect(() => {
@@ -58,14 +86,55 @@ export default function TickerSearchBox({ market, onSelect }: Props) {
     };
   }, []);
 
+  const updateQuery = (value: string) => {
+    setInput(value);
+    if (!value.trim()) {
+      setQuery('');
+      setItems([]);
+      setIsSearching(false);
+      lastFetchedKeyRef.current = null;
+      return;
+    }
+    setQuery(value);
+    // 입력이 바뀌는 즉시 검색 중으로 전환 (응답 전 '결과 없음' 노출 금지)
+    if (`${scopeParam}|${value.trim()}` !== lastFetchedKeyRef.current) setIsSearching(true);
+    setOpen(true);
+  };
+
+  const onCompositionStart = () => {
+    composingRef.current = true;
+  };
+
+  const onCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+    composingRef.current = false;
+    flushRef.current = true;
+    updateQuery(e.currentTarget.value);
+    setFlushTick((t) => t + 1);
+  };
+
+  const changeScope = (s: Scope) => {
+    if (s === scope) return;
+    setScope(s);
+    if (input.trim()) setIsSearching(true);
+  };
+
   const choose = (item: SearchItem) => {
     onSelect(item);
+    setInput('');
     setQuery('');
     setItems([]);
+    setIsSearching(false);
+    lastFetchedKeyRef.current = null;
     setOpen(false);
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // 한글 조합 중 Enter/방향키는 IME 확정용 — 선택 동작으로 처리하지 않음
+    if (e.nativeEvent.isComposing || composingRef.current) return;
+    if (e.key === 'Escape') {
+      setOpen(false);
+      return;
+    }
     if (!open || items.length === 0) return;
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -73,13 +142,13 @@ export default function TickerSearchBox({ market, onSelect }: Props) {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setActiveIndex((i) => (i <= 0 ? items.length - 1 : i - 1));
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' && !isSearching) {
       e.preventDefault();
       choose(items[activeIndex >= 0 ? activeIndex : 0]);
-    } else if (e.key === 'Escape') {
-      setOpen(false);
     }
   };
+
+  const hasQuery = input.trim().length > 0;
 
   return (
     <div ref={wrapperRef} className="relative">
@@ -87,18 +156,22 @@ export default function TickerSearchBox({ market, onSelect }: Props) {
         <div className="relative flex-1">
           <input
             type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onFocus={() => items.length > 0 && setOpen(true)}
+            value={input}
+            onChange={(e) => updateQuery(e.target.value)}
+            onCompositionStart={onCompositionStart}
+            onCompositionEnd={onCompositionEnd}
+            onFocus={() => hasQuery && setOpen(true)}
             onKeyDown={onKeyDown}
-            placeholder="종목명·코드 검색 (예: 삼성전자, NVDA)"
+            placeholder="종목명·코드 검색 (예: 삼성전자, 테슬라)"
             aria-label="종목 검색"
             role="combobox"
-            aria-expanded={open}
+            aria-expanded={open && hasQuery}
             aria-controls="ticker-search-list"
-            className="w-full rounded-xl bg-gray-100 px-4 py-3 text-[15px] text-gray-900 outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500"
+            aria-busy={isSearching}
+            autoComplete="off"
+            className="w-full rounded-xl bg-gray-100 px-4 py-3 pr-10 text-[15px] text-gray-900 outline-none placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500"
           />
-          {loading && (
+          {isSearching && (
             <span className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin rounded-full border-2 border-gray-300 border-t-blue-500" />
           )}
         </div>
@@ -107,7 +180,7 @@ export default function TickerSearchBox({ market, onSelect }: Props) {
             <button
               key={s}
               type="button"
-              onClick={() => setScope(s)}
+              onClick={() => changeScope(s)}
               className={`rounded-md px-2 py-1.5 transition ${scope === s ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
             >
               {s === 'ALL' ? '한+미' : market === 'KR' ? '국내' : '미국'}
@@ -116,15 +189,28 @@ export default function TickerSearchBox({ market, onSelect }: Props) {
         </div>
       </div>
 
-      {open && query.trim() && (
+      {open && hasQuery && (
         <ul
           id="ticker-search-list"
           role="listbox"
           className="absolute z-20 mt-2 max-h-80 w-full overflow-auto rounded-xl border border-gray-100 bg-white py-1 shadow-lg"
         >
-          {items.length === 0 && !loading && <li className="px-4 py-3 text-sm text-gray-400">검색 결과가 없습니다</li>}
+          {items.length === 0 &&
+            (isSearching ? (
+              <li className="flex items-center gap-2 px-4 py-3 text-sm text-gray-400">
+                <span className="h-3 w-3 animate-spin rounded-full border-2 border-gray-200 border-t-blue-500" />
+                검색 중…
+              </li>
+            ) : (
+              <li className="px-4 py-3 text-sm text-gray-400">검색 결과가 없습니다</li>
+            ))}
           {items.map((item, idx) => (
-            <li key={`${item.market}-${item.ticker}`} role="option" aria-selected={idx === activeIndex}>
+            <li
+              key={`${item.market}-${item.ticker}`}
+              role="option"
+              aria-selected={idx === activeIndex}
+              className={isSearching ? 'opacity-60 transition-opacity' : 'transition-opacity'}
+            >
               <button
                 type="button"
                 onClick={() => choose(item)}

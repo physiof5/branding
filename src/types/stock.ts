@@ -27,9 +27,13 @@ export interface DisclosureEvent {
   source: 'DART' | 'SEC_FORM4';
   reporter: string;
   action: 'BUY' | 'SELL';
+  /** 단가. priceBasis 가 CLOSE_ESTIMATE 이면 공시일(또는 직전 거래일) 종가 추정치 */
   price: number;
+  /** 변동 수량(주, 절댓값) */
   shares: number;
   summary: string;
+  /** REPORTED: 신고서 기재 체결 단가(가중평균) · CLOSE_ESTIMATE: 공시일 종가 추정 */
+  priceBasis?: 'REPORTED' | 'CLOSE_ESTIMATE';
 }
 
 export interface VolumeBin {

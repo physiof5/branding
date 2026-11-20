@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import TickerSearchBox from '@/components/TickerSearchBox';
-import type { DataSource, DominantFlow, MarketType, SearchItem, StockProfileResponse, VolumeBin } from '@/types/stock';
+import type { DataSource, DisclosureEvent, DominantFlow, MarketType, SearchItem, StockProfileResponse, VolumeBin } from '@/types/stock';
 
+/** 빠른 선택 칩 — 키 없이도 샘플 데이터가 있는 대표 종목 */
 const QUICK_CHIPS: Record<MarketType, Array<{ ticker: string; name: string }>> = {
   KR: [
     { ticker: '005930', name: '삼성전자' },
@@ -50,6 +51,52 @@ function formatQty(value: number, market: MarketType) {
   if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M sh`;
   if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(1)}K sh`;
   return `${sign}${Math.round(abs)} sh`;
+}
+
+function priceBasisLabel(d: DisclosureEvent) {
+  const basis = d.priceBasis ?? (d.source === 'DART' ? 'CLOSE_ESTIMATE' : 'REPORTED');
+  if (d.price <= 0) return { label: '단가', note: '신고서에 단가 미기재' };
+  return basis === 'CLOSE_ESTIMATE'
+    ? { label: '추정 단가', note: '공시일 종가 기준 추정 (DART 공시는 체결 단가 미제공)' }
+    : { label: '체결 단가', note: 'Form 4 신고 체결가 (여러 건은 수량 가중평균)' };
+}
+
+function DisclosureCard({ d, market }: { d: DisclosureEvent; market: MarketType }) {
+  const isBuy = d.action === 'BUY';
+  const basis = priceBasisLabel(d);
+  return (
+    <li className={`overflow-hidden rounded-xl border-l-4 bg-white shadow-sm ${isBuy ? 'border-red-400' : 'border-blue-400'}`}>
+      <div className="flex items-center justify-between gap-2 px-3 pt-3">
+        <span className="flex items-center gap-1.5">
+          <span
+            className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${isBuy ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'}`}
+          >
+            {isBuy ? '▲ 매수·보유 증가' : '▼ 매도·보유 감소'}
+          </span>
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
+            {d.source === 'DART' ? 'DART' : 'SEC Form 4'}
+          </span>
+        </span>
+      </div>
+      <dl className="grid grid-cols-[64px_1fr] gap-x-2 gap-y-1 px-3 py-2.5 text-[12px]">
+        <dt className="text-gray-400">보고자</dt>
+        <dd className="break-words font-semibold text-gray-800">{d.reporter}</dd>
+        <dt className="text-gray-400">공시일</dt>
+        <dd className="tabular-nums text-gray-700">{d.date}</dd>
+        <dt className="text-gray-400">변동 수량</dt>
+        <dd className={`font-semibold tabular-nums ${isBuy ? 'text-red-500' : 'text-blue-500'}`}>
+          {isBuy ? '+' : '-'}
+          {formatQty(d.shares, market).replace('+', '')}
+        </dd>
+        <dt className="text-gray-400">{basis.label}</dt>
+        <dd className="tabular-nums text-gray-700">
+          {d.price > 0 ? formatPrice(d.price, market) : '—'}
+          <span className="block text-[10px] leading-snug text-gray-400">{basis.note}</span>
+        </dd>
+      </dl>
+      <p className="border-t border-gray-50 px-3 py-2 text-[11px] leading-snug text-gray-400">{d.summary}</p>
+    </li>
+  );
 }
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
@@ -111,6 +158,7 @@ export default function VolumeProfileDashboard() {
   // 마지막으로 완료된 요청 키 — 현재 키와 다르면 로딩 중
   const [settled, setSettled] = useState<{ key: string; error: string | null } | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const detailRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -149,6 +197,14 @@ export default function VolumeProfileDashboard() {
     setTicker(next.ticker);
   };
 
+  const selectBin = (bin: VolumeBin) => {
+    setSelectedIndex(bin.index);
+    // 공시 마커가 있는 구간은 상세 카드로 스크롤해 바로 확인할 수 있게
+    if (showDisclosures && bin.disclosures.length > 0) {
+      requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    }
+  };
+
   const switchMarket = (m: MarketType) => {
     if (m === market) return;
     setMarket(m);
@@ -169,19 +225,29 @@ export default function VolumeProfileDashboard() {
           />
         </div>
         <TickerSearchBox market={market} onSelect={(item: SearchItem) => selectStock(item)} />
-        <div className="flex gap-2 overflow-x-auto pb-0.5">
-          {QUICK_CHIPS[market].map((chip) => (
-            <button
-              key={chip.ticker}
-              type="button"
-              onClick={() => selectStock({ ticker: chip.ticker, market })}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${
-                ticker === chip.ticker ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-600'
-              }`}
-            >
-              {chip.name}
-            </button>
-          ))}
+        <div className="flex items-center gap-2 overflow-x-auto pb-0.5">
+          <span className="shrink-0 text-[11px] font-semibold text-gray-400">
+            {market === 'KR' ? '국내 대표' : '미국 대표'}
+          </span>
+          {QUICK_CHIPS[market].map((chip) => {
+            const active = ticker === chip.ticker;
+            return (
+              <button
+                key={chip.ticker}
+                type="button"
+                aria-pressed={active}
+                onClick={() => selectStock({ ticker: chip.ticker, market })}
+                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${
+                  active ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-600'
+                }`}
+              >
+                {market === 'US' && (
+                  <span className={`text-[11px] font-bold ${active ? 'text-blue-500' : 'text-gray-900'}`}>{chip.ticker}</span>
+                )}
+                {chip.name}
+              </button>
+            );
+          })}
         </div>
       </header>
 
@@ -272,7 +338,10 @@ export default function VolumeProfileDashboard() {
                       key={bin.index}
                       type="button"
                       role="listitem"
-                      onClick={() => setSelectedIndex(bin.index)}
+                      onClick={() => selectBin(bin)}
+                      aria-label={`${formatPrice(bin.minPrice, viewMarket)}~${formatPrice(bin.maxPrice, viewMarket)} 구간${
+                        bin.disclosures.length > 0 ? `, 지분 공시 이벤트 ${bin.disclosures.length}건` : ''
+                      }`}
                       className={`flex w-full items-center gap-2 rounded-md px-1 py-[2px] text-left transition ${
                         isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : 'hover:bg-gray-50'
                       }`}
@@ -306,9 +375,16 @@ export default function VolumeProfileDashboard() {
 
             {/* 선택 구간 상세 */}
             {selectedBin && (
-              <section className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+              <section ref={detailRef} className="scroll-mt-48 space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
                 <div>
-                  <p className="text-xs font-semibold text-blue-600">선택 구간</p>
+                  <p className="flex items-center gap-1.5 text-xs font-semibold text-blue-600">
+                    선택 구간
+                    {selectedBin.disclosures.length > 0 && (
+                      <span className="rounded-full bg-white px-1.5 py-0.5 text-[10px] text-gray-600 shadow-sm">
+                        공시 {selectedBin.disclosures.length}건
+                      </span>
+                    )}
+                  </p>
                   <p className="text-base font-bold text-gray-900">
                     {formatPrice(selectedBin.minPrice, viewMarket)} ~ {formatPrice(selectedBin.maxPrice, viewMarket)}
                   </p>
@@ -360,25 +436,11 @@ export default function VolumeProfileDashboard() {
                     <p className="text-xs text-gray-400">이 구간에 매칭된 공시가 없습니다.</p>
                   ) : (
                     <ul className="space-y-2">
-                      {selectedBin.disclosures.map((d) => (
-                        <li key={d.id} className="rounded-xl bg-white p-3 shadow-sm">
-                          <div className="flex items-center justify-between gap-2">
-                            <span
-                              className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${
-                                d.action === 'BUY' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
-                              }`}
-                            >
-                              {d.source === 'DART' ? 'DART' : 'SEC Form 4'} · {d.action === 'BUY' ? '매수' : '매도'}
-                            </span>
-                            <span className="text-[11px] text-gray-400">{d.date}</span>
-                          </div>
-                          <p className="mt-1 truncate text-[13px] font-semibold text-gray-800">{d.reporter}</p>
-                          <p className="text-xs tabular-nums text-gray-500">
-                            {formatQty(d.shares, viewMarket).replace('+', '')} @ {formatPrice(d.price, viewMarket)}
-                          </p>
-                          <p className="mt-1 text-[11px] leading-snug text-gray-400">{d.summary}</p>
-                        </li>
-                      ))}
+                      {[...selectedBin.disclosures]
+                        .sort((a, b) => b.date.localeCompare(a.date))
+                        .map((d) => (
+                          <DisclosureCard key={d.id} d={d} market={viewMarket} />
+                        ))}
                     </ul>
                   )}
                 </div>

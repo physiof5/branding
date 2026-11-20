@@ -1,0 +1,418 @@
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import TickerSearchBox from '@/components/TickerSearchBox';
+import type { DataSource, DominantFlow, MarketType, SearchItem, StockProfileResponse, VolumeBin } from '@/types/stock';
+
+const QUICK_CHIPS: Record<MarketType, Array<{ ticker: string; name: string }>> = {
+  KR: [
+    { ticker: '005930', name: '삼성전자' },
+    { ticker: '000660', name: 'SK하이닉스' },
+  ],
+  US: [
+    { ticker: 'NVDA', name: '엔비디아' },
+    { ticker: 'TSLA', name: '테슬라' },
+  ],
+};
+
+const PERIODS = [20, 60, 120, 180];
+const BIN_OPTIONS = [12, 24, 36];
+
+const FLOW_STYLE: Record<DominantFlow, { label: string; bar: string; text: string }> = {
+  FOREIGN: { label: '외국인 우위', bar: 'bg-violet-500', text: 'text-violet-600' },
+  INSTITUTION: { label: '기관 우위', bar: 'bg-sky-500', text: 'text-sky-600' },
+  RETAIL: { label: '개인 우위', bar: 'bg-orange-400', text: 'text-orange-500' },
+  MIXED: { label: '혼조', bar: 'bg-gray-400', text: 'text-gray-500' },
+  NONE: { label: '수급 없음', bar: 'bg-gray-300', text: 'text-gray-400' },
+};
+
+const SOURCE_BADGE: Record<DataSource, { label: string; cls: string }> = {
+  live: { label: '실시간 API', cls: 'bg-emerald-50 text-emerald-700' },
+  'hybrid-sec': { label: '샘플 시세 + SEC 공시', cls: 'bg-amber-50 text-amber-700' },
+  mock: { label: '샘플 데이터', cls: 'bg-gray-100 text-gray-600' },
+};
+
+function formatPrice(value: number, market: MarketType) {
+  return market === 'KR'
+    ? `${Math.round(value).toLocaleString('ko-KR')}원`
+    : `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatQty(value: number, market: MarketType) {
+  const abs = Math.abs(value);
+  const sign = value < 0 ? '-' : value > 0 ? '+' : '';
+  if (market === 'KR') {
+    if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(1)}억주`;
+    if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
+    return `${sign}${Math.round(abs).toLocaleString('ko-KR')}주`;
+  }
+  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B sh`;
+  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M sh`;
+  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(1)}K sh`;
+  return `${sign}${Math.round(abs)} sh`;
+}
+
+function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex items-center gap-2 text-[13px] font-medium text-gray-700"
+    >
+      <span className={`relative h-5 w-9 rounded-full transition ${checked ? 'bg-blue-500' : 'bg-gray-300'}`}>
+        <span
+          className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${checked ? 'left-[18px]' : 'left-0.5'}`}
+        />
+      </span>
+      {label}
+    </button>
+  );
+}
+
+function Segmented<T extends string | number>({
+  options,
+  value,
+  onChange,
+  render,
+}: {
+  options: T[];
+  value: T;
+  onChange: (v: T) => void;
+  render: (v: T) => string;
+}) {
+  return (
+    <div className="flex rounded-lg bg-gray-100 p-0.5">
+      {options.map((opt) => (
+        <button
+          key={String(opt)}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={`flex-1 rounded-md px-2 py-1.5 text-[13px] font-semibold transition ${
+            value === opt ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'
+          }`}
+        >
+          {render(opt)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export default function VolumeProfileDashboard() {
+  const [market, setMarket] = useState<MarketType>('KR');
+  const [ticker, setTicker] = useState('005930');
+  const [period, setPeriod] = useState(120);
+  const [bins, setBins] = useState(24);
+  const [flowHighlight, setFlowHighlight] = useState(true);
+  const [showDisclosures, setShowDisclosures] = useState(true);
+  const [data, setData] = useState<StockProfileResponse | null>(null);
+  // 마지막으로 완료된 요청 키 — 현재 키와 다르면 로딩 중
+  const [settled, setSettled] = useState<{ key: string; error: string | null } | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const params = new URLSearchParams({ ticker, market, period: String(period), bins: String(bins) });
+    const key = params.toString();
+    fetch(`/api/profile?${params.toString()}`, { signal: controller.signal })
+      .then(async (res) => {
+        const json = await res.json();
+        if (!res.ok) throw new Error(json?.error ?? `HTTP ${res.status}`);
+        return json as StockProfileResponse;
+      })
+      .then((json) => {
+        setData(json);
+        setSettled({ key, error: null });
+        const current = json.bins.find((b) => b.containsCurrentPrice);
+        setSelectedIndex(current ? current.index : null);
+      })
+      .catch((err: Error) => {
+        if (err.name !== 'AbortError') setSettled({ key, error: err.message });
+      });
+    return () => controller.abort();
+  }, [ticker, market, period, bins]);
+
+  const requestKey = new URLSearchParams({ ticker, market, period: String(period), bins: String(bins) }).toString();
+  const loading = settled?.key !== requestKey;
+  const error = settled?.key === requestKey ? settled.error : null;
+
+  const binsHighToLow = useMemo(() => (data ? [...data.bins].sort((a, b) => b.minPrice - a.minPrice) : []), [data]);
+  const maxVolume = useMemo(() => Math.max(1, ...binsHighToLow.map((b) => b.volume)), [binsHighToLow]);
+  const selectedBin: VolumeBin | undefined = data?.bins.find((b) => b.index === selectedIndex);
+  const disclosureCount = data?.bins.reduce((s, b) => s + b.disclosures.length, 0) ?? 0;
+  const viewMarket = data?.market ?? market;
+
+  const selectStock = (next: { ticker: string; market: MarketType }) => {
+    setMarket(next.market);
+    setTicker(next.ticker);
+  };
+
+  const switchMarket = (m: MarketType) => {
+    if (m === market) return;
+    setMarket(m);
+    setTicker(QUICK_CHIPS[m][0].ticker);
+  };
+
+  return (
+    <div className="mx-auto flex min-h-screen w-full max-w-[480px] flex-col bg-white">
+      {/* 헤더 */}
+      <header className="sticky top-0 z-30 space-y-3 border-b border-gray-100 bg-white/95 px-4 pb-3 pt-4 backdrop-blur">
+        <div className="flex items-center justify-between">
+          <h1 className="text-lg font-bold text-gray-900">가격대별 매물대</h1>
+          <Segmented<MarketType>
+            options={['KR', 'US']}
+            value={market}
+            onChange={switchMarket}
+            render={(m) => (m === 'KR' ? '🇰🇷 국내' : '🇺🇸 미국')}
+          />
+        </div>
+        <TickerSearchBox market={market} onSelect={(item: SearchItem) => selectStock(item)} />
+        <div className="flex gap-2 overflow-x-auto pb-0.5">
+          {QUICK_CHIPS[market].map((chip) => (
+            <button
+              key={chip.ticker}
+              type="button"
+              onClick={() => selectStock({ ticker: chip.ticker, market })}
+              className={`shrink-0 rounded-full border px-3 py-1.5 text-[13px] font-medium transition ${
+                ticker === chip.ticker ? 'border-blue-500 bg-blue-50 text-blue-600' : 'border-gray-200 text-gray-600'
+              }`}
+            >
+              {chip.name}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      <main className="flex-1 space-y-4 px-4 py-4">
+        {/* 조회 옵션 */}
+        <section className="space-y-3 rounded-2xl bg-gray-50 p-4">
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500">조회 기간</p>
+            <Segmented options={PERIODS} value={period} onChange={setPeriod} render={(p) => `${p}일`} />
+          </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-semibold text-gray-500">구간 분할</p>
+            <Segmented options={BIN_OPTIONS} value={bins} onChange={setBins} render={(b) => `${b}구간`} />
+          </div>
+          <div className="flex flex-wrap gap-x-5 gap-y-2 pt-1">
+            <Toggle label="수급 강조" checked={flowHighlight} onChange={setFlowHighlight} />
+            <Toggle label="공시 마커" checked={showDisclosures} onChange={setShowDisclosures} />
+          </div>
+        </section>
+
+        {error && <div className="rounded-xl bg-red-50 p-4 text-sm text-red-600">데이터를 불러오지 못했습니다: {error}</div>}
+
+        {data && (
+          <div className={`space-y-4 transition-opacity ${loading ? 'opacity-50' : ''}`}>
+            {/* 종목 요약 */}
+            <section className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl font-bold text-gray-900">{data.name}</h2>
+                <span className="text-sm text-gray-400">{data.ticker}</span>
+                <span className={`ml-auto rounded px-1.5 py-0.5 text-[11px] font-semibold ${SOURCE_BADGE[data.source].cls}`}>
+                  {SOURCE_BADGE[data.source].label}
+                </span>
+              </div>
+              <p className="text-2xl font-bold tabular-nums text-gray-900">{formatPrice(data.currentPrice, viewMarket)}</p>
+              <p className="text-xs text-gray-400">
+                {data.periodStart} ~ {data.periodEnd} · {data.periodDays}거래일 · 누적 거래량{' '}
+                {formatQty(data.totalVolume ?? 0, viewMarket).replace('+', '')}
+              </p>
+            </section>
+
+            {/* 상·하방 게이지 */}
+            <section className="rounded-2xl border border-gray-100 p-4">
+              <p className="mb-2 text-sm font-semibold text-gray-800">현재가 상방/하방 누적 거래량 비중</p>
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100">
+                <div className="h-full bg-indigo-400" style={{ width: `${data.aboveVolumeShare}%` }} />
+                <div className="h-full w-0.5 bg-white" />
+                <div className="h-full flex-1 bg-emerald-400" />
+              </div>
+              <div className="mt-2 flex justify-between text-xs">
+                <span className="font-semibold text-indigo-500">상방 {data.aboveVolumeShare}%</span>
+                <span className="text-gray-500">현재가 {formatPrice(data.currentPrice, viewMarket)}</span>
+                <span className="font-semibold text-emerald-600">하방 {data.belowVolumeShare}%</span>
+              </div>
+              <p className="mt-3 text-[13px] leading-relaxed text-gray-600">{data.commentary}</p>
+            </section>
+
+            {/* 매물대 차트 */}
+            <section className="rounded-2xl border border-gray-100 p-4">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-sm font-semibold text-gray-800">구간별 누적 체결량 비중</p>
+                {showDisclosures && disclosureCount > 0 && (
+                  <span className="text-[11px] text-gray-400">
+                    <span className="text-red-500">▲</span>매수 <span className="text-blue-500">▼</span>매도 공시
+                  </span>
+                )}
+              </div>
+              {flowHighlight && (
+                <div className="mb-3 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-500">
+                  {(['FOREIGN', 'INSTITUTION', 'RETAIL', 'MIXED'] as DominantFlow[]).map((f) => (
+                    <span key={f} className="flex items-center gap-1">
+                      <span className={`inline-block h-2 w-2 rounded-sm ${FLOW_STYLE[f].bar}`} />
+                      {FLOW_STYLE[f].label}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="space-y-[3px]" role="list">
+                {binsHighToLow.map((bin) => {
+                  const isSelected = bin.index === selectedIndex;
+                  const relation = bin.containsCurrentPrice ? 'current' : bin.midPrice > data.currentPrice ? 'above' : 'below';
+                  const baseColor =
+                    relation === 'current' ? 'bg-amber-400' : relation === 'above' ? 'bg-indigo-300' : 'bg-emerald-300';
+                  const barColor = flowHighlight && data.hasFlowData && bin.dominantFlow !== 'NONE' ? FLOW_STYLE[bin.dominantFlow].bar : baseColor;
+                  const buys = bin.disclosures.filter((d) => d.action === 'BUY').length;
+                  const sells = bin.disclosures.length - buys;
+                  return (
+                    <button
+                      key={bin.index}
+                      type="button"
+                      role="listitem"
+                      onClick={() => setSelectedIndex(bin.index)}
+                      className={`flex w-full items-center gap-2 rounded-md px-1 py-[2px] text-left transition ${
+                        isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <span
+                        className={`w-[72px] shrink-0 text-right text-[11px] tabular-nums ${
+                          relation === 'current' ? 'font-bold text-amber-600' : 'text-gray-500'
+                        }`}
+                      >
+                        {formatPrice(bin.midPrice, viewMarket)}
+                      </span>
+                      <span className="relative h-3.5 flex-1">
+                        <span
+                          className={`absolute left-0 top-0 h-full rounded-r ${barColor} ${
+                            relation === 'current' && flowHighlight ? 'ring-2 ring-amber-400' : ''
+                          }`}
+                          style={{ width: `${Math.max(1.5, (bin.volume / maxVolume) * 100)}%` }}
+                        />
+                      </span>
+                      <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-gray-500">{bin.volumeShare.toFixed(1)}%</span>
+                      <span className="w-7 shrink-0 text-[10px] leading-none">
+                        {showDisclosures && buys > 0 && <span className="text-red-500">▲{buys > 1 ? buys : ''}</span>}
+                        {showDisclosures && sells > 0 && <span className="text-blue-500">▼{sells > 1 ? sells : ''}</span>}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-3 text-[11px] text-gray-400">막대를 눌러 구간별 순매수 수급과 지분 공시 이벤트를 확인하세요.</p>
+            </section>
+
+            {/* 선택 구간 상세 */}
+            {selectedBin && (
+              <section className="space-y-3 rounded-2xl border border-blue-100 bg-blue-50/40 p-4">
+                <div>
+                  <p className="text-xs font-semibold text-blue-600">선택 구간</p>
+                  <p className="text-base font-bold text-gray-900">
+                    {formatPrice(selectedBin.minPrice, viewMarket)} ~ {formatPrice(selectedBin.maxPrice, viewMarket)}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    체결량 {formatQty(selectedBin.volume, viewMarket).replace('+', '')} · 구간별 누적 체결량 비중{' '}
+                    {selectedBin.volumeShare.toFixed(2)}%
+                  </p>
+                </div>
+
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold text-gray-500">구간별 순매수 수급</p>
+                  {data.hasFlowData ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {(
+                        [
+                          ['외국인', selectedBin.netBuyForeign, viewMarket === 'US'],
+                          ['기관', selectedBin.netBuyInstitution, false],
+                          ['개인', selectedBin.netBuyRetail, viewMarket === 'US'],
+                        ] as Array<[string, number, boolean]>
+                      ).map(([label, value, unavailable]) => (
+                        <div key={label} className="rounded-xl bg-white p-2.5 text-center shadow-sm">
+                          <p className="text-[11px] text-gray-500">
+                            {label}
+                            {viewMarket === 'US' && label === '기관' ? '(추정)' : ''}
+                          </p>
+                          <p
+                            className={`text-sm font-bold tabular-nums ${
+                              unavailable ? 'text-gray-300' : value > 0 ? 'text-red-500' : value < 0 ? 'text-blue-500' : 'text-gray-400'
+                            }`}
+                          >
+                            {unavailable ? 'N/A' : formatQty(value, viewMarket)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-400">이 기간에는 투자자별 수급 데이터가 없습니다.</p>
+                  )}
+                  {data.hasFlowData && (
+                    <p className={`mt-1.5 text-xs font-semibold ${FLOW_STYLE[selectedBin.dominantFlow].text}`}>
+                      {FLOW_STYLE[selectedBin.dominantFlow].label}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="mb-1.5 text-xs font-semibold text-gray-500">지분 공시 이벤트 ({selectedBin.disclosures.length})</p>
+                  {selectedBin.disclosures.length === 0 ? (
+                    <p className="text-xs text-gray-400">이 구간에 매칭된 공시가 없습니다.</p>
+                  ) : (
+                    <ul className="space-y-2">
+                      {selectedBin.disclosures.map((d) => (
+                        <li key={d.id} className="rounded-xl bg-white p-3 shadow-sm">
+                          <div className="flex items-center justify-between gap-2">
+                            <span
+                              className={`rounded px-1.5 py-0.5 text-[11px] font-bold ${
+                                d.action === 'BUY' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-blue-500'
+                              }`}
+                            >
+                              {d.source === 'DART' ? 'DART' : 'SEC Form 4'} · {d.action === 'BUY' ? '매수' : '매도'}
+                            </span>
+                            <span className="text-[11px] text-gray-400">{d.date}</span>
+                          </div>
+                          <p className="mt-1 truncate text-[13px] font-semibold text-gray-800">{d.reporter}</p>
+                          <p className="text-xs tabular-nums text-gray-500">
+                            {formatQty(d.shares, viewMarket).replace('+', '')} @ {formatPrice(d.price, viewMarket)}
+                          </p>
+                          <p className="mt-1 text-[11px] leading-snug text-gray-400">{d.summary}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {data.notes.length > 0 && (
+              <ul className="space-y-1 rounded-xl bg-gray-50 p-3 text-[11px] leading-relaxed text-gray-500">
+                {data.notes.map((n) => (
+                  <li key={n}>• {n}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
+        {!data && loading && (
+          <div className="space-y-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-24 animate-pulse rounded-2xl bg-gray-100" />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* 투자 유의사항 (고정) */}
+      <footer className="border-t border-gray-100 bg-gray-50 px-4 py-4 text-[11px] leading-relaxed text-gray-500">
+        <p className="mb-1 font-semibold text-gray-600">투자 유의사항</p>
+        <p>
+          본 화면은 과거 체결 거래량 분포와 공개 공시·수급 데이터를 시각화한 참고 자료이며, 특정 계좌의 실제 보유 잔고나
+          투자 권유가 아닙니다. 가격 구간별 수치는 일봉 고가~저가 범위에 거래량을 균등 배분한 추정치이고, 미국 주식의 기관
+          수급은 거래량 급증 양봉 기반 추정치입니다. 투자 판단과 그 결과에 대한 책임은 투자자 본인에게 있습니다.
+        </p>
+      </footer>
+    </div>
+  );
+}

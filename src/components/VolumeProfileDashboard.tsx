@@ -1,8 +1,26 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import SplitOrderPlanner, {
+  SPLIT_TAG_STYLE,
+  SPLIT_TARGETS,
+  defaultSplitTargets,
+  splitTagsByBin,
+  type SplitTargets,
+} from '@/components/SplitOrderPlanner';
 import TickerSearchBox from '@/components/TickerSearchBox';
-import type { DataSource, DisclosureEvent, DominantFlow, MarketType, SearchItem, StockProfileResponse, VolumeBin } from '@/types/stock';
+import { FLOW_STYLE, formatPct, formatPrice, formatQty } from '@/lib/display';
+import { pctFromCurrent, summarizeDisclosurePositions } from '@/lib/volumeCalculator';
+import type {
+  DataSource,
+  DisclosureEvent,
+  DominantFlow,
+  MarketType,
+  SearchItem,
+  SplitTargetKey,
+  StockProfileResponse,
+  VolumeBin,
+} from '@/types/stock';
 
 /** 빠른 선택 칩 — 키 없이도 샘플 데이터가 있는 대표 종목 */
 const QUICK_CHIPS: Record<MarketType, Array<{ ticker: string; name: string }>> = {
@@ -19,39 +37,11 @@ const QUICK_CHIPS: Record<MarketType, Array<{ ticker: string; name: string }>> =
 const PERIODS = [20, 60, 120, 180];
 const BIN_OPTIONS = [12, 24, 36];
 
-const FLOW_STYLE: Record<DominantFlow, { label: string; bar: string; text: string }> = {
-  FOREIGN: { label: '외국인 우위', bar: 'bg-violet-500', text: 'text-violet-600' },
-  INSTITUTION: { label: '기관 우위', bar: 'bg-sky-500', text: 'text-sky-600' },
-  RETAIL: { label: '개인 우위', bar: 'bg-orange-400', text: 'text-orange-500' },
-  MIXED: { label: '혼조', bar: 'bg-gray-400', text: 'text-gray-500' },
-  NONE: { label: '수급 없음', bar: 'bg-gray-300', text: 'text-gray-400' },
-};
-
 const SOURCE_BADGE: Record<DataSource, { label: string; cls: string }> = {
   live: { label: '실시간 API', cls: 'bg-emerald-50 text-emerald-700' },
   'hybrid-sec': { label: '샘플 시세 + SEC 공시', cls: 'bg-amber-50 text-amber-700' },
   mock: { label: '샘플 데이터', cls: 'bg-gray-100 text-gray-600' },
 };
-
-function formatPrice(value: number, market: MarketType) {
-  return market === 'KR'
-    ? `${Math.round(value).toLocaleString('ko-KR')}원`
-    : `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
-
-function formatQty(value: number, market: MarketType) {
-  const abs = Math.abs(value);
-  const sign = value < 0 ? '-' : value > 0 ? '+' : '';
-  if (market === 'KR') {
-    if (abs >= 1e8) return `${sign}${(abs / 1e8).toFixed(1)}억주`;
-    if (abs >= 1e4) return `${sign}${(abs / 1e4).toFixed(1)}만주`;
-    return `${sign}${Math.round(abs).toLocaleString('ko-KR')}주`;
-  }
-  if (abs >= 1e9) return `${sign}${(abs / 1e9).toFixed(2)}B sh`;
-  if (abs >= 1e6) return `${sign}${(abs / 1e6).toFixed(1)}M sh`;
-  if (abs >= 1e3) return `${sign}${(abs / 1e3).toFixed(1)}K sh`;
-  return `${sign}${Math.round(abs)} sh`;
-}
 
 function priceBasisLabel(d: DisclosureEvent) {
   const basis = d.priceBasis ?? (d.source === 'DART' ? 'CLOSE_ESTIMATE' : 'REPORTED');
@@ -95,6 +85,54 @@ function DisclosureCard({ d, market }: { d: DisclosureEvent; market: MarketType 
         </dd>
       </dl>
       <p className="border-t border-gray-50 px-3 py-2 text-[11px] leading-snug text-gray-400">{d.summary}</p>
+    </li>
+  );
+}
+
+function ZoneRow({
+  tag,
+  tagCls,
+  bin,
+  currentPrice,
+  market,
+  hasFlowData,
+  isPoc = false,
+  onSelect,
+}: {
+  isPoc?: boolean;
+  tag: string;
+  tagCls: string;
+  bin: VolumeBin;
+  currentPrice: number;
+  market: MarketType;
+  hasFlowData: boolean;
+  onSelect: (bin: VolumeBin) => void;
+}) {
+  const pct = formatPct(pctFromCurrent(bin.midPrice, currentPrice));
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => onSelect(bin)}
+        className="flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left hover:bg-gray-50"
+      >
+        <span className={`w-12 shrink-0 rounded px-1 py-0.5 text-center text-[10px] font-bold ${tagCls}`}>{tag}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-[12px] font-semibold tabular-nums text-gray-800">
+            {formatPrice(bin.minPrice, market)}~{formatPrice(bin.maxPrice, market)}
+          </span>
+          <span className="flex items-center gap-1.5 text-[10px] text-gray-400">
+            <span className={`tabular-nums ${pct.cls}`}>중심가 {pct.text}</span>
+            {isPoc && <span className="rounded bg-amber-100 px-1 py-px font-bold text-amber-700">POC</span>}
+            {hasFlowData && (
+              <span className={`rounded px-1 py-px font-semibold ${FLOW_STYLE[bin.dominantFlow].badge}`}>
+                {FLOW_STYLE[bin.dominantFlow].label}
+              </span>
+            )}
+          </span>
+        </span>
+        <span className="shrink-0 text-[12px] font-bold tabular-nums text-gray-700">{bin.volumeShare.toFixed(1)}%</span>
+      </button>
     </li>
   );
 }
@@ -159,6 +197,9 @@ export default function VolumeProfileDashboard() {
   const [settled, setSettled] = useState<{ key: string; error: string | null } | null>(null);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const detailRef = useRef<HTMLElement>(null);
+  const [plannerOpen, setPlannerOpen] = useState(false);
+  /** 종목별 사용자 입력 목표가. 종목이 바뀌면 key 불일치로 기본 제안값 사용 */
+  const [plan, setPlan] = useState<{ key: string; values: SplitTargets } | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -192,6 +233,26 @@ export default function VolumeProfileDashboard() {
   const disclosureCount = data?.bins.reduce((s, b) => s + b.disclosures.length, 0) ?? 0;
   const viewMarket = data?.market ?? market;
 
+  const planKey = data ? `${data.market}:${data.ticker}` : '';
+  const splitTargets: SplitTargets | null = data
+    ? plan?.key === planKey
+      ? plan.values
+      : defaultSplitTargets(data.currentPrice, data.market)
+    : null;
+  // 차트 태그는 시뮬레이터를 펼쳤을 때만 표시
+  const tagsByBin = useMemo(
+    () => (data && splitTargets && plannerOpen ? splitTagsByBin(data.bins, splitTargets) : new Map<number, SplitTargetKey[]>()),
+    [data, splitTargets, plannerOpen],
+  );
+  const disclosureSummary = useMemo(() => (data ? summarizeDisclosurePositions(data.bins, data.currentPrice) : null), [data]);
+  const binByIndex = (index: number) => data?.bins.find((b) => b.index === index);
+  const pocBin = data ? binByIndex(data.pocIndex) : undefined;
+
+  const updateTarget = (key: SplitTargetKey, value: string) => {
+    if (!splitTargets) return;
+    setPlan({ key: planKey, values: { ...splitTargets, [key]: value } });
+  };
+
   const selectStock = (next: { ticker: string; market: MarketType }) => {
     setMarket(next.market);
     setTicker(next.ticker);
@@ -203,6 +264,11 @@ export default function VolumeProfileDashboard() {
     if (showDisclosures && bin.disclosures.length > 0) {
       requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
     }
+  };
+
+  const selectBinByIndex = (index: number) => {
+    setSelectedIndex(index);
+    requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
   };
 
   const switchMarket = (m: MarketType) => {
@@ -304,6 +370,104 @@ export default function VolumeProfileDashboard() {
               <p className="mt-3 text-[13px] leading-relaxed text-gray-600">{data.commentary}</p>
             </section>
 
+            {/* 공시 포지션 요약 배너 */}
+            {disclosureSummary && (
+              <section className="rounded-xl bg-gray-900 px-4 py-3 text-white">
+                {disclosureSummary.total === 0 ? (
+                  <p className="text-[12px] text-gray-300">조회 기간 내 수집된 지분 공시 이벤트가 없습니다.</p>
+                ) : (
+                  <>
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
+                      <span className="font-semibold text-gray-300">공시 포지션</span>
+                      <span>
+                        <span className="text-red-300">▲ 매수·취득 {disclosureSummary.buyCount}건</span>
+                        <span className="text-gray-500"> / </span>
+                        <span className="text-blue-300">▼ 매도·처분 {disclosureSummary.sellCount}건</span>
+                      </span>
+                      <span className="text-gray-500">·</span>
+                      <span className="text-gray-200">
+                        현재가 상방 {disclosureSummary.aboveCount} · 하방 {disclosureSummary.belowCount}
+                      </span>
+                    </p>
+                    {(disclosureSummary.avgBuyPrice || disclosureSummary.avgSellPrice) && (
+                      <p className="mt-1 text-[11px] text-gray-400">
+                        {disclosureSummary.avgBuyPrice && (
+                          <>
+                            매수 공시 가중평균 {formatPrice(disclosureSummary.avgBuyPrice, viewMarket)} (현재가 대비{' '}
+                            {formatPct(pctFromCurrent(disclosureSummary.avgBuyPrice, data.currentPrice)).text})
+                          </>
+                        )}
+                        {disclosureSummary.avgBuyPrice && disclosureSummary.avgSellPrice && ' · '}
+                        {disclosureSummary.avgSellPrice && (
+                          <>
+                            매도 공시 가중평균 {formatPrice(disclosureSummary.avgSellPrice, viewMarket)} (
+                            {formatPct(pctFromCurrent(disclosureSummary.avgSellPrice, data.currentPrice)).text})
+                          </>
+                        )}
+                      </p>
+                    )}
+                  </>
+                )}
+              </section>
+            )}
+
+            {/* 중기 매물 핵심 구간 */}
+            {pocBin && (
+              <section className="rounded-2xl border border-gray-100 p-4">
+                <p className="text-sm font-semibold text-gray-800">중기 매물 핵심 구간</p>
+                <p className="mb-2 text-[11px] text-gray-400">
+                  조회 기간 {data.periodDays}거래일 동안 체결량이 많았던 가격대입니다. 우측 수치는 구간별 누적 체결량 비중입니다.
+                </p>
+                <ul className="divide-y divide-gray-50">
+                  <ZoneRow
+                    tag="POC"
+                    tagCls="bg-amber-100 text-amber-700"
+                    bin={pocBin}
+                    currentPrice={data.currentPrice}
+                    market={viewMarket}
+                    hasFlowData={Boolean(data.hasFlowData)}
+                    onSelect={selectBin}
+                  />
+                </ul>
+                <div className="mt-3 grid grid-cols-1 gap-3">
+                  {(
+                    [
+                      ['현재가 하방 두터운 구간', '분할 매수 참고 위치', data.lowerHeavyIndexes, '하방', 'bg-rose-50 text-rose-600'],
+                      ['현재가 상방 두터운 구간', '분할 익절 참고 위치', data.upperHeavyIndexes, '상방', 'bg-blue-50 text-blue-600'],
+                    ] as Array<[string, string, number[], string, string]>
+                  ).map(([title, sub, indexes, tagPrefix, tagCls]) => (
+                    <div key={title}>
+                      <p className="text-[12px] font-semibold text-gray-600">
+                        {title} <span className="font-normal text-gray-400">· {sub}</span>
+                      </p>
+                      {indexes.length === 0 ? (
+                        <p className="py-1.5 text-[11px] text-gray-400">조회 기간 내 해당 방향 체결 구간이 없습니다.</p>
+                      ) : (
+                        <ul className="divide-y divide-gray-50">
+                          {indexes.map((idx, i) => {
+                            const bin = binByIndex(idx);
+                            return bin ? (
+                              <ZoneRow
+                                key={idx}
+                                tag={`${tagPrefix} ${i + 1}`}
+                                tagCls={tagCls}
+                                bin={bin}
+                                currentPrice={data.currentPrice}
+                                market={viewMarket}
+                                hasFlowData={Boolean(data.hasFlowData)}
+                                isPoc={idx === data.pocIndex}
+                                onSelect={selectBin}
+                              />
+                            ) : null;
+                          })}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* 매물대 차트 */}
             <section className="rounded-2xl border border-gray-100 p-4">
               <div className="mb-3 flex items-center justify-between">
@@ -333,6 +497,8 @@ export default function VolumeProfileDashboard() {
                   const barColor = flowHighlight && data.hasFlowData && bin.dominantFlow !== 'NONE' ? FLOW_STYLE[bin.dominantFlow].bar : baseColor;
                   const buys = bin.disclosures.filter((d) => d.action === 'BUY').length;
                   const sells = bin.disclosures.length - buys;
+                  const isPoc = bin.index === data.pocIndex;
+                  const splitTags = tagsByBin.get(bin.index) ?? [];
                   return (
                     <button
                       key={bin.index}
@@ -341,6 +507,10 @@ export default function VolumeProfileDashboard() {
                       onClick={() => selectBin(bin)}
                       aria-label={`${formatPrice(bin.minPrice, viewMarket)}~${formatPrice(bin.maxPrice, viewMarket)} 구간${
                         bin.disclosures.length > 0 ? `, 지분 공시 이벤트 ${bin.disclosures.length}건` : ''
+                      }${isPoc ? ', POC 최대 체결 구간' : ''}${
+                        splitTags.length > 0
+                          ? `, 시뮬레이터 ${splitTags.map((k) => SPLIT_TARGETS.find((t) => t.key === k)!.tag).join('·')}`
+                          : ''
                       }`}
                       className={`flex w-full items-center gap-2 rounded-md px-1 py-[2px] text-left transition ${
                         isSelected ? 'bg-blue-50 ring-1 ring-blue-300' : 'hover:bg-gray-50'
@@ -360,6 +530,26 @@ export default function VolumeProfileDashboard() {
                           }`}
                           style={{ width: `${Math.max(1.5, (bin.volume / maxVolume) * 100)}%` }}
                         />
+                        {(isPoc || splitTags.length > 0) && (
+                          <span className="absolute right-0 top-1/2 flex -translate-y-1/2 gap-0.5">
+                            {isPoc && (
+                              <span className="rounded-sm bg-amber-100 px-1 text-[9px] font-bold leading-[14px] text-amber-700 ring-1 ring-white">
+                                POC
+                              </span>
+                            )}
+                            {splitTags.map((key) => {
+                              const meta = SPLIT_TARGETS.find((t) => t.key === key)!;
+                              return (
+                                <span
+                                  key={key}
+                                  className={`rounded-sm px-1 text-[9px] font-bold leading-[14px] ring-1 ring-white ${SPLIT_TAG_STYLE[meta.side]}`}
+                                >
+                                  {meta.tag}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        )}
                       </span>
                       <span className="w-10 shrink-0 text-right text-[11px] tabular-nums text-gray-500">{bin.volumeShare.toFixed(1)}%</span>
                       <span className="w-7 shrink-0 text-[10px] leading-none">
@@ -447,6 +637,18 @@ export default function VolumeProfileDashboard() {
               </section>
             )}
 
+            {splitTargets && (
+              <SplitOrderPlanner
+                profile={data}
+                targets={splitTargets}
+                open={plannerOpen}
+                onToggle={() => setPlannerOpen((v) => !v)}
+                onChange={updateTarget}
+                onReplaceAll={(values) => setPlan({ key: planKey, values })}
+                onSelectBin={selectBinByIndex}
+              />
+            )}
+
             {data.notes.length > 0 && (
               <ul className="space-y-1 rounded-xl bg-gray-50 p-3 text-[11px] leading-relaxed text-gray-500">
                 {data.notes.map((n) => (
@@ -472,7 +674,10 @@ export default function VolumeProfileDashboard() {
         <p>
           본 화면은 과거 체결 거래량 분포와 공개 공시·수급 데이터를 시각화한 참고 자료이며, 특정 계좌의 실제 보유 잔고나
           투자 권유가 아닙니다. 가격 구간별 수치는 일봉 고가~저가 범위에 거래량을 균등 배분한 추정치이고, 미국 주식의 기관
-          수급은 거래량 급증 양봉 기반 추정치입니다. 투자 판단과 그 결과에 대한 책임은 투자자 본인에게 있습니다.
+          수급은 거래량 급증 양봉 기반 추정치입니다. POC·두터운 매물 구간은 과거 체결량이 많았던 위치를 표시할 뿐 지지·저항이나
+          향후 가격을 보장하지 않습니다. 분할 매수/매도 시뮬레이션은 사용자가 입력한 가상의 가격대가 매물대 위 어디에
+          위치하는지 표시하는 참고 계산기이며, 목표가 제시나 투자 권유가 아닙니다. 투자 판단과 그 결과에 대한 책임은
+          투자자 본인에게 있습니다.
         </p>
       </footer>
     </div>

@@ -69,6 +69,27 @@ export interface StockProfileResult {
   periodEnd?: string;
   totalVolume?: number;
   hasFlowData?: boolean;
+  /** POC(최대 체결 구간) bin index. 데이터 없으면 -1 */
+  pocIndex: number;
+  /** 현재가 하방 체결 밀집 상위 구간 index (현재가에 가까운 순) — 분할 매수 참고 위치 */
+  lowerHeavyIndexes: number[];
+  /** 현재가 상방 체결 밀집 상위 구간 index (현재가에 가까운 순) — 분할 익절 참고 위치 */
+  upperHeavyIndexes: number[];
+}
+
+/** 분할 매수/익절 시뮬레이터 목표가 키 */
+export type SplitTargetKey = 'buy1' | 'buy2' | 'take1' | 'take2';
+
+export interface DisclosurePositionSummary {
+  total: number;
+  buyCount: number;
+  sellCount: number;
+  /** 공시 단가가 현재가보다 높은 건수 / 낮은(같은 포함) 건수 */
+  aboveCount: number;
+  belowCount: number;
+  /** 매수·취득 공시의 수량 가중평균 단가 (없으면 null) */
+  avgBuyPrice: number | null;
+  avgSellPrice: number | null;
 }
 
 export interface StockProfileResponse extends StockProfileResult {

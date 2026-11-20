@@ -1,5 +1,6 @@
 import type {
   CandleData,
+  DisclosurePositionSummary,
   DisclosureEvent,
   DominantFlow,
   MarketType,
@@ -80,6 +81,9 @@ export function buildVolumeProfile({
       periodDays: 0,
       totalVolume: 0,
       hasFlowData: false,
+      pocIndex: -1,
+      lowerHeavyIndexes: [],
+      upperHeavyIndexes: [],
     };
   }
 
@@ -183,6 +187,7 @@ export function buildVolumeProfile({
   const belowVolumeShare = totalVolume > 0 ? round((below / totalVolume) * 100, 1) : 0;
 
   const peak = bins.reduce((best, b) => (b.volume > best.volume ? b : best), bins[0]);
+  const { lowerHeavyIndexes, upperHeavyIndexes } = findHeavyZones(bins, currentPrice);
   const fmt = (v: number) =>
     market === 'KR' ? `${Math.round(v).toLocaleString('ko-KR')}원` : `$${v.toFixed(2)}`;
   const side =
@@ -207,5 +212,62 @@ export function buildVolumeProfile({
     periodEnd,
     totalVolume: Math.round(totalVolume),
     hasFlowData,
+    pocIndex: totalVolume > 0 ? peak.index : -1,
+    lowerHeavyIndexes,
+    upperHeavyIndexes,
+  };
+}
+
+/**
+ * 현재가 하방/상방에서 체결량이 가장 두터운 구간 상위 N개.
+ * 현재가가 속한 구간은 제외하고, 결과는 현재가에 가까운 순으로 정렬한다.
+ */
+export function findHeavyZones(bins: VolumeBin[], currentPrice: number, topN = 2) {
+  const pick = (side: VolumeBin[], nearestFirst: (a: VolumeBin, b: VolumeBin) => number) =>
+    side
+      .filter((b) => b.volume > 0)
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, topN)
+      .sort(nearestFirst)
+      .map((b) => b.index);
+  const lower = bins.filter((b) => !b.containsCurrentPrice && b.maxPrice <= currentPrice);
+  const upper = bins.filter((b) => !b.containsCurrentPrice && b.minPrice >= currentPrice);
+  return {
+    lowerHeavyIndexes: pick(lower, (a, b) => b.midPrice - a.midPrice),
+    upperHeavyIndexes: pick(upper, (a, b) => a.midPrice - b.midPrice),
+  };
+}
+
+/** 가격이 속한 구간. 조회 구간 고가~저가 범위 밖이면 undefined */
+export function findBinForPrice(bins: VolumeBin[], price: number): VolumeBin | undefined {
+  if (!Number.isFinite(price) || price <= 0 || bins.length === 0) return undefined;
+  const sorted = [...bins].sort((a, b) => a.minPrice - b.minPrice);
+  return sorted.find((b, i) => price >= b.minPrice && (i === sorted.length - 1 ? price <= b.maxPrice : price < b.maxPrice));
+}
+
+/** 현재가 대비 등락률(%) */
+export function pctFromCurrent(price: number, currentPrice: number) {
+  return currentPrice > 0 ? ((price - currentPrice) / currentPrice) * 100 : 0;
+}
+
+/** 조회 기간 내 공시의 매수/매도 건수와 현재가 대비 상·하방 분포 */
+export function summarizeDisclosurePositions(bins: VolumeBin[], currentPrice: number): DisclosurePositionSummary {
+  const events = bins.flatMap((b) => b.disclosures);
+  const weightedAvg = (list: DisclosureEvent[]) => {
+    const priced = list.filter((d) => d.price > 0 && d.shares > 0);
+    const shares = priced.reduce((s, d) => s + d.shares, 0);
+    return shares > 0 ? priced.reduce((s, d) => s + d.price * d.shares, 0) / shares : null;
+  };
+  const buys = events.filter((d) => d.action === 'BUY');
+  const sells = events.filter((d) => d.action === 'SELL');
+  const priced = events.filter((d) => d.price > 0);
+  return {
+    total: events.length,
+    buyCount: buys.length,
+    sellCount: sells.length,
+    aboveCount: priced.filter((d) => d.price > currentPrice).length,
+    belowCount: priced.filter((d) => d.price <= currentPrice).length,
+    avgBuyPrice: weightedAvg(buys),
+    avgSellPrice: weightedAvg(sells),
   };
 }

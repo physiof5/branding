@@ -1629,7 +1629,7 @@ let G=null;
 const keys={};
 let joyVec={x:0,y:0};
 
-const kstDate=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10); const COLL_KEY='alonechief_coll_v1',PET_KEY='alonechief_pet_v1';const collList=()=>{const a=load(COLL_KEY,[]);return Array.isArray(a)?a:[];};const collHas=k=>collList().includes(k);const collAdd=k=>{const a=collList();if(!a.includes(k)){a.push(k);store(COLL_KEY,a);return true;}return false;};const PET_INFO={none:{n:'없음',e:'🚫'},dog:{n:'강아지',e:'🐶'},cat:{n:'고양이',e:'🐱'},monkey:{n:'원숭이',e:'🐵'}};const SPECIAL={kimchi:1,fruit:1,dog:1,cat:1,monkey:1};const curPet=()=>load(PET_KEY,'none');const effPet=()=>{const p=curPet();return PET_INFO[p]&&(p==='none'||collHas(p))?p:'none';};
+const kstDate=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10); const COLL_KEY='alonechief_coll_v1',PET_KEY='alonechief_pet_v1';const collList=()=>{const a=load(COLL_KEY,[]);return Array.isArray(a)?a:[];};const collHas=k=>collList().includes(k);const collAdd=k=>{const a=collList();if(!a.includes(k)){a.push(k);store(COLL_KEY,a);return true;}return false;};const PET_INFO={none:{n:'없음',e:'🚫'},dog:{n:'강아지',e:'🐶'},cat:{n:'고양이',e:'🐱'},monkey:{n:'원숭이',e:'🐵'}};const SPECIAL={kimchi:1,fruit:1,dog:1,cat:1,monkey:1};const curPet=()=>load(PET_KEY,'none');const effPet=()=>{const p=curPet();return PET_INFO[p]&&(p!=='monkey'||collHas('monkey'))?p:'none';};
 function accPicked(){const u=load('alonechief_acc_unlock',null);return u&&u.date===kstDate()&&Array.isArray(u.items)?u.items:[];}
 function accState(k){if(!k||k==='none')return 'ok';if(SPECIAL[k])return collHas(k)?'ok':'slock';const d=new Date(Date.now()+9*3600e3),wd=d.getUTCDay();if(wd===0||wd===6)return 'ok';if(!accPicked().includes(k))return 'lock';return d.getUTCHours()>=14?'ok':'got';}
 const effHand=()=>ACC_INFO[charCfg.hand]&&accState(charCfg.hand)==='ok'?charCfg.hand:'none';
@@ -2693,8 +2693,8 @@ function accDescHtml(v){const a=ACC_INFO[v]||ACC_INFO.none,st=accState(v);
   if(st==='lock')return `<span class="adi">❓</span><span><b>잠긴 악세서리</b><br>점심시간(오후 1~2시) 휴게실에서 찾아 주우면 오후 2시부터 쓸 수 있어요</span>`;
   if(st==='got')return `<span class="adi">${a.i}</span><span><b>${a.n}</b> · 획득!<br>${a.d}<br>⏰ 오후 2시부터 사용 가능</span>`;
   return `<span class="adi">${a.i}</span><span><b>${a.n}</b><br>${a.d}</span>`;}
-function petHtml(){const cur=effPet();return `<div class="grp"><label class="t">🐾 동행 펫 <small class="acch">점수 +10% 보너스</small></label><div class="accgrid">${['none','dog','cat','monkey'].map(v=>{const p=PET_INFO[v],ok=v==='none'||collHas(v);return `<button class="accb ${cur===v?'on':''} ${ok?'':'lock'}" onclick="pickPet('${v}')"><span>${ok?p.e:'🔒'}</span><span>${p.n}</span></button>`;}).join('')}</div></div>`;}
-function pickPet(k){if(k!=='none'&&!collHas(k)){toast('🔒 점심시간 이벤트로 획득할 수 있어요!','bad');return;}store(PET_KEY,k);rebuildPreview();$('#optGroups').innerHTML=TABS.find(t=>t[0]===curTab)[2].map(ctrlHtml).join('');}}
+function petHtml(){const cur=effPet();return `<div class="grp"><label class="t">🐾 동행 펫 <small class="acch">점수 +10% 보너스</small></label><div class="accgrid">${['none','dog','cat','monkey'].map(v=>{const p=PET_INFO[v],ok=v!=='monkey'||collHas('monkey');return `<button class="accb ${cur===v?'on':''} ${ok?'':'lock'}" onclick="pickPet('${v}')"><span>${ok?p.e:'🔒'}</span><span>${p.n}</span></button>`;}).join('')}</div></div>`;}
+window.pickPet=function(k){if(k==='monkey'&&!collHas('monkey')){toast('🔒 일요일 점심시간 이벤트로 원숭이를 잡아보세요!','bad');return;}store(PET_KEY,k);rebuildPreview();$('#optGroups').innerHTML=TABS.find(t=>t[0]===curTab)[2].map(ctrlHtml).join('');};
 function ctrlHtml(k){if(k==='_pet')return petHtml();
   if(k==='hand'){const cur=effHand();
     return `<div class="grp"><label class="t">🎒 악세서리 <small class="acch">점심시간(오후1~2시)에 찾을 수 있어요.</small></label>

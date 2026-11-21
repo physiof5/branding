@@ -648,7 +648,13 @@ body.touch #joyHint{display:grid}
 @media (max-height:420px){
   #actBtn{width:88px;height:88px;font-size:34px}
   .ibtns{flex-direction:row}
-}
+} 
+  @media (orientation: landscape){
+    #hud{padding:calc(var(--sat) + 4px) calc(var(--sar) + 8px) 0 calc(var(--sal) + 8px);gap:6px}
+    #actWrap{right:calc(var(--sar) + 10px);bottom:calc(var(--sab) + 10px)}
+    #actBtn{width:84px;height:84px;font-size:34px}
+    #joyHint{left:calc(var(--sal) + 12px);bottom:calc(var(--sab) + 12px);width:96px;height:96px}
+  }
 </style>
 </head>
 <body>
@@ -665,7 +671,7 @@ body.touch #joyHint{display:grid}
         <h3>근무 수칙</h3>
         <ol class="steps">
           <li><b>💻 차트 확인</b><span>컴퓨터에서 처방 확인</span></li>
-          <li><b>👋 환자 안내</b><span>환자를 데리고 초록 베드로</span></li>
+          <li><b>👋 환자 안내</b><span>환자를 데리고 베드로</span></li>
           <li><b>⚡☀️🧤 자동 치료</b><span>ICT·IR·파라핀은 자리만 안내<br>초록불이 켜지면 마무리</span></li>
           <li><b>🔊💥💆 직접 치료</b><span>US·ESWT·도수는 끝까지 곁에<br>US는 초음파 치료기를 끌고 가요</span></li>
           <li class="warn"><b>😡 방치 금지</b><span>20초 방치 → 돌진! 부딪히면 3초 기절</span></li>
@@ -1594,9 +1600,9 @@ window.addEventListener('resize',()=>{if(R.renderer)resize();});
 const CAM={x:16,z:9,dist:40,zoom:load('alonechief_zoom',1)};
 const ELEV=49*PI/180;
 const ZOOMS=[1.4,1,.72];
-function viewWidth(){const portrait=R.h>R.w, asp=R.w/R.h;let vw=isTouch?(portrait?10:16):(R.w<1100?14:17);
+function viewWidth(){const portrait=R.h>R.w, asp=R.w/R.h;let vw=isTouch?(portrait?10:22):(R.w<1100?18:22);
   // wide/landscape screens: keep at least ~14 rows of depth visible (waiting room + beds), not just a thin strip
-  vw=Math.max(vw,asp*15.5*Math.sin(ELEV));return Math.min(34,vw*ZOOMS[CAM.zoom]);}
+  vw=Math.max(vw,asp*17.5*Math.sin(ELEV));return Math.min(36,vw*ZOOMS[CAM.zoom]);}
 function camUpdate(dt,overview,snap){
   const asp=R.w/R.h, tan=Math.tan(R.camera.fov/2*PI/180);
   const vw=overview?Math.max(33,20*asp):viewWidth();
@@ -2186,7 +2192,7 @@ function rxChip(t,done,unknown){const tr=TREAT[t];if(unknown)return `<span class
 function ticketStatus(p){
   if(p.state==='arriving')return ['입장 중',''];
   if(p.state==='waiting')return [p.charted?'👋 안내 가능':'💻 차트 확인',p.patience<20?'alert':''];
-  if(p.state==='following')return ['🟢 초록 베드로 안내',''];
+  if(p.state==='following')return ['🟢 베드로 안내',''];
   if(p.state==='toPlayer')return ['🔔 호출됨',''];
   if(p.state==='toSeat'||p.state==='toChair')return ['이동 중',''];
   if(p.state==='chase')return ['😡 돌진 중!','alert'];
@@ -2234,7 +2240,7 @@ function updateHUD(){
   if(G.modal){setT(btn,'✖');setT(lbl,'차트 닫기');btn.className='';}
   else if(G.player.stunT>0){setT(btn,'💫');setT(lbl,'기절 중');btn.className='none';}
   else if(c){popLbl(lbl,c.label);setT(btn,c.icon);setT(lbl,c.label);btn.className=c.bad?'bad':c.go?'go':'';}
-  else{setT(btn,'✋');setT(lbl,G.player.escort?'초록 베드로':'할 일 없음');btn.className='none';}
+  else{setT(btn,'✋');setT(lbl,G.player.escort?'베드로':'할 일 없음');btn.className='none';}
 }
 function toast(msg,type){
   const box=$('#toasts');const d=document.createElement('div');d.className='toast '+(type||'');d.textContent=msg;box.appendChild(d);

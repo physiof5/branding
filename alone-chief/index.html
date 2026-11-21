@@ -2805,7 +2805,7 @@ function initPreview(){
   pv.addEventListener('pointermove',e=>{if(pvDrag)pvYaw=pvDrag.y0+(e.clientX-pvDrag.x)*.012;});
   pv.addEventListener('pointerup',()=>pvDrag=null);pv.addEventListener('pointercancel',()=>pvDrag=null);
 }
-function rebuildPreview(){if(!PV.r)return;if(PV.obj)disposeChar(PV.obj);PV.obj=makeChar(playerCfg());PV.s.add(PV.obj.root);if(PV.pet){PV.s.remove(PV.pet);PV.pet=null;}const pk=effPet();if(pk!=='none'){PV.obj.root.position.x=-0.18;PV.pet=petModel(pk);PV.pet.position.set(0.44,0,0.22);PV.pet.rotation.y=-0.28;PV.pet.scale.setScalar(1.45);PV.s.add(PV.pet);}else{PV.obj.root.position.x=0;}}
+function rebuildPreview(){if(!PV.r)return;if(PV.obj)disposeChar(PV.obj);PV.obj=makeChar(playerCfg());PV.s.add(PV.obj.root);if(PV.pet){PV.s.remove(PV.pet);PV.pet=null;}const pk=effPet();if(pk!=='none'){PV.obj.root.position.x=0;PV.pet=petModel(pk);PV.pet.position.set(0.35,0,0.28);PV.pet.rotation.y=-0.22;PV.pet.scale.setScalar(1.0);PV.s.add(PV.pet);}else{PV.obj.root.position.x=0;}}
 function renderPreview(dt){
   if(!PV.obj)return;pvT+=dt;
   const w=pv.clientWidth,h=pv.clientHeight;if(!w||!h)return;
@@ -2816,7 +2816,7 @@ function renderPreview(dt){
   else if(target!=null){let d=target-pvYaw;d=Math.atan2(Math.sin(d),Math.cos(d));pvYaw+=d*Math.min(1,dt*8);}
   const o=PV.obj;o.yaw=pvYaw;o.root.rotation.y=pvYaw;
   animChar(o,dt,pvT,{moving:pvView==='walk',walk:pvT*10,face:null,mood:null});
-  const ht=o.height;PV.cam.position.set(0,ht*.6+.25,ht*1.7+(PV.pet?2.45:1.6));PV.cam.lookAt(0,ht*.5,0);
+  const ht=o.height;PV.cam.position.set(0,ht*.6+.25,ht*1.7+1.6);PV.cam.lookAt(0,ht*.5,0);
   PV.r.render(PV.s,PV.cam);
 }
 

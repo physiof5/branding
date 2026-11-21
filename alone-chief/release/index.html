@@ -2928,7 +2928,7 @@ function rxChip(t,done,unknown){const tr=TREAT[t];if(unknown)return `<span class
 function ticketStatus(p){
   if(p.state==='arriving')return ['입장 중',''];
   if(p.state==='waiting')return [p.charted?'👋 안내 가능':'💻 차트 확인',p.patience<20?'alert':''];
-  if(p.state==='following')return ['🟢 초록 베드로 안내',''];
+  if(p.state==='following')return ['🟢 베드로 안내',''];
   if(p.state==='toPlayer')return ['🔔 호출됨',''];
   if(p.state==='toSeat'||p.state==='toChair')return ['이동 중',''];
   if(p.state==='chase')return ['😡 돌진 중!','alert'];
@@ -2976,7 +2976,7 @@ function updateHUD(){
   if(G.modal){setT(btn,'✖');setT(lbl,'차트 닫기');btn.className='';}
   else if(G.player.stunT>0){setT(btn,'💫');setT(lbl,'기절 중');btn.className='none';}
   else if(c){popLbl(lbl,c.label);setT(btn,c.icon);setT(lbl,c.label);btn.className=c.bad?'bad':c.go?'go':'';}
-  else{setT(btn,'✋');setT(lbl,G.player.escort?'초록 베드로':'할 일 없음');btn.className='none';}
+  else{setT(btn,'✋');setT(lbl,G.player.escort?'베드로':'할 일 없음');btn.className='none';}
 }
 function toast(msg,type){
   if(G&&G.asMate){teamSendMate({k:'toast',msg,type});return;}

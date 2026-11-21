@@ -1631,7 +1631,7 @@ let joyVec={x:0,y:0};
 
 const kstDate=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
 function accPicked(){const u=load('alonechief_acc_unlock',null);return u&&u.date===kstDate()&&Array.isArray(u.items)?u.items:[];}
-function accState(k){if(!k||k==='none')return 'ok';if(!accPicked().includes(k))return 'lock';return new Date(Date.now()+9*3600e3).getUTCHours()>=14?'ok':'got';}
+function accState(k){if(!k||k==='none')return 'ok';const d=new Date(Date.now()+9*3600e3),wd=d.getUTCDay();if(wd===0||wd===6)return 'ok';if(!accPicked().includes(k))return 'lock';return d.getUTCHours()>=14?'ok':'got';}
 const effHand=()=>ACC_INFO[charCfg.hand]&&accState(charCfg.hand)==='ok'?charCfg.hand:'none';
 function playerCfg(){return Object.assign({},charCfg,{badge:badgeText(),extra:null,hand:effHand()});}
 function doRounds(){

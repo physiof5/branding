@@ -29,13 +29,13 @@
   --sat:env(safe-area-inset-top,0px); --sar:env(safe-area-inset-right,0px); --sab:env(safe-area-inset-bottom,0px); --sal:env(safe-area-inset-left,0px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;overflow:hidden;max-width:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;background:
+html,body{margin:0;height:100dvh;overflow:hidden;max-width:100%;-webkit-text-size-adjust:100%;text-size-adjust:100%;background:
   radial-gradient(circle at 20% 15%,rgba(255,255,255,.18) 0 2px,transparent 3px) 0 0/34px 34px,
   linear-gradient(160deg,var(--sky1),var(--sky2));
   font-family:'Jua','Noto Sans KR',system-ui,sans-serif;color:var(--ink);-webkit-user-select:none;user-select:none;overscroll-behavior:none;-webkit-touch-callout:none}
 body,button,input{word-break:keep-all;overflow-wrap:break-word;line-break:strict}
 button{font-family:inherit;cursor:pointer;touch-action:manipulation;color:inherit}
-.screen{position:fixed;inset:0;display:none;overflow-x:hidden;overflow-x:clip;overflow-y:auto;overscroll-behavior-x:none;-webkit-overflow-scrolling:touch;
+.screen{position:fixed;inset:0; height:100dvh;;display:none;overflow-x:hidden;overflow-x:clip;overflow-y:auto;overscroll-behavior-x:none;-webkit-overflow-scrolling:touch;
   padding:max(16px,var(--sat)) max(16px,var(--sar)) max(16px,var(--sab)) max(16px,var(--sal))}
 .screen.active{display:flex}
 .screen>.center{margin:auto}
@@ -306,7 +306,7 @@ body.kb .cfoot,body.kb .ebtns{position:static}
 #preview{max-width:100%}
 
 /* ---------- Game ---------- */
-#game{padding:0;background:#1a100b;touch-action:none}
+#game{padding:0;background:#1a100b;touch-action:none;height:100dvh}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
 #ov{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:2}
 .ovi{position:absolute;left:0;top:0;will-change:transform;white-space:nowrap}
@@ -479,7 +479,7 @@ body.fever #game::after{content:'🔥 FEVER x2';position:absolute;left:50%;botto
 body.touch #help{display:none}
 
 /* touch controls */
-#actWrap{position:absolute;right:calc(var(--sar) + 20px);bottom:calc(var(--sab) + 18px);display:none;flex-direction:column;align-items:center;gap:6px;z-index:6}
+#actWrap{position:absolute;right:calc(var(--sar) + 20px);bottom:calc(var(--sab)  + 36px);display:none;flex-direction:column;align-items:center;gap:6px;z-index:6}
 body.touch #actWrap{display:flex}
 #actBtn{width:108px;height:108px;border-radius:50%;background:var(--accent);border:4px solid var(--ink);color:#fff;font-size:42px;box-shadow:0 6px 0 var(--ink);touch-action:none;display:grid;place-items:center;transition:transform .06s}
 #actBtn:active,#actBtn.press{transform:translateY(5px);box-shadow:0 1px 0 var(--ink)}
@@ -489,7 +489,7 @@ body.touch #actWrap{display:flex}
 #actLbl{background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 10px;font-size:15px;max-width:44vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.35)}
 #joyBase{position:absolute;width:132px;height:132px;margin:-66px 0 0 -66px;border-radius:50%;background:rgba(255,255,255,.16);border:3px solid rgba(255,255,255,.6);display:none;pointer-events:none;z-index:6}
 #joyKnob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px;border-radius:50%;background:rgba(255,255,255,.9);border:3px solid var(--ink)}
-#joyHint{position:absolute;left:calc(var(--sal) + 30px);bottom:calc(var(--sab) + 30px);width:120px;height:120px;border-radius:50%;border:3px dashed rgba(255,255,255,.55);display:none;place-items:center;color:#fff;font-size:14px;text-align:center;text-shadow:0 1px 0 #000;pointer-events:none;z-index:3;transition:opacity .4s}
+#joyHint{position:absolute;left:calc(var(--sal) + 30px);bottom:calc(var(--sab) + 42px);width:120px;height:120px;border-radius:50%;border:3px dashed rgba(255,255,255,.55);display:none;place-items:center;color:#fff;font-size:14px;text-align:center;text-shadow:0 1px 0 #000;pointer-events:none;z-index:3;transition:opacity .4s}
 body.touch #joyHint{display:grid}
 
 /* ---------- End ---------- */
@@ -651,9 +651,9 @@ body.touch #joyHint{display:grid}
 } 
   @media (orientation: landscape){
     #hud{padding:calc(var(--sat) + 4px) calc(var(--sar) + 8px) 0 calc(var(--sal) + 8px);gap:6px}
-    #actWrap{right:calc(var(--sar) + 10px);bottom:calc(var(--sab) + 10px)}
+    #actWrap{right:calc(var(--sar) + 10px);bottom:calc(var(--sab) + 22px)}
     #actBtn{width:84px;height:84px;font-size:34px}
-    #joyHint{left:calc(var(--sal) + 12px);bottom:calc(var(--sab) + 12px);width:96px;height:96px}
+    #joyHint{left:calc(var(--sal) + 12px);bottom:calc(var(--sab) + 22px);width:96px;height:96px}
   }
 </style>
 </head>
@@ -2382,7 +2382,7 @@ function show(id){if(id!=='game'&&G&&G.lunch&&!G.lunch.left)lunchLeave();
   $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
   if(id==='game')resize();if(id==='custom'){buildCustom();rebuildPreview();const LU=!DUEL&&isLunch();$('#customBanner').textContent=DUEL?'⚔️ 대결 · 캐릭터 꾸미기':LU?'🍱 점심 시간 · 캐릭터 꾸미기':'🧑‍⚕️ 캐릭터 선택';$('#startBtn').textContent=DUEL?'⚔️ 대결장 입장 ▶':LU?'🍱 휴게실 입장 ▶':'출근하기 ▶';emojify($('#customBanner'));emojify($('#startBtn'));}if(id==='lobby'){renderLobby();}if(id==='title')renderTitle();}
 function startGame(){
-  if(isTouch){try{const de=document.documentElement;if(!document.fullscreenElement&&de.requestFullscreen)de.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(e){}}
+  
   newGame();show('game');
   CAM.x=16;CAM.z=9.4;camUpdate(0,true,true);
   $('#tickets').innerHTML='';$('#tickets').dataset.ids='';$('#toasts').innerHTML='';

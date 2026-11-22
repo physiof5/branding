@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#111827">
+<title>공부는 엉덩이 싸움</title>
+<style>
+:root{color-scheme:dark;--bg:#101522;--panel:#1b2435;--line:#35435b;--pink:#ff668c;--cyan:#59d8ee;--gold:#ffd36b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 50% 0,#26334c 0,#101522 58%);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif;color:#f7f8fc;min-height:100vh;overflow-x:hidden}
+button{font:inherit;color:inherit;border:1px solid #46536b;background:#28344a;border-radius:14px;padding:12px 14px;font-weight:800;cursor:pointer;touch-action:manipulation}button:disabled{opacity:.38;cursor:not-allowed}
+.wrap{width:min(1100px,100%);margin:auto;padding:18px 16px 28px}.top{text-align:center;margin:4px 0 14px}.eyebrow{font-size:11px;letter-spacing:.25em;color:var(--gold);font-weight:900}.top h1{font-size:clamp(27px,5vw,46px);margin:5px 0;line-height:1.1}.top p{margin:8px 0;color:#b9c4d8;font-size:13px}
+.arena{position:relative;border:1px solid #39465d;border-radius:22px;overflow:hidden;background:#111827;box-shadow:0 18px 55px #0008}
+#stage{height:clamp(270px,48vw,470px);width:100%;display:block}.hud{position:absolute;top:14px;left:14px;right:14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;pointer-events:none}.fighter{background:#111827d9;border:1px solid #ffffff22;border-radius:14px;padding:10px 12px;backdrop-filter:blur(8px)}.fighter.right{text-align:right}.name{font-size:12px;font-weight:900;margin-bottom:7px}.bar{height:12px;background:#465168;border-radius:20px;overflow:hidden}.fill{height:100%;width:100%;transition:width .25s;background:linear-gradient(90deg,#ff507a,#ff9a8c)}.right .fill{margin-left:auto;background:linear-gradient(90deg,#3dc5e5,#8af0db)}.hptext{font-size:11px;color:#d4dbea;margin-top:4px}.arena-foot{position:absolute;bottom:12px;left:0;right:0;text-align:center;pointer-events:none}.status{display:inline-block;background:#111827d9;border:1px solid #ffffff25;border-radius:99px;padding:7px 14px;font-size:12px;font-weight:800;backdrop-filter:blur(8px)}
+.stats{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:12px 2px;color:#c8d2e4;font-size:12px}.charge{color:var(--gold);font-weight:900}.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}.panel{background:linear-gradient(160deg,#202b40,#171f30);border:1px solid var(--line);border-radius:18px;padding:13px}.panel h2{font-size:13px;margin:0 0 10px;color:#dce5f5}.move-row{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.move-row button{min-height:54px}.dodge button{width:100%;min-height:58px;border-color:#348ba1;background:linear-gradient(145deg,#164b5a,#1b344b)}.attack button{background:linear-gradient(145deg,#6d2945,#3c233d);border-color:#a94a70}.attack .guard{background:linear-gradient(145deg,#34517a,#24344f);border-color:#5c86bd}.specials{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}.specials button{font-size:11px;padding:10px 5px;min-height:55px}.specials small{display:block;color:#ffd8e1;font-size:10px;margin-top:3px}.bottom{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.bottom button{font-size:12px}.note{font-size:11px;color:#98a8c2;line-height:1.6;margin:12px 3px}.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#0b1020c9;backdrop-filter:blur(5px);z-index:5;padding:20px;text-align:center}.modal{max-width:480px}.modal h2{font-size:clamp(25px,5vw,38px);margin:0 0 10px}.modal p{color:#c4cde0;font-size:13px;line-height:1.7}.primary{background:linear-gradient(120deg,#ff5d83,#ff995f);border:0;color:#1b1720;padding:14px 26px;font-size:15px}.hidden{display:none!important}.toast{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:clamp(24px,5vw,48px);font-weight:1000;text-shadow:0 4px 20px #000;pointer-events:none;z-index:3;white-space:nowrap}.kbd{font-size:10px;color:#8ea0bd}
+@media(max-width:620px){.wrap{padding:12px 10px 22px}.controls{grid-template-columns:1fr}.panel{padding:11px}.stats{font-size:11px}.hud{top:8px;left:8px;right:8px;gap:7px}.fighter{padding:8px}.name{font-size:10px}.hptext{font-size:10px}.move-row button{min-height:50px;padding:8px 4px;font-size:12px}.dodge button{min-height:52px}}
+</style>
+</head>
+<body>
+<main class="wrap">
+<header class="top"><div class="eyebrow">THE FUTURE OF ADMISSIONS</div><h1>공부는 엉덩이 싸움</h1><p>미래에는 공부로 대학을 가는 것이 아니다. 엉덩이 싸움으로 대학이 결정된다.</p></header>
+<section class="arena">
+<canvas id="stage"></canvas>
+<div class="hud">
+ <div class="fighter"><div class="name">YOU · 수험생</div><div class="bar"><div class="fill" id="playerBar"></div></div><div class="hptext" id="playerHp">HP 100 / 100</div></div>
+ <div class="fighter right"><div class="name" id="enemyName">상대 · 라이벌</div><div class="bar"><div class="fill" id="enemyBar"></div></div><div class="hptext" id="enemyHp">HP 100 / 100</div></div>
+</div>
+<div class="arena-foot"><span class="status" id="status">상대를 기다리는 중…</span></div>
+<div class="toast hidden" id="toast"></div>
+<div class="overlay" id="intro"><div class="modal"><div class="eyebrow">1 VS 1 · SURVIVAL EXAM</div><h2>입시의 판도를 뒤집어라!</h2><p>왼쪽 버튼으로 엉덩이를 좌우로 움직여 공격을 피하고, 오른쪽 버튼으로 공격과 방어를 수행하세요.<br>상대는 라운드가 올라갈수록 영리하고 빨라집니다.</p><button class="primary" id="start">대결 시작</button></div></div>
+<div class="overlay hidden" id="result"><div class="modal"><div class="eyebrow">MATCH RESULT</div><h2 id="resultTitle">승리!</h2><p id="resultCopy"></p><button class="primary" id="again">다시 도전</button></div></div>
+</section>
+<div class="stats"><span>ROUND <b id="round">1</b> · 상대 난이도 <b id="difficulty">입문</b></span><span>방어 성공 <b class="charge" id="defCount">0</b>회 · 필살기 <b class="charge" id="chargeText">0 / 9</b></span></div>
+<section class="controls">
+<div class="panel dodge"><h2>왼손 · 회피 조작 <span class="kbd">A / D 또는 ← / →</span></h2><div class="move-row"><button data-dodge="-1">◀ 왼쪽 회피</button><button data-dodge="0">중앙 복귀</button><button data-dodge="1">오른쪽 회피 ▶</button></div></div>
+<div class="panel attack"><h2>오른손 · 공격 / 수비 <span class="kbd">J / K / L · Space</span></h2><div class="move-row"><button data-attack="left">좌측 공격</button><button data-attack="center">중앙 공격</button><button data-attack="right">우측 공격</button></div><div class="move-row" style="margin-top:7px"><button class="guard" id="guard" style="grid-column:1/-1">🛡️ 수비하기 (Space)</button></div><div class="specials"><button data-special="3" id="sp3" disabled>필살기 I<small>3회 방어 · 30 / 45</small></button><button data-special="6" id="sp6" disabled>필살기 II<small>6회 방어 · 50 / 75</small></button><button data-special="9" id="sp9" disabled>필살기 III<small>9회 방어 · 100</small></button></div></div>
+</section>
+<div class="bottom"><button id="sound">🔊 사운드 켜짐</button><button id="how">게임 방법</button></div>
+<p class="note">규칙: 일반 좌·우 공격은 10, 중앙 공격은 15 피해를 줍니다. 공격을 가드하면 공격자가 좌·우 5, 중앙 10 피해를 받습니다. 방어 성공 3·6·9회에 필살기가 해금되며, 필살기는 가드할 수 없고 회피만 가능합니다. 공격 재사용 대기시간은 5초입니다.</p>
+</main>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const canvas=document.querySelector('#stage');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:false});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setSize(canvas.clientWidth,canvas.clientHeight,false);renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x111827);scene.fog=new THREE.Fog(0x111827,13,28);
+const camera=new THREE.PerspectiveCamera(36,canvas.clientWidth/canvas.clientHeight,.1,100);camera.position.set(0,4.3,12.5);camera.lookAt(0,1.3,0);
+scene.add(new THREE.HemisphereLight(0xb9d9ff,0x35283a,2));
+const key=new THREE.DirectionalLight(0xffe4c4,3);key.position.set(-4,8,6);key.castShadow=true;scene.add(key);
+const rim=new THREE.PointLight(0x4cc9ed,18,14);rim.position.set(2,4,-4);scene.add(rim);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,20),new THREE.MeshStandardMaterial({color:0x26334a,roughness:.85}));floor.rotation.x=-Math.PI/2;floor.position.y=-.03;floor.receiveShadow=true;scene.add(floor);
+const grid=new THREE.GridHelper(24,24,0x53647d,0x344158);grid.position.y=.005;scene.add(grid);
+function mat(color,rough=.7){return new THREE.MeshStandardMaterial({color,roughness:rough})}
+function makeFighter(skin,shirt,shorts,accent){
+ const root=new THREE.Group();const body=new THREE.Group();root.add(body);
+ const mSkin=mat(skin),mShirt=mat(shirt),mShort=mat(shorts),mAccent=mat(accent,.45),mDark=mat(0x202637);
+ function ball(parent,x,y,z,sx,sy,sz,m){const o=new THREE.Mesh(new THREE.SphereGeometry(1,24,18),m);o.position.set(x,y,z);o.scale.set(sx,sy,sz);o.castShadow=true;parent.add(o);return o}
+ function limb(parent,a,b,r1,r2,m){const v1=new THREE.Vector3(...a),v2=new THREE.Vector3(...b),d=v2.clone().sub(v1);const o=new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,d.length(),16),m);o.position.copy(v1.add(v2).multiplyScalar(.5));o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),d.normalize());o.castShadow=true;parent.add(o);return o}
+ ball(body,0,1.38,0,.48,.57,.3,mShirt);ball(body,0,2.13,0,.31,.33,.29,mSkin);
+ // hair cap
+ ball(body,0,2.35,-.015,.32,.17,.3,mDark);
+ // face details
+ ball(body,-.12,2.15,.255,.035,.045,.025,mDark);ball(body,.12,2.15,.255,.035,.045,.025,mDark);
+ // arms
+ limb(body,[-.4,1.72,0],[-.63,1.23,.08],.13,.095,mSkin);limb(body,[.4,1.72,0],[.63,1.23,.08],.13,.095,mSkin);
+ ball(body,-.63,1.2,.1,.14,.13,.14,mSkin);ball(body,.63,1.2,.1,.14,.13,.14,mSkin);
+ // hips and legs
+ ball(body,0,.91,0,.43,.3,.31,mShort);
+ limb(body,[-.2,.82,0],[-.24,.35,.02],.19,.14,mSkin);limb(body,[.2,.82,0],[.24,.35,.02],.19,.14,mSkin);
+ ball(body,-.24,.22,.11,.17,.13,.29,mDark);ball(body,.24,.22,.11,.17,.13,.29,mDark);
+ // belt stripe
+ const belt=new THREE.Mesh(new THREE.TorusGeometry(.34,.035,8,32),mAccent);belt.rotation.x=Math.PI/2;belt.position.y=.99;body.add(belt);
+ root.userData={body,hip:body,shirt:mShirt,accent:mAccent};root.position.y=0;scene.add(root);return root;
+}
+const player=makeFighter(0xf1bd99,0x267d91,0x25364d,0x66d7e8);player.position.set(-2.15,0,0);
+const enemy=makeFighter(0xc98d70,0x983f59,0x422b45,0xff7896);enemy.position.set(2.15,0,-.4);enemy.rotation.y=Math.PI;
+function addSpot(x,color){const l=new THREE.SpotLight(color,25,16,Math.PI/5,.45,1.3);l.position.set(x,7,3);l.target.position.set(x,0,0);scene.add(l,l.target)}addSpot(-3,0x6ee5ff);addSpot(3,0xff719a);
+let camShake=0,camZoom=0,toastTimer=0;
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}new ResizeObserver(resize).observe(canvas);
+const clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();player.userData.body.position.y=Math.sin(t*2.2)*.025;enemy.userData.body.position.y=Math.sin(t*2.2+1)*.025;
+ const targetZ=12.5-camZoom;camera.position.z+=(targetZ-camera.position.z)*.06;
+ if(camShake>0){camera.position.x=(Math.random()-.5)*camShake;camera.position.y=4.3+(Math.random()-.5)*camShake;camShake*=.88}else{camera.position.x+=(0-camera.position.x)*.12;camera.position.y+=(4.3-camera.position.y)*.12}
+ camera.lookAt(0,1.3,0);renderer.render(scene,camera)}animate();
+const $=s=>document.querySelector(s);
+let hpP=100,hpE=100,round=1,defenses=0,lane=0,enemyLane=0,guarding=false,playing=false,attackReady=0,enemyReady=0,enemyTimer=0,incoming=null,phase='idle',soundOn=true,audioCtx=null,available=new Set(),used=new Set(),roundTimer=0;
+const laneX=[-1.1,0,1.1],names=['왼쪽','중앙','오른쪽'];
+function beep(freq=440,d=.08,type='sine'){if(!soundOn)return;try{audioCtx??=new(window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type=type;o.frequency.value=freq;g.gain.setValueAtTime(.08,audioCtx.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+d);o.connect(g);g.connect(audioCtx.destination);o.start();o.stop(audioCtx.currentTime+d)}catch{}}
+function shout(t){const el=$('#toast');el.textContent=t;el.classList.remove('hidden');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.add('hidden'),850)}
+function ui(){ $('#playerBar').style.width=hpP+'%';$('#enemyBar').style.width=hpE+'%';$('#playerHp').textContent='HP '+hpP+' / 100';$('#enemyHp').textContent='HP '+hpE+' / 100';$('#round').textContent=round;$('#difficulty').textContent=round<3?'입문':round<6?'경쟁':round<9?'상위권':'전국 최강';$('#defCount').textContent=defenses;$('#chargeText').textContent=Math.min(defenses,9)+' / 9';
+ for(const n of [3,6,9])$('#sp'+n).disabled=!playing||defenses<n||used.has(n);
+ $('#status').textContent=!playing?'대결 대기':incoming?'상대 '+names[incoming.lane]+' 공격 임박!':Date.now()<attackReady?'공격 재정비 중 · '+Math.ceil((attackReady-Date.now())/1000)+'초':'다음 수를 읽어라!'}
+function moveLane(n){if(!playing)return;lane=Math.max(-1,Math.min(1,n));player.position.x=-2.15+laneX[lane+1]*.52;beep(260,.04)}
+function hitEffect(target){camShake=.18;camZoom=.7;setTimeout(()=>camZoom=0,280);beep(110,.18,'sawtooth')}
+function endMatch(win){playing=false;incoming=null;$('#resultTitle').textContent=win?'🏆 합격! 승리!':'💥 불합격… 패배';$('#resultCopy').textContent=win?'라이벌을 제압했습니다. 다음 라운드에 도전할 준비가 됐나요?':'상대에게 밀렸습니다. 다시 도전해 입시의 판도를 뒤집으세요.';$('#result').classList.remove('hidden');ui()}
+function damagePlayer(d){hpP=Math.max(0,hpP-d);hitEffect(player);shout('-'+d+' HP');if(hpP<=0)endMatch(false);ui()}
+function damageEnemy(d){hpE=Math.max(0,hpE-d);hitEffect(enemy);shout('상대 -'+d+' HP');if(hpE<=0){round++;hpP=Math.min(100,hpP+18);hpE=100;defenses=0;available.clear();used.clear();enemyTimer=0;shout('ROUND '+round+' 진출!');$('#enemyName').textContent='상대 · 라이벌 '+round;beep(660,.22);ui()}}
+function playerAttack(type,special=0){if(!playing||Date.now()<attackReady)return;const now=Date.now();attackReady=now+5000;const d=special===9?100:special===6?(type==='center'?75:50):special===3?(type==='center'?45:30):(type==='center'?15:10);
+ shout(special?'필살기 발동!':names[['left','center','right'].indexOf(type)]+' 공격!');player.userData.body.rotation.z=type==='left'?.18:type==='right'?-.18:0;setTimeout(()=>player.userData.body.rotation.z=0,250);
+ if(incoming&&incoming.lane===({left:-1,center:0,right:1}[type])){incoming=null;enemyTimer=1.2;damageEnemy(d);$('#status').textContent='상대 공격을 끊었습니다!'}else{damageEnemy(d);if(incoming){incoming=null;enemyTimer=1.1}}
+ if(special){used.add(special);defenses=Math.max(0,defenses-special);beep(760,.22,'triangle')}
+ ui()}
+function guard(){if(!playing)return;guarding=true;$('#guard').style.filter='brightness(1.7)';setTimeout(()=>{guarding=false;$('#guard').style.filter='';},850);beep(320,.06)}
+function enemyPlan(){if(!playing||incoming||Date.now()<enemyReady)return;const level=Math.min(round,10);const lane=Math.floor(Math.random()*3)-1;const special=round>=3&&Math.random()<Math.min(.12+round*.035,.45);incoming={lane,special,at:Date.now(),impact:Date.now()+(special?1450:1900-Math.min(round*70,550))};enemyReady=Date.now()+Math.max(2600,5100-round*210);enemyLane=lane;shout(special?'상대 필살기 준비!':'상대 공격 예고!');beep(special?180:240,.12,'square');ui()}
+function resolveIncoming(){if(!incoming||Date.now()<incoming.impact)return;const hit=incoming;incoming=null;const avoided=lane!==hit.lane;if(avoided){shout('회피 성공!');beep(600,.12)}else if(guarding&&!hit.special){const recoil=hit.lane===0?10:5;defenses++;damageEnemy(recoil);shout('완벽 방어!');beep(520,.12);if([3,6,9].includes(defenses))shout('필살기 해금!')}else{damagePlayer(hit.special?25:hit.lane===0?15:10)}ui()}
+function loop(){if(playing){const now=Date.now();if(!incoming&&now>=enemyTimer)enemyPlan();resolveIncoming();ui()}requestAnimationFrame(loop)}loop();
+function reset(){hpP=100;hpE=100;round=1;defenses=0;lane=0;used.clear();incoming=null;attackReady=0;enemyReady=0;enemyTimer=0;player.position.x=-2.15;$('#enemyName').textContent='상대 · 라이벌';playing=true;$('#intro').classList.add('hidden');$('#result').classList.add('hidden');shout('대결 시작!');ui()}
+$('#start').onclick=reset;$('#again').onclick=reset;
+document.querySelectorAll('[data-dodge]').forEach(b=>b.addEventListener('click',()=>moveLane(Number(b.dataset.dodge))));
+document.querySelectorAll('[data-attack]').forEach(b=>b.addEventListener('click',()=>playerAttack(b.dataset.attack)));
+$('#guard').onclick=guard;
+document.querySelectorAll('[data-special]').forEach(b=>b.addEventListener('click',()=>{const n=Number(b.dataset.special);if(defenses>=n&&!used.has(n))playerAttack('center',n)}));
+window.addEventListener('keydown',e=>{if(['ArrowLeft','ArrowRight',' ','a','A','d','D','j','J','k','K','l','L'].includes(e.key))e.preventDefault();if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')moveLane(-1);if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')moveLane(1);if(e.key===' ')guard();if(e.key.toLowerCase()==='j')playerAttack('left');if(e.key.toLowerCase()==='k')playerAttack('center');if(e.key.toLowerCase()==='l')playerAttack('right')});
+$('#sound').onclick=()=>{soundOn=!soundOn;$('#sound').textContent=soundOn?'🔊 사운드 켜짐':'🔇 사운드 꺼짐';if(soundOn)beep()};
+$('#how').onclick=()=>{$('#intro').classList.remove('hidden');$('#start').textContent='계속하기';$('#start').onclick=()=>{$('#intro').classList.add('hidden');playing=true;$('#start').textContent='대결 시작';$('#start').onclick=reset}};
+ui();
+</script>
+</body></html>

@@ -3116,7 +3116,7 @@ function lunchPick(it){const u=load('alonechief_acc_unlock',null),d=kstDate(),it
   toast(`🎁 ${a.i} ${a.n} 획득! 오후 2시부터 쓸 수 있어요`,'good');}
 
 
-function bedTaken(s){if(G.player.bed===s.id)return true;for(const p of G.lunch.peers.values())if(p.bed===s.id)return true;return false;}
+function bedTaken(s){if(G.player.bed===s.id)return true;for(const p of G.lunch.peers.values())if(p.bed===s.id)return true;if(G.lunch.gm&&G.lunch.gm.bed===s.id)return true;return false;}
 function lunchLie(s){const P=G.player;P.bed=s.id;P.x=s.seat.x;P.y=s.seat.y;sfx('click');lunchSend(true);}
 function lunchStand(){const P=G.player,s=stById(P.bed);P.bed=null;if(s){P.x=s.access.x*T+T/2;P.y=s.access.y*T+T/2;}lunchSend(true);}
 function lunchCands(){const P=G.player,L=G.lunch,out=[];
@@ -3129,7 +3129,7 @@ function lunchCands(){const P=G.player,L=G.lunch,out=[];
     out.push({pr:3,d,icon:s.lie==='sit'?'🪑':'🛏',label:s.lie==='sit'?'앉기':'눕기',at:{x:s.seat.x,y:s.seat.y,h:1.5},fn:()=>lunchLie(s)});}
   evCands(out);out.sort((a,b)=>a.pr-b.pr||a.d-b.d);return out;}
 function lunchUpdate(dt){const P=G.player,L=G.lunch;
-  L.cool=Math.max(0,L.cool-dt);evTick(L,dt);P.actT=Math.max(0,P.actT-dt);
+  L.cool=Math.max(0,L.cool-dt);huntTick(L,dt);evTick(L,dt);P.actT=Math.max(0,P.actT-dt);
   L.near=L.near||new Set();for(const it of L.items){const d=Math.hypot(it.x-P.x,it.y-P.y);if(d<110&&!L.near.has(it.k)){L.near.add(it.k);sfx('sparkle');}}
   P.moving=false;
   let mx=0,my=0;
@@ -3182,11 +3182,7 @@ function lunchRender(dt,t){const P=G.player,L=G.lunch;
     poseOn(o,p.bed,dt,t,{moving:p.moving,walk:p.walk,face:p.face,mood:p.fxT>0?'happy':null});armsFx(o,p.act,p.actT,t,!!p.bed);}
   for(const [sid,o] of R.lchars)if(!L.peers.has(sid)||!L.peers.get(sid).ready){disposeChar(o);R.lchars.delete(sid);}
   for(const s of stations){s.lampMat.color.setHex(LAMP.idle);s.lamp.scale.setScalar(.12);if(s.irMat){s.irMat.emissive.setHex(0);s.irLight.intensity=0;}s.hl.visible=false;}
-  if(L.mk&&!L.mk.gone){
-    if(!R.mkObj){R.mkObj=petModel('monkey');R.mkObj.scale.setScalar(1.45);R.scene.add(R.mkObj);}
-    const o=R.mkObj,ud=o.userData;o.position.set(L.mk.x/T,.95+L.mk.h+(L.mk.hop?0:Math.abs(Math.sin(t*3))*.04),L.mk.y/T);
-    o.rotation.y=L.mk.face;if(ud.tail)ud.tail.rotation.y=Math.sin(t*6)*.5;if(ud.head)ud.head.rotation.z=Math.sin(t*1.7)*.15;
-  }else if(R.mkObj){dropModel(R.mkObj);R.mkObj=null;}
+  evRender(L,dt,t);
   R.screenMat.color.setHex(0x4dd0e1);
   camUpdate(dt,false);R.renderer.render(R.scene,R.camera);}
 // name tag spot: above the head when standing/sitting, at the foot of the bed when lying (keeps the face visible)
@@ -3195,9 +3191,7 @@ function lunchOverlays(t){const L=G.lunch,P=G.player;
   for(const p of L.peers.values()){if(!p.ready)continue;const [x,y,h]=tagAt(p.bed,p.x,p.y);ov('ln'+p.sid,'lname',esc(p.n),x,y,h);}
   {const [x,y,h]=tagAt(P.bed,P.x,P.y);ov('ln-me','lname me','나',x,y,h);}
   for(const it of L.items||[])ov('li'+it.k,'litem',`<span>${ACC_INFO[it.k].i}</span>`,it.x,it.y,.55+Math.sin(t*3+it.x)*.08,'center');
-  if(L.gm)ov('ev-gm','litem',`<span>👵</span>${L.gm.ph==='treat'?`<small>${Math.ceil(3.2-L.gm.t)}s</small>`:''}`,L.gm.x,L.gm.y,1.3,'center');
-                     if(L.mk&&!L.mk.gone)ov('ev-mk','litem','<span>🐒</span>',L.mk.x,L.mk.y,.9+L.mk.h+Math.abs(Math.sin(t*4))*.2,'center');
-if(L.fruit)ov('ev-fr','litem','<span>🍇</span>',L.fruit.x,L.fruit.y,.6+Math.sin(t*3)*.12,'center');
+  evOverlays(L,t);
                           const c=G.cand;if(c){const a=c.at;ov('hint','hint',`<b>E</b>${c.icon} ${esc(c.label)}`,a.x,a.y,a.h+.35+Math.sin(t*6)*.04);}}
 let shotBlob=null,shotUrl='';
 function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
@@ -3230,7 +3224,7 @@ $('#shotShare').onclick=async()=>{try{const b=shotBlob||await (await fetch(shotU
 function lunchLeave(){$('#shotOv').classList.remove('show');const L=G.lunch;if(!L||L.left)return;L.left=true;
   try{if(L.ch&&SBC){L.ch.untrack();SBC.removeChannel(L.ch);}}catch(e){}L.ch=null;
   if(R.lchars){for(const o of R.lchars.values())disposeChar(o);R.lchars.clear();}
-  if(R.mkObj){R.scene.remove(R.mkObj);R.mkObj=null;}
+  if(R.gma){R.scene.remove(R.gma);disposeChar(R.gma);R.gma=null;}if(R.mkObj){dropModel(R.mkObj);R.mkObj=null;}if(R.evFruit){dropModel(R.evFruit);R.evFruit=null;}
   document.body.classList.remove('lunchmode');$('#pauseOv').classList.remove('show');G.state='end';}
 
 /* ---------- 1:1 도전장 대결 (real-time lobby: both ready → start together, same patient seed) ---------- */

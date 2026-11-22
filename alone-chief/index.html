@@ -908,9 +908,9 @@ function buzz(ms){if(isTouch&&navigator.vibrate)try{navigator.vibrate(ms);}catch
    ========================================================= */
 let actx=null, muted=load('alonechief_muted',false);
 const BGM={
-  title:Object.assign(new Audio('audio/title.wav'),{loop:true,volume:.48}),
-  ingame:Object.assign(new Audio('audio/ingame.wav'),{loop:true,volume:.48}),
-  end:Object.assign(new Audio('audio/end.wav'),{loop:true,volume:.48})
+  title:Object.assign(new Audio('audio/title.mp3'),{loop:true,volume:.48}),
+  ingame:Object.assign(new Audio('audio/ingame.mp3'),{loop:true,volume:.48}),
+  end:Object.assign(new Audio('audio/end.mp3'),{loop:true,volume:.48})
 };
 BGM.ingame.preservesPitch=true;BGM.ingame.mozPreservesPitch=true;BGM.ingame.webkitPreservesPitch=true;
 let curBgm=null;

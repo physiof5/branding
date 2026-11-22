@@ -3010,11 +3010,11 @@ $('#evTier').textContent=tr[1];$('#evT').textContent=title;$('#evS').innerHTML=s
 const B=$('#evBtns');B.innerHTML=`<div class="evadd">${note||''}</div><div class="evtap">화면을 누르면 닫혀요</div>`;emojify(B);
 if(tr[0]==='t3'){sweepSfx(200,2200,.8,'sine',.07);setTimeout(()=>playTones([[1047,.1],[1319,.1],[1568,.1],[2093,.5]]),650);buzz([60,40,60,40,200]);}
 else if(tr[0]==='t4'){sweepSfx(300,1600,.5,'triangle',.06);setTimeout(()=>playTones([[523,.09],[659,.09],[784,.09],[1047,.09],[1319,.35]]),380);buzz([40,30,120]);}
-else if(tr[0]==='t2'){playTones([[784,.08],[988,.08],[1175,.08]},[1568,.3]]);buzz([40,30,80]);} 
+else if(tr[0]==='t2'){playTones([[784,.08],[988,.08],[1175,.08],[1568,.3]]);buzz([40,30,80]);} 
 else{playTones([[659,.1],[784,.1],[1047,.28]]);buzz([40,40]);}}
 function evCands(out){const L=G.lunch,P=G.player,g=L.gm;
 if(g){if(g.ph==='wait'){const d=Math.hypot(g.x-P.x,g.y-P.y)-14;if(d<52)out.push({pr:0,d,icon:'👵',label:'할머니 모시기',at:{x:g.x,y:g.y,h:2.85},fn:()=>gmTake(g)});}
-else if(g.ph==='follow'){for(const s }of stations){const d=rectDist(s.irect,P.x,P.y);if(d>34||bedTaken(s))continue;
+else if(g.ph==='follow'){for(const s of stations){const d=rectDist(s.irect,P.x,P.y);if(d>34||bedTaken(s))continue;
 out.push({pr:0,d,icon:'👵',label:s.lie==='sit'?'앉혀 드리기':'눕혀 드리기',at:{x:s.seat.x,y:s.seat.y,h:1.5},fn:()=>gmSeat(g,s)});}}
 else if(g.ph==='lie'){const s=stById(g.bed),d=rectDist(s.irect,P.x,P.y);if(d<=44)out.push({pr:0,d,icon:LTREAT[s.type].i,label:'치료하기',at:{x:g.x,y:g.y,h:1.9},fn:()=>gmStart(g)});}}
 if(L.mk&&!L.mk.hop&&!L.mk.caught){const m=L.mk,d=Math.hypot(m.x-P.x,m.y-P.y)-12;if(d<58)out.push({pr:0,d,icon:'🐒',label:'원숭이 잡기',at:{x:m.x,y:m.y,h:1.9},fn:()=>mkCatch(m)});}
@@ -3042,7 +3042,6 @@ const rx=g.rx.map((k,i)=>i<g.step?`<i>${ST_NAME[k]}</i>`:i===g.step?`<b>${ST_NAM
 ov('gmrx','gmrx',`👵 처방 ${rx}`,x,y,h);
 if(g.ph==='treat')ov('gmbar','gmbar',`<i style="width:${Math.round(g.prog*100)}%"></i>`,x,y,h-.32);}
 if(g&&g.sayT>0&&g.ph!=='gone')ov('gmsay','gmsay',esc(g.say),g.x,g.y,(g.bed&&stById(g.bed).lie!=='sit')?2.05:2.95);}
-}
   function startLunch(){
   if(isTouch){try{const de=document.documentElement;if(!document.fullscreenElement&&de.requestFullscreen)de.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(e){}}
   newGame();G.state='lunch';

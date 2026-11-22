@@ -2880,11 +2880,34 @@ function evInit(L){
   const ev=lunchEvent();
   if(ev==='mon'){const rx=GM_RX[new Date().getDate()%GM_RX.length];
     L.gm={ph:'wait',rx,step:0,t:0,x:8*T,y:9*T,seat:{x:8*T,y:9*T},bed:null};}
-  else if(ev==='sun'&&!collHas('monkey')){
-    L.mk={x:8*T,y:9*T,tx:8*T,ty:9*T,dodge:0,hopT:0,waitT:5,caught:false};}
+  if(ev==='sun'&&!collHas('monkey')){
+    const ci=3,ch=chairs[ci];
+    if(ch)L.mk={ci,x:ch.x,y:ch.y,h:0,hop:null,dodge:0,idle:5,face:0,caught:false,seen:false};
+  }
   if(isWeekday()&&effPet()==='monkey'&&!collHas('fruit')){
     L.hunt={ph:'wait',t:3.5,x:G.player.x-24,y:G.player.y-24};}
 }
+// ---- 🐒 Sunday monkey: release-version hopping, two dodges, then catch ----
+function mkHop(m,ci,dur,a){const ch=chairs[ci];if(!ch)return;m.hop={x0:m.x,y0:m.y,x1:ch.x,y1:ch.y,t:0,d:dur*(1+Math.abs(ci-m.ci)*.1),a};m.ci=ci;}
+function mkFreeChairs(m){return chairs.map((c,i)=>i).filter(i=>i!==m.ci);}
+const mkSound=()=>playTones([[1700,.05,'triangle'],[2300,.06,'triangle'],[1700,.05,'triangle'],[2500,.09,'triangle']]);
+function mkTick(L,dt){const m=L.mk;if(!m||m.gone)return;const P=G.player;
+  if(m.hop){const h=m.hop;h.t+=dt;const u=Math.min(1,h.t/h.d);m.x=h.x0+(h.x1-h.x0)*u;m.y=h.y0+(h.y1-h.y0)*u;m.h=Math.sin(u*PI)*h.a;
+    if(Math.abs(h.x1-h.x0)+Math.abs(h.y1-h.y0)>1)m.face=Math.atan2(h.x1-h.x0,h.y1-h.y0);
+    if(u>=1){m.hop=null;m.h=0;if(m.caught)m.gone=true;}return;}
+  const d=Math.hypot(m.x-P.x,m.y-P.y);m.idle-=dt;
+  if(d<190&&!m.seen){m.seen=true;mkSound();particle(m.x,m.y,1.9,'🍌',0,.8,1.1);toast('🐒 대기실 의자 위에 원숭이가 있어요! 다가가서 잡아 보세요','good');}
+  if(m.idle<=0){m.idle=rand(5,9);if(d>110){const f=mkFreeChairs(m);if(f.length){mkHop(m,pick(f),.5,1.2);if(d<400)mkSound();}}}
+  const tf=d<160?Math.atan2(P.x-m.x,P.y-m.y):Math.sin(L.t3=(L.t3||0)+dt)*.6;
+  let dd=tf-m.face;dd=Math.atan2(Math.sin(dd),Math.cos(dd));m.face+=dd*Math.min(1,dt*6);}
+function mkCatch(m){const P=G.player;
+  if(m.dodge<2){m.dodge++;let best=m.ci,bd=-1;for(const i of mkFreeChairs(m)){const c=chairs[i],dd=Math.hypot(c.x-P.x,c.y-P.y);if(dd>bd){bd=dd;best=i;}}
+    for(let i=0;i<5;i++)particle(m.x+rand(-10,10),m.y,1.3,pick(['💨','🙈','🍌']),rand(-50,50),rand(.6,1.4),.8);
+    mkHop(m,best,.45,1.9);mkSound();buzz(25);toast(m.dodge===1?'🐒 끼끼! 약 올리며 도망쳤어요 (1/3)':'🐒 끼끼끼! 한 번만 더! (2/3)','');return;}
+  m.caught=true;m.hop={x0:m.x,y0:m.y,x1:P.x,y1:P.y,t:0,d:.5,a:1.4};
+  playTones([[1319,.06],[1568,.06],[2093,.14]]);buzz([40,30,80]);
+  for(let i=0;i<10;i++)particle(P.x+rand(-14,14),P.y,1.8,pick(['💗','🍌','✨']),rand(-70,70),rand(1,2),1);
+  setTimeout(()=>{if(G&&G.lunch&&!G.lunch.left)evReward('monkey');},650);}
 function evReward(k){
   if(!collHas(k)){collAdd(k);sfx('win');
     const nm=k==='monkey'?'🐒 원숭이 펫':`${ACC_INFO[k].i} ${ACC_INFO[k].n}`;
@@ -2897,10 +2920,7 @@ function evTick(L,dt){
     else if(g.ph==='treat'){const s=stById(g.bed);if(s&&rectDist(s.irect,P.x,P.y)<=36){g.t+=dt;
       if(g.t>=3.2){g.t=0;g.step++;sfx('coin');if(g.step>=g.rx.length){g.ph='thanks';evReward('kimchi');}else{g.ph='follow';g.bed=null;toast(`할머니 다음 처방: ${ST_NAME[g.rx[g.step]]}`,'good');}}}}
   }
-  if(L.mk&&!L.mk.caught){const m=L.mk;
-    if(m.hopT>0){m.hopT=Math.max(0,m.hopT-dt);m.x+=(m.tx-m.x)*Math.min(1,dt*8);m.y+=(m.ty-m.y)*Math.min(1,dt*8);}
-    else{m.waitT-=dt;if(m.waitT<=0){m.waitT=5+Math.random()*4;const spots=Object.values(ACC_SPOTS).flat();const sp=spots[Math.floor(Math.random()*spots.length)];m.tx=sp.x;m.ty=sp.y;m.hopT=.6;}}
-  }
+  mkTick(L,dt);
   if(L.hunt&&L.hunt.ph!=='done'){const h=L.hunt;h.t-=dt;
     if(h.ph==='wait'&&h.t<=0){h.ph='run';h.t=2.5;toast('🐒 원숭이가 무언가 냄새를 맡고 달려가요!','good');}
     else if(h.ph==='run'){h.x+=(22*T-h.x)*Math.min(1,dt*3);h.y+=(3.5*T-h.y)*Math.min(1,dt*3);if(h.t<=0){h.ph='found';L.fruit={x:22*T,y:3.8*T};sfx('sparkle');toast('🍇 원숭이가 신비한 열매를 찾았어요! 가까이 가서 주우세요','good');}}
@@ -2912,11 +2932,8 @@ function evCands(out){
     if(g.ph==='wait'&&Math.hypot(g.x-P.x,g.y-P.y)<40)out.push({pr:0,d:0,icon:'👵',label:'할머니 모시기',at:{x:g.x,y:g.y,h:2},fn:()=>{g.ph='follow';toast(`처방: ${ST_NAME[g.rx[0]]} 자리로 모셔가세요`,'good');}});
     if(g.ph==='follow'){const want=g.rx[g.step];for(const s of stations)if(s.type===want&&rectDist(s.irect,P.x,P.y)<=34)out.push({pr:0,d:0,icon:'🛏️',label:`${ST_NAME[want]} 치료 시작`,at:{x:s.seat.x,y:s.seat.y,h:1.8},fn:()=>{g.ph='treat';g.bed=s.id;g.x=s.seat.x;g.y=s.seat.y;g.t=0;}});}
   }
-  if(L.mk&&!L.mk.caught&&Math.hypot(L.mk.x-P.x,L.mk.y-P.y)<42){
-    out.push({pr:0,d:0,icon:'🐒',label:'원숭이 잡기',at:{x:L.mk.x,y:L.mk.y,h:1.4},fn:()=>{
-      L.mk.dodge++;if(L.mk.dodge<3){const spots=Object.values(ACC_SPOTS).flat();const sp=spots[(L.mk.dodge*3)%spots.length];L.mk.tx=sp.x;L.mk.ty=sp.y;L.mk.hopT=.5;toast('🐒 앗, 원숭이가 도망갔어요! 다시 잡아보세요','warn');}
-      else{L.mk.caught=true;evReward('monkey');}}});
-  }
+  if(L.mk&&!L.mk.hop&&!L.mk.caught){const m=L.mk,d=Math.hypot(m.x-P.x,m.y-P.y)-12;if(d<58)
+    out.push({pr:0,d,icon:'🐒',label:'원숭이 잡기',at:{x:m.x,y:m.y,h:1.9},fn:()=>mkCatch(m)});}
   if(L.fruit&&Math.hypot(L.fruit.x-P.x,L.fruit.y-P.y)<40){
     out.push({pr:0,d:0,icon:'🍇',label:'신비한 열매 줍기',at:{x:L.fruit.x,y:L.fruit.y,h:1.2},fn:()=>{L.fruit=null;L.hunt.ph='done';evReward('fruit');}});
   }
@@ -3060,6 +3077,11 @@ function lunchRender(dt,t){const P=G.player,L=G.lunch;
     poseOn(o,p.bed,dt,t,{moving:p.moving,walk:p.walk,face:p.face,mood:p.fxT>0?'happy':null});armsFx(o,p.act,p.actT,t,!!p.bed);}
   for(const [sid,o] of R.lchars)if(!L.peers.has(sid)||!L.peers.get(sid).ready){disposeChar(o);R.lchars.delete(sid);}
   for(const s of stations){s.lampMat.color.setHex(LAMP.idle);s.lamp.scale.setScalar(.12);if(s.irMat){s.irMat.emissive.setHex(0);s.irLight.intensity=0;}s.hl.visible=false;}
+  if(L.mk&&!L.mk.gone){
+    if(!R.mkObj){R.mkObj=itemModel('monkey',{lite:true});R.mkObj.scale.setScalar(1.45);R.scene.add(R.mkObj);}
+    const o=R.mkObj,ud=o.userData;o.position.set(L.mk.x/T,.95+L.mk.h+(L.mk.hop?0:Math.abs(Math.sin(t*3))*.04),L.mk.y/T);
+    o.rotation.y=L.mk.face;if(ud.tail)ud.tail.rotation.y=Math.sin(t*6)*.5;if(ud.head)ud.head.rotation.z=Math.sin(t*1.7)*.15;
+  }else if(R.mkObj){dropModel(R.mkObj);R.mkObj=null;}
   R.screenMat.color.setHex(0x4dd0e1);
   camUpdate(dt,false);R.renderer.render(R.scene,R.camera);}
 // name tag spot: above the head when standing/sitting, at the foot of the bed when lying (keeps the face visible)
@@ -3069,7 +3091,7 @@ function lunchOverlays(t){const L=G.lunch,P=G.player;
   {const [x,y,h]=tagAt(P.bed,P.x,P.y);ov('ln-me','lname me','나',x,y,h);}
   for(const it of L.items||[])ov('li'+it.k,'litem',`<span>${ACC_INFO[it.k].i}</span>`,it.x,it.y,.55+Math.sin(t*3+it.x)*.08,'center');
   if(L.gm)ov('ev-gm','litem',`<span>👵</span>${L.gm.ph==='treat'?`<small>${Math.ceil(3.2-L.gm.t)}s</small>`:''}`,L.gm.x,L.gm.y,1.3,'center');
-                     if(L.mk&&!L.mk.caught)ov('ev-mk','litem','<span>🐒</span>',L.mk.x,L.mk.y,.9+Math.abs(Math.sin(t*4))*.2,'center');
+                     if(L.mk&&!L.mk.gone)ov('ev-mk','litem','<span>🐒</span>',L.mk.x,L.mk.y,.9+L.mk.h+Math.abs(Math.sin(t*4))*.2,'center');
 if(L.fruit)ov('ev-fr','litem','<span>🍇</span>',L.fruit.x,L.fruit.y,.6+Math.sin(t*3)*.12,'center');
                           const c=G.cand;if(c){const a=c.at;ov('hint','hint',`<b>E</b>${c.icon} ${esc(c.label)}`,a.x,a.y,a.h+.35+Math.sin(t*6)*.04);}}
 let shotBlob=null,shotUrl='';

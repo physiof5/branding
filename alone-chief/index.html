@@ -2403,7 +2403,7 @@ function renderTitle(){setTimeout(fitTitle,0);
    ========================================================= */
 function show(id){if(id!=='game'&&G&&G.lunch&&!G.lunch.left)lunchLeave();
   $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
-  if(id==='game')resize();if(id==='custom'){buildCustom();playBgm('title');rebuildPreview();const LU=!DUEL&&isLunch();$('#customBanner').textContent=DUEL?'⚔️ 대결 · 캐릭터 꾸미기':LU?'🍱 점심 시간 · 캐릭터 꾸미기':'🧑‍⚕️ 캐릭터 선택';$('#startBtn').textContent=DUEL?'⚔️ 대결장 입장 ▶':LU?'🍱 휴게실 입장 ▶':'출근하기 ▶';emojify($('#customBanner'));emojify($('#startBtn'));}if(id==='lobby'){renderLobby();}if(id==='title'){renderTitle();playBgm('title');}}
+  if(id==='game')resize();if(id==='title'||id==='custom')playBgm('title');if(id==='custom'){buildCustom();rebuildPreview();const LU=!DUEL&&isLunch();$('#customBanner').textContent=DUEL?'⚔️ 대결 · 캐릭터 꾸미기':LU?'🍱 점심 시간 · 캐릭터 꾸미기':'🧑‍⚕️ 캐릭터 선택';$('#startBtn').textContent=DUEL?'⚔️ 대결장 입장 ▶':LU?'🍱 휴게실 입장 ▶':'출근하기 ▶';emojify($('#customBanner'));emojify($('#startBtn'));}if(id==='lobby'){renderLobby();}if(id==='title'){renderTitle();playBgm('title');}}
 function startGame(){
   
   newGame();show('game');curBgm=null;playBgm('ingame');

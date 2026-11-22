@@ -655,6 +655,27 @@ body.touch #joyHint{display:grid}
     #actBtn{width:84px;height:84px;font-size:34px}
     #joyHint{left:calc(var(--sal) + 12px);bottom:calc(var(--sab) + 22px);width:96px;height:96px}
   }
+  #evOv{z-index:81;background:rgba(10,14,30,.84);--rc:rgba(255,120,90,.55)}
+#evOv.t2{--rc:rgba(80,170,255,.55)}#evOv.t3{--rc:rgba(255,200,60,.7)}#evOv.t4{--rc:rgba(170,110,255,.6)}
+.evwrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;max-width:340px}
+.evrays{position:absolute;left:50%;top:118px;width:440px;height:440px;margin:-220px 0 0 -220px;border-radius:50%;pointer-events:none;
+  background:repeating-conic-gradient(var(--rc) 0 9deg,transparent 9deg 22deg);-webkit-mask:radial-gradient(circle,#000 18%,transparent 68%);mask:radial-gradient(circle,#000 18%,transparent 68%);animation:evSpin 9s linear infinite}
+@keyframes evSpin{to{transform:rotate(360deg)}}
+.evimg{position:relative;width:190px!important;height:190px!important;animation:evPop .7s cubic-bezier(.2,1.6,.4,1)}
+@keyframes evPop{0%{transform:scale(.1) rotate(-30deg);filter:brightness(3)}60%{transform:scale(1.2)}100%{transform:none}}
+.evtier{position:relative;font-family:var(--head);font-size:14px;color:#fff;border:2px solid #fff;border-radius:999px;padding:1px 12px;background:#ff7043}
+#evOv.t2 .evtier{background:#1e88e5}#evOv.t3 .evtier{background:linear-gradient(90deg,#ff8c1a,#ffb300);box-shadow:0 0 18px #ffd56b}#evOv.t4 .evtier{background:#7e3ff2}
+#evOv .boxt{position:relative;font-size:26px;word-break:keep-all}#evOv .boxs{position:relative;font-size:15px;font-weight:700;line-height:1.65;word-break:keep-all;color:#f1f5fa}
+.evimg.float{animation:evPop .7s cubic-bezier(.2,1.6,.4,1),evFloat 2.6s ease-in-out .7s infinite}
+@keyframes evFloat{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-12px) rotate(-3deg)}50%{transform:translateY(-4px) rotate(0)}75%{transform:translateY(-14px) rotate(3deg)}}
+.evbtns{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:8px}
+.evadd{font-family:var(--head);font-size:16px;color:#1f2f5c;background:#fff;border:2.5px solid var(--ink);border-radius:999px;padding:4px 14px;animation:evAdd .5s .45s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes evAdd{from{transform:scale(.3);opacity:0}}
+.evtap{font-family:'Noto Sans KR';font-size:12px;font-weight:700;color:#cfd8e3;animation:lpulse 1.4s ease-in-out infinite}.evbtns .btn{min-width:120px;font-size:17px;padding:9px 14px}.evbtns .btn.sub{background:#fff;color:#1f2f5c;text-shadow:none}
+.gmrx{font-family:var(--head);font-size:12.5px;color:#1f2f5c;background:#fff;border:2.5px solid #ff8fb1;border-radius:12px;padding:2px 8px;white-space:nowrap;pointer-events:none}
+.gmrx i{font-style:normal;opacity:.4}.gmrx b{font-weight:400;color:#e53935}
+.gmsay{font-family:'Noto Sans KR';font-weight:800;font-size:12.5px;color:#3a2a20;background:#fff8e7;border:2px solid #8d5a3b;border-radius:14px;padding:4px 9px;white-space:nowrap;pointer-events:none;animation:tin .18s ease-out}
+.gmbar{width:56px;height:9px;border-radius:9px;background:#fff;border:2px solid #1f2f5c;overflow:hidden;pointer-events:none}.gmbar i{display:block;height:100%;background:linear-gradient(90deg,#3ec46d,
 </style>
 </head>
 <body>
@@ -828,6 +849,7 @@ body.touch #joyHint{display:grid}
   <div class="rcard"><div class="rback">?</div><div class="rfront"><div class="rl">✨ 희귀 캐릭터 ✨</div><div class="rn">원장님</div><div class="rs">📣 원장님 회진</div></div></div>
 </div></div>
 <div id="duelSheet" class="dsheet"><div class="dbox card"></div></div>
+  <div id="evOv" class="dsheet"><div class="evwrap"><div class="evrays"></div><div class="evtier" id="evTier"></div><img class="evimg" id="evImg" alt=""><div class="boxt" id="evT"></div><div class="boxs" id="evS"></div><div class="evbtns" id="evBtns"></div></div></div>
 <div id="toasts"></div>
 <div id="tip"></div>
 
@@ -3327,6 +3349,7 @@ function loop(now){
 }
 requestAnimationFrame(loop);
 $('#pigOv').addEventListener('click',piggyDock);
+  $('#evOv').addEventListener('click',e=>{const ov=$('#evOv');if(Date.now()-(+ov.dataset.at||0)<700)return;ov.classList.remove('show');sfx('click');});
 window.__AC={get G(){return G;},stations,chairs,interact,startGame,CAM,step(sec){for(let i=0;i<sec*30;i++)update(1/30);}};
 })();
 </script>

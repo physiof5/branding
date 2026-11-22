@@ -3078,7 +3078,7 @@ function lunchRender(dt,t){const P=G.player,L=G.lunch;
   for(const [sid,o] of R.lchars)if(!L.peers.has(sid)||!L.peers.get(sid).ready){disposeChar(o);R.lchars.delete(sid);}
   for(const s of stations){s.lampMat.color.setHex(LAMP.idle);s.lamp.scale.setScalar(.12);if(s.irMat){s.irMat.emissive.setHex(0);s.irLight.intensity=0;}s.hl.visible=false;}
   if(L.mk&&!L.mk.gone){
-    if(!R.mkObj){R.mkObj=itemModel('monkey',{lite:true});R.mkObj.scale.setScalar(1.45);R.scene.add(R.mkObj);}
+    if(!R.mkObj){R.mkObj=petModel('monkey');R.mkObj.scale.setScalar(1.45);R.scene.add(R.mkObj);}
     const o=R.mkObj,ud=o.userData;o.position.set(L.mk.x/T,.95+L.mk.h+(L.mk.hop?0:Math.abs(Math.sin(t*3))*.04),L.mk.y/T);
     o.rotation.y=L.mk.face;if(ud.tail)ud.tail.rotation.y=Math.sin(t*6)*.5;if(ud.head)ud.head.rotation.z=Math.sin(t*1.7)*.15;
   }else if(R.mkObj){dropModel(R.mkObj);R.mkObj=null;}
@@ -3125,6 +3125,7 @@ $('#shotShare').onclick=async()=>{try{const b=shotBlob||await (await fetch(shotU
 function lunchLeave(){$('#shotOv').classList.remove('show');const L=G.lunch;if(!L||L.left)return;L.left=true;
   try{if(L.ch&&SBC){L.ch.untrack();SBC.removeChannel(L.ch);}}catch(e){}L.ch=null;
   if(R.lchars){for(const o of R.lchars.values())disposeChar(o);R.lchars.clear();}
+  if(R.mkObj){R.scene.remove(R.mkObj);R.mkObj=null;}
   document.body.classList.remove('lunchmode');$('#pauseOv').classList.remove('show');G.state='end';}
 
 /* ---------- 1:1 도전장 대결 (real-time lobby: both ready → start together, same patient seed) ---------- */

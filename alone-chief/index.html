@@ -2079,7 +2079,7 @@ function update(dt){
         if(tgt&&dist(p,tgt)<2&&tr.length>12)tr.splice(0,idx-2>0?Math.min(idx-2,4):0);
         break;}
       case 'toSeat': if(followPath(p,dt)&&p.station)onSeated(p.station); break;
-      case 'chase':{ if(accOn('kimchi')&&!(G.kimchiCd>0)&&dist(p,P)<120){G.kimchiCd=4;p.kimchi=true;p.state='complain';p.complainT=1.8;p.wp=[];sfx('coin');buzz(50);for(let i=0;i<6;i++)particle(p.x+rand(-10,10),p.y,1.5,'🥬',rand(-60,60),rand(1,2),.8);toast('🥬 김치 싸대기! 추격 환자 제압!','good');break;}
+      case 'chase':{ if(accOn('kimchi')&&(G.kimT||0)<=0&&!p.kimFly&&dist(p,P)<120&&P.stunT<=0)kimchiThrow(p);
         p.chaseT+=dt;p.repath-=dt;p.speed=Math.min(205,120+p.chaseT*7);
         if(p.repath<=0){p.repath=.35;const st=tileOfFree(p.x,p.y);const pt=tileOfFree(P.x,P.y);
           const path=bfs(st.x,st.y,pt.x,pt.y)||[];p.wp=smooth([{x:p.x,y:p.y},...path]).slice(1);p.wp.push({x:P.x,y:P.y});}
@@ -2122,9 +2122,9 @@ function update(dt){
   for(const q of G.particles){q.t+=dt;q.x+=q.vx*dt;q.h+=q.vh*dt;}
   G.particles=G.particles.filter(q=>q.t<q.life);
 
-  G.hudT-=dt;if(G.hudT<=0){G.hudT=.12;updateHUD();} if(G.kimchiCd>0)G.kimchiCd=Math.max(0,G.kimchiCd-dt);
+  G.hudT-=dt;if(G.hudT<=0){G.hudT=.12;updateHUD();} if(G.kimT>0)G.kimT-=dt;kimchiTick(dt);
 }
-function particle(x,y,h,text,vx,vh,life){G.particles.push({id:G.pid++,x,y,h,text,vx,vh,life,t:0});}
+function kimchiThrow(p){G.kimT=2.5;p.kimFly={t:0,x0:G.player.x,y0:G.player.y};sweepSfx(520,240,.22,'sine',.05);buzz(20);}function kimchiTick(dt){for(const p of G.patients){if(!p.kimFly)continue;p.kimFly.t+=dt;if(p.kimFly.t>=.35){p.kimFly=null;p.kimchi=true;p.angry=0;p.mood=null;const ch=chairs[p.chair];if(ch&&(!ch.occ||ch.occ===p)){ch.occ=p;p.state='toChair';p.wp=[...pathFrom(tileOfFree(p.x,p.y),ch.access.x,ch.access.y).slice(1),{x:ch.x,y:ch.y}];}else sendToExit(p);G.combo=(G.combo||0)+1;if(G.stats)G.stats.kimchi=(G.stats.kimchi||0)+1;sfx('coin');buzz(40);for(let i=0;i<8;i++)particle(p.x+rand(-12,12),p.y,1.5,pick(['🥬','🌶️','💥']),rand(-80,80),rand(1,2.2),.9);popup(p.x,p.y,2.2,'🥬 김치 싸대기!','#ff5252');toast('🥬 김치 싸대기 명중! 진상 진정!','good');}}}function particle(x,y,h,text,vx,vh,life){G.particles.push({id:G.pid++,x,y,h,text,vx,vh,life,t:0});}
 function popup(x,y,h,text,col){G.particles.push({id:G.pid++,x,y,h,text,vx:0,vh:.9,life:1.4,t:0,pop:true,col});}
 
 /* =========================================================
@@ -2153,7 +2153,7 @@ function render3D(dt,t){
     else if(sitting){setPose(o,'sit');o.root.position.set(p.x/T,0,p.y/T);if(seated)p.face=PI/2;}
     else{setPose(o,'stand');o.root.position.set(p.x/T,0,p.y/T);}
     o.root.visible=!(p.state==='leaving'&&p.y>H+10);
-    const mood=p.mood||(p.angry?'angry':null); if(p.kimchi&&!o.kimchiMesh){const km=new THREE.Mesh(new THREE.BoxGeometry(.16,.2,.04),new THREE.MeshStandardMaterial({color:0xdc2626,roughness:.75}));km.position.set(0,0,.13);(o.faceAcc||o.head||o.root).add(km);o.kimchiMesh=km;}
+    const mood=p.mood||(p.angry?'angry':null); if(p.kimchi&&!o.kimFx&&o.faceAcc){const g=new THREE.Group(),sm=new THREE.MeshStandardMaterial({color:0xdc2626,roughness:.6}),lm=new THREE.MeshStandardMaterial({color:0xfef3c7,roughness:.75}),gm=new THREE.MeshStandardMaterial({color:0x65a30d,roughness:.75});const f=(geo,mat,x,y,dz,t)=>{const m=new THREE.Mesh(geo,mat);onFace(m,x,y,dz,t);g.add(m);};f(new THREE.BoxGeometry(.15,.18,.025),sm,.02,-.01,.015,.18);f(new THREE.BoxGeometry(.11,.13,.02),lm,-.03,.02,.02,-.25);f(new THREE.BoxGeometry(.07,.09,.02),gm,.05,.04,.025,.4);o.faceAcc.add(g);o.kimFx=g;}
     animChar(o,dt,t,{moving:p.moving,walk:p.walk,face:(seated&&s.lie!=='sit')?null:p.face,mood});
   }
   for(const [id,o] of R.chars)if(!seen.has(id)){disposeChar(o);R.chars.delete(id);}
@@ -2217,7 +2217,7 @@ function renderOverlays(t){
     if(p.state==='chase'){ov('c'+p.id,'af red','<span>😡</span>',p.x,p.y,hh+.15);edge('ec'+p.id,'😡',p.x,p.y,1);}
     if(p.state==='complain')ov('cm'+p.id,'emo','💢',p.x,p.y,hh+.15);
     if(p.state==='leaving'&&p.mood==='angry'&&p.y<H)ov('c'+p.id,'af red','<span>😡</span>',p.x,p.y,hh+.15);
-    if(p.state==='leaving'&&p.mood==='happy'&&p.y<H)ov('h'+p.id,'emo','😊',p.x,p.y,hh+.1);
+    if(p.state==='leaving'&&p.mood==='happy'&&p.y<H)ov('h'+p.id,'emo','😊',p.x,p.y,hh+.1);if(p.kimFly){const f=clamp(p.kimFly.t/.35,0,1),kx=lerp(p.kimFly.x0,p.x,f),ky=lerp(p.kimFly.y0,p.y,f),kh=1.2+Math.sin(f*Math.PI)*1.1,ke=ov('kf'+p.id,'emo kfly','🥬',kx,ky,kh,'center');ke.style.setProperty('--r',`${(f*720)|0}deg`);}
   }
   {const C=G.cart;if(!C.held&&stations.some(s=>needsCart(s)&&!cartNear(s))){ov('cartlbl','ob blue','🔊 초음파 치료기',C.x,C.y,1.35);edge('e-cart','🔊',C.x,C.y,.6);}}
   if(P.stunT>0)ov('stun','ob red',`💫 기절 ${P.stunT.toFixed(1)}s`,P.x,P.y,2.45);
@@ -2843,7 +2843,7 @@ function updLand(){let land;try{land=screen.orientation&&screen.orientation.type
 updLand();addEventListener('orientationchange',()=>setTimeout(updLand,200));addEventListener('resize',updLand);
 $('#viewBtns').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;pvView=b.dataset.v;$$('#viewBtns button').forEach(x=>x.classList.toggle('on',x===b));});
 const pv=$('#preview');const PV={};
-function initPreview(){
+const _evCache={};function evSnap(k){if(_evCache[k])return _evCache[k];const c=document.createElement('canvas');c.width=c.height=256;try{const r=new THREE.WebGLRenderer({canvas:c,alpha:true,antialias:true,preserveDrawingBuffer:true});r.setSize(256,256,false);const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(32,1,.1,20);cam.position.set(0,.35,2.1);cam.lookAt(0,.05,0);sc.add(new THREE.AmbientLight(0xffffff,.95));const dl=new THREE.DirectionalLight(0xfff8e7,1.2);dl.position.set(2,3,3);sc.add(dl);const grp=new THREE.Group();if(k==='kimchi'){const b=new THREE.Mesh(new THREE.BoxGeometry(.5,.62,.1),new THREE.MeshStandardMaterial({color:0xdc2626,roughness:.6}));b.rotation.z=.2;grp.add(b);const l=new THREE.Mesh(new THREE.BoxGeometry(.38,.44,.12),new THREE.MeshStandardMaterial({color:0xfef3c7,roughness:.75}));l.position.set(-.05,.04,.02);l.rotation.z=-.18;grp.add(l);const g=new THREE.Mesh(new THREE.BoxGeometry(.22,.28,.13),new THREE.MeshStandardMaterial({color:0x65a30d,roughness:.75}));g.position.set(.1,.1,.03);g.rotation.z=.35;grp.add(g);}else if(k==='fruit'){const p=new THREE.Mesh(new THREE.CylinderGeometry(.38,.32,.07,16),new THREE.MeshStandardMaterial({color:0xf8fafc,roughness:.4}));p.position.y=-.18;grp.add(p);const a=new THREE.Mesh(new THREE.SphereGeometry(.16,12,12),new THREE.MeshStandardMaterial({color:0xef4444,roughness:.5}));a.position.set(-.12,0,.06);grp.add(a);const o=new THREE.Mesh(new THREE.SphereGeometry(.15,12,12),new THREE.MeshStandardMaterial({color:0xf97316,roughness:.6}));o.position.set(.14,-.02,.04);grp.add(o);const g=new THREE.Mesh(new THREE.SphereGeometry(.14,12,12),new THREE.MeshStandardMaterial({color:0x22c55e,roughness:.5}));g.position.set(0,.12,-.08);grp.add(g);}else if(k==='monkey'){const hd=new THREE.Mesh(new THREE.SphereGeometry(.3,16,16),new THREE.MeshStandardMaterial({color:0x8b5a2b,roughness:.75}));grp.add(hd);const fc=new THREE.Mesh(new THREE.SphereGeometry(.23,14,14),new THREE.MeshStandardMaterial({color:0xf3c69f,roughness:.8}));fc.position.set(0,-.04,.12);grp.add(fc);for(const sx of[-1,1]){const er=new THREE.Mesh(new THREE.SphereGeometry(.11,10,10),new THREE.MeshStandardMaterial({color:0x8b5a2b,roughness:.75}));er.position.set(sx*.32,.04,0);grp.add(er);}}grp.rotation.y=.35;sc.add(grp);r.render(sc,cam);const u=c.toDataURL('image/png');r.dispose();return(_evCache[k]=u);}catch(e){return '';}}function initPreview(){
   PV.r=new THREE.WebGLRenderer({canvas:pv,antialias:true,alpha:true});PV.r.setPixelRatio(Math.min(2,window.devicePixelRatio||1));
   PV.r.shadowMap.enabled=true;PV.r.shadowMap.type=THREE.PCFSoftShadowMap;PV.r.toneMapping=THREE.NoToneMapping;PV.r.toneMappingExposure=0.92;PV.r.outputColorSpace=THREE.SRGBColorSpace;
   PV.s=new THREE.Scene();PV.s.add(new THREE.HemisphereLight(0xfff3df, 0x6a5a54, 0.52));

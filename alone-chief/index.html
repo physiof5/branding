@@ -3181,7 +3181,8 @@ function lunchRender(dt,t){const P=G.player,L=G.lunch;
     poseOn(o,p.bed,dt,t,{moving:p.moving,walk:p.walk,face:p.face,mood:p.fxT>0?'happy':null});armsFx(o,p.act,p.actT,t,!!p.bed);}
   for(const [sid,o] of R.lchars)if(!L.peers.has(sid)||!L.peers.get(sid).ready){disposeChar(o);R.lchars.delete(sid);}
   for(const s of stations){s.lampMat.color.setHex(LAMP.idle);s.lamp.scale.setScalar(.12);if(s.irMat){s.irMat.emissive.setHex(0);s.irLight.intensity=0;}s.hl.visible=false;}
-  evRender(L,dt,t);
+  const g=L.gm;if(g&&g.ph==='treat'){const s=stById(g.bed);s.lampMat.color.setHex(LAMP.auto);s.lamp.scale.setScalar(.16+Math.sin(t*8)*.03);if(s.irMat){s.irMat.emissive.setHex(0xff5a1f);s.irLight.intensity=1.2;}}
+                           evRender(L,dt,t);
   R.screenMat.color.setHex(0x4dd0e1);
   camUpdate(dt,false);R.renderer.render(R.scene,R.camera);}
 // name tag spot: above the head when standing/sitting, at the foot of the bed when lying (keeps the face visible)

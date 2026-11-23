@@ -2919,12 +2919,12 @@ function lunchEvent(){if(EV_FORCE)return EV_FORCE;const d=kstNow(),wd=d.getUTCDa
   function isWeekday(){if(EV_FORCE)return EV_FORCE!=='sun';const wd=kstNow().getUTCDay();return wd>=1&&wd<=5;}
 const GM_RX=[['combo','manual'],['eswt','paraffin'],['manual','combo'],['combo','paraffin']];
 const ST_NAME={combo:'⚡ ICT',manual:'💆 도수',eswt:'💥 충격파',paraffin:'🫧 파라핀'};
-function evLabel(ev){if(ev==='mon')return '👵 할머니 방문 (13:10까지 입장)';if(ev==='sun')return collHas('monkey')?'':'🐒 원숭이 출몰';return '';}
+function evLabel(ev){if(ev==='sun')return collHas('monkey')?'':'🐒 원숭이 출몰';return '';}
 function evBanner(txt){const b=$('#roundBanner');b.textContent=txt;b.classList.remove('show');void b.offsetWidth;b.classList.add('show');emojify(b);}
 const mkSound=()=>playTones([[1700,.05,'triangle'],[2300,.06,'triangle'],[1700,.05,'triangle'],[2500,.09,'triangle']]);
 function dropModel(o){if(!o)return;if(o.parent)o.parent.remove(o);(o.userData.own||[]).forEach(x=>x.dispose&&x.dispose());}
 function evInit(L){const ev=L.ev=lunchEvent();
-if(ev==='mon')L.gm={ph:'pre',t:2.5,rx:GM_RX[Math.floor(seeded('gm-'+kstDate())*GM_RX.length)],step:0,x:-24,y:15*T,wp:[],speed:72,dir:'right',face:PI/2,walk:0,moving:false,bed:null,prog:0,say:'',sayT:0};
+if(ev==='mon')L.gm={ph:'pre',t:3,rx:GM_RX[Math.floor(seeded('gm-'+kstDate())*GM_RX.length)],step:0,x:-24,y:15*T,wp:[],speed:72,dir:'right',face:PI/2,walk:0,moving:false,bed:null,prog:0,say:'',sayT:0};
 if(ev==='sun'&&!collHas('monkey'))L.mk={ci:3,x:chairs[3].x,y:chairs[3].y,h:0,hop:null,dodge:0,idle:5,face:0,caught:false,seen:false};
 if(isWeekday()&&G.pet&&G.pet.kind==='monkey'&&!collHas('fruit'))L.hunt={ph:'wait',t:3.5};
 const lb=evLabel(ev);if(lb)setTimeout(()=>{if(G&&G.lunch===L&&!L.left)evBanner('🎉 '+lb.replace(/ \(.*\)/,''));playTones([[523,.08],[659,.08],[784,.08],[1047,.22]]);},1600);}
@@ -2944,7 +2944,7 @@ function gmTick(L,dt){const g=L.gm;if(!g||g.ph==='gone')return;const P=G.player;
 switch(g.ph){
 case 'pre':g.t-=dt;if(g.t<=0){const free=chairs.map((c,i)=>i).filter(i=>!(L.mk&&L.mk.ci===i));g.ci=free[0]||0;const ch=chairs[g.ci];
 g.wp=[tc(0,15),...pathFrom({x:0,y:15},ch.access.x,ch.access.y).slice(1),{x:ch.x,y:ch.y}];g.ph='enter';
-sfx('doorbell');toast('👵 할머니가 대기실에 오셨어요! 처방대로 치료해 드리면 선물을 주신대요','good');gmSay(g,'아이고 허리야~ 선생님 계신가?',3);}break;
+sfx('doorbell');}break;
 case 'enter':if(followPath(g,dt)){g.ph='wait';g.face=0;}break;
 case 'follow':{const tr=P.trail,k=12,tg=tr.length>k+1?tr[tr.length-1-k]:null;
 const tx=tg?tg.x:P.x-Math.sin(P.face||0)*30,ty=tg?tg.y:P.y-Math.cos(P.face||0)*30,d=Math.hypot(tx-g.x,ty-g.y);

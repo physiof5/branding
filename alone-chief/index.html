@@ -2927,7 +2927,7 @@ function evInit(L){const ev=L.ev=lunchEvent();
 if(ev==='mon')L.gm={ph:'pre',t:3,rx:GM_RX[Math.floor(seeded('gm-'+kstDate())*GM_RX.length)],step:0,x:-24,y:15*T,wp:[],speed:72,dir:'right',face:PI/2,walk:0,moving:false,bed:null,prog:0,say:'',sayT:0};
 if(ev==='sun'&&!collHas('monkey'))L.mk={ci:3,x:chairs[3].x,y:chairs[3].y,h:0,hop:null,dodge:0,idle:5,face:0,caught:false,seen:false};
 if(isWeekday()&&G.pet&&G.pet.kind==='monkey'&&!collHas('fruit'))L.hunt={ph:'wait',t:3.5};
-const lb=evLabel(ev);if(lb)setTimeout(()=>{if(G&&G.lunch===L&&!L.left)evBanner('🎉 '+lb.replace(/ \(.*\)/,''));playTones([[523,.08],[659,.08],[784,.08],[1047,.22]]);},1600);}
+const lb=evLabel(ev);if(ev!=='mon'&&lb)setTimeout(()=>{if(G&&G.lunch===L&&!L.left&&ev!=='mon')evBanner('🎉 '+lb.replace(/ \(.*\)/,''));playTones([[523,.08],[659,.08],[784,.08],[1047,.22]]);},1600);}
 function gmSay(g,txt,sec){g.say=txt;g.sayT=sec||2.5;}
 const gmFollowing=()=>{const g=G&&G.lunch&&G.lunch.gm;return !!g&&g.ph==='follow';};
 function gmTake(g){g.ph='follow';sfx('click');gmSay(g,`${ST_NAME[g.rx[g.step]]} 받으러 왔어요~`,2.6);toast(`👵 할머니를 ${ST_NAME[g.rx[g.step]]} 자리로 모셔 가세요`,'');}
@@ -2949,7 +2949,7 @@ case 'enter':if(followPath(g,dt)){g.ph='wait';g.face=0;}break;
 case 'follow':{const tr=P.trail,k=12,tg=tr.length>k+1?tr[tr.length-1-k]:null;
 const tx=tg?tg.x:P.x-Math.sin(P.face||0)*30,ty=tg?tg.y:P.y-Math.cos(P.face||0)*30,d=Math.hypot(tx-g.x,ty-g.y);
 if(d>240){g.x=tx;g.y=ty;}else if(d>8)moveToward(g,tx,ty,Math.max(P.speed*.97,d*3),dt);else if(Math.hypot(P.x-g.x,P.y-g.y)>4)g.face=Math.atan2(P.x-g.x,P.y-g.y);break;}
-case 'treat':{const s=stById(g.bed),near=!P.bed&&rectDist(s.irect,P.x,P.y)<=44;
+case 'treat':{const s=stById(g.bed);const near=s&&!P.bed&&rectDist(s.irect,P.x,P.y)<=44;
 if(near){g.prog+=dt/3.2;P.actT=Math.max(P.actT,.25);P.act=s.type;P.actTarget=null;P.face=Math.atan2(g.x-P.x,g.y-P.y);
 g.fxT-=dt;if(g.fxT<=0){g.fxT=.28;const a=LTREAT[s.type];particle(g.x+rand(-16,16),g.y,1.4,pick(a.fx),rand(-14,14),.9,1);}
 const tk=Math.floor(g.prog*5);if(tk!==g.tk){g.tk=tk;sfx('tick');}}
@@ -3023,7 +3023,7 @@ function evTick(L,dt){gmTick(L,dt);mkTick(L,dt);if(L.fruit)L.fruit.t+=dt;}
 function evRender(L,dt,t){const g=L.gm;
 if(g&&g.ph!=='pre'&&g.ph!=='gone'){if(!R.gma){R.gma=makeChar(Object.assign({},PTYPES[0].cfg,{hair:'curly',hairColor:'#cfcfcf',top:'#e88aa8',badge:'',name:''}));R.gma.root.scale.setScalar(.9*1.08);R.scene.add(R.gma.root);R.gma.yaw=g.face;}
 const o=R.gma,s=g.bed&&stById(g.bed);
-if(s&&s.lie!=='sit'){setPose(o,'lie','.55/.9');o.root.position.set(s.seat.x/T,0,s.seat.y/T);o.yaw=s.lie==='h'?PI/2:0;o.root.rotation.y=o.yaw;animChar(o,dt,t,{moving:false,face:null,mood:g.ph==='treat'?'happy':null});}
+if(s&&s.lie!=='sit'){setPose(o,'lie',.55/.9);o.root.position.set(s.seat.x/T,0,s.seat.y/T);o.yaw=s.lie==='h'?PI/2:0;o.root.rotation.y=o.yaw;animChar(o,dt,t,{moving:false,face:null,mood:g.ph==='treat'?'happy':null});}
 else if(s||g.ph==='wait'){setPose(o,'sit');o.root.position.set(g.x/T,0,g.y/T);animChar(o,dt,t,{moving:false,walk:0,face:s?PI/2:g.face,mood:'happy'});}
 else{setPose(o,'stand');o.root.position.set(g.x/T,0,g.y/T);animChar(o,dt,t,{moving:g.moving,walk:g.walk,face:g.face,mood:'happy'});}
 if(o.pose)o.pose.rotation.x=g.ph==='thanks'?(g.bow||0)*.55:0;o.root.visible=g.y<H+10;}
@@ -3041,7 +3041,7 @@ if(g&&g.ph!=='pre'&&g.ph!=='gone'&&g.ph!=='leave'&&g.ph!=='thanks'){const s=g.be
 const rx=g.rx.map((k,i)=>i<g.step?`<i>${ST_NAME[k]}</i>`:i===g.step?`<b>${ST_NAME[k]}</b>`:ST_NAME[k]).join(' → ');
 ov('gmrx','gmrx',`👵 처방 ${rx}`,x,y,h);
 if(g.ph==='treat')ov('gmbar','gmbar',`<i style="width:${Math.round(g.prog*100)}%"></i>`,x,y,h-.32);}
-if(g&&g.sayT>0&&g.ph!=='gone')ov('gmsay','gmsay',esc(g.say),g.x,g.y,(g.bed&&stById(g.bed).lie!=='sit')?2.05:2.95);}
+if(g&&g.sayT>0&&g.ph!=='gone')ov('gmsay','gmsay',esc(g.say),g.x,g.y,(g.bed&&stById(g.bed)?.lie!=='sit')?2.05:2.95);}
   function startLunch(){
   if(isTouch){try{const de=document.documentElement;if(!document.fullscreenElement&&de.requestFullscreen)de.requestFullscreen({navigationUI:'hide'}).catch(()=>{});}catch(e){}}
   newGame();G.state='lunch';

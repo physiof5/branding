@@ -367,7 +367,7 @@ export function BattleHud({ onPause }: { onPause: () => void }) {
     <div className="pointer-events-none absolute inset-0 flex flex-col">
       <WorldLabels />
       <ScreenFx />
-      <div className="pointer-events-auto px-2 pt-[max(8px,env(safe-area-inset-top))] sm:px-4">
+      <div className="pointer-events-auto px-4 pt-[max(8px,env(safe-area-inset-top))]">
         <div className="flex items-start gap-2 sm:gap-4">
           <FighterPanel index={0} />
           <TurnTimer />
@@ -377,7 +377,7 @@ export function BattleHud({ onPause }: { onPause: () => void }) {
       </div>
       <button
         onClick={onPause}
-        className="pointer-events-auto absolute top-[calc(max(8px,env(safe-area-inset-top))+92px)] right-2 grid h-10 w-10 place-items-center rounded-full bg-[#1b1633]/80 text-lg sm:right-4"
+        className="pointer-events-auto absolute top-[calc(max(8px,env(safe-area-inset-top))+92px)] right-4 grid h-10 w-10 place-items-center rounded-full bg-[#1b1633]/80 text-lg"
         aria-label="일시정지"
       >
         ⏸
@@ -385,7 +385,7 @@ export function BattleHud({ onPause }: { onPause: () => void }) {
       <Announcer />
       <div className="flex-1" />
       {showPads && (
-        <div className="pointer-events-auto px-2 pb-[max(10px,env(safe-area-inset-bottom))] sm:px-4">
+        <div className="pointer-events-auto px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
           {mode === 'ai' ? (
             <div className="mx-auto flex max-w-xl flex-col gap-2">
               <ItemBar />

@@ -71,7 +71,7 @@ export function PassScreen() {
   };
 
   return (
-    <div className="min-h-dvh bg-[radial-gradient(ellipse_at_top,#4a3270_0%,#1b1633_60%)]">
+    <div className="min-h-full bg-[radial-gradient(ellipse_at_top,#4a3270_0%,#1b1633_60%)]">
       <header className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-[max(12px,env(safe-area-inset-top))]">
         <Button variant="ghost" className="px-3 py-2 text-base" onClick={() => go('lobby')}>
           ← 로비

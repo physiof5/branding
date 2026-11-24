@@ -75,7 +75,7 @@ export function LobbyScreen() {
   ).length;
 
   return (
-    <div className="min-h-dvh bg-[radial-gradient(ellipse_at_top,#3a2f78_0%,#1b1633_60%)]">
+    <div className="min-h-full bg-[radial-gradient(ellipse_at_top,#3a2f78_0%,#1b1633_60%)]">
       <header className="mx-auto flex max-w-6xl items-center gap-3 px-4 pt-[max(12px,env(safe-area-inset-top))]">
         <div className="min-w-0 flex-1">
           <Nickname />

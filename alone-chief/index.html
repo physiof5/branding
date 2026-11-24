@@ -400,9 +400,6 @@ body.final10 #game::before{content:'';position:absolute;inset:0;pointer-events:n
 #comboPop b{font-weight:400;font-size:1.35em;color:#ffd23f;margin-right:.12em}
 #comboPop small{display:block;font-family:var(--head);font-size:.5em;-webkit-text-stroke:0;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 12px;margin:4px auto 0;width:max-content;text-shadow:none}
 #comboPop.lv1 b{color:#7ed957}#comboPop.lv2 b{color:#ff9a2e}#comboPop.lv3 b{color:#4fc3f7}#comboPop.lv4 b{color:#ff5c8a}
-/* 톡! 톡! pop-in for the fruit's rainbow/star sparkles */
-.ovi.tok img.em,.ovi.tok{animation:tokPop .32s cubic-bezier(.2,1.9,.4,1)}
-@keyframes tokPop{0%{scale:.15}55%{scale:1.4}100%{scale:1}}
 #comboPop.show{animation:comboIn 1.1s cubic-bezier(.2,1.6,.4,1) forwards}
 #checkPop{position:absolute;left:50%;top:40%;transform:translate(-50%,-100%) scale(0);z-index:7;pointer-events:none;white-space:nowrap;font-family:'Bagel Fat One',var(--head);font-size:clamp(20px,4.6vw,30px);color:#fff;-webkit-text-stroke:.14em var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 rgba(0,0,0,.25);opacity:0}
 #checkPop.show{animation:checkIn .9s cubic-bezier(.2,1.6,.4,1) forwards}
@@ -2416,7 +2413,7 @@ function showCombo(n){
   const base=520*Math.pow(1.06,Math.min(n,14));playTones([[base,.07,'square'],[base*1.26,.07,'square'],[base*1.5,.14,'triangle']]);
   if(COMBO_TXT[n])buzz([30,30,30]);
 }
-function newGame(){{const c=$('#comboPop');if(c){c.className='';c.innerHTML='';}const ck=$('#checkPop');if(ck)ck.classList.remove('show');const rb=$('#roundBanner');if(rb)rb.classList.remove('show');} // stale end-of-game animations would replay when the game screen is shown again
+function newGame(){clearRainbows();{const c=$('#comboPop');if(c){c.className='';c.innerHTML='';}const ck=$('#checkPop');if(ck)ck.classList.remove('show');const rb=$('#roundBanner');if(rb)rb.classList.remove('show');} // stale end-of-game animations would replay when the game screen is shown again
   for(const s of stations)Object.assign(s,{phase:'idle',occ:null,t:0,dur:0,autoList:[],handsList:[],cur:null,neglect:0});
   for(const ch of chairs)ch.occ=null;
   if(R.chars){for(const o of R.chars.values())disposeChar(o);R.chars.clear();}
@@ -2663,7 +2660,7 @@ function update(dt){
       if(p.angry===1&&prev===0){particle(cx,cy,1.6,'😠',0,1,1);sfx('angry');buzz(40);}
       if(s.neglect>=negMax())startChase(p);}
     else if(s.phase==='hands'){
-      if(active===s&&(s.cur!=='US'||cartNear(s))){s.t+=dt;if(accOn('fruit')){s.tokT=(s.tokT||0)-dt;if(s.tokT<=0){s.tokT=.17;tokParticle(s.seat.x+rand(-30,30),s.seat.y+rand(-16,16),.9+rand(0,.45),pick(['🌈','⭐','🌟','🌈','⭐']),rand(-45,45),rand(1.3,2.1),.62);if(Math.random()<.45)sfx('tap');}}if(Math.random()<dt*8)particle(cx+rand(-20,20),cy+rand(-10,10),1,pick(['✨','💫',TREAT[s.cur].icon]),rand(-20,20),1.2,.6);
+      if(active===s&&(s.cur!=='US'||cartNear(s))){s.t+=dt;if(Math.random()<dt*8)particle(cx+rand(-20,20),cy+rand(-10,10),1,pick(['✨','💫',TREAT[s.cur].icon]),rand(-20,20),1.2,.6);
         if(s.t>=s.dur){award(p,s.cur,s);s.cur=null;nextStep(s);}}
       else{p.patience-=dt*.5;if(p.patience<=0)startChase(p);}
     }
@@ -2729,14 +2726,43 @@ function update(dt){
 
   G.hudT-=dt;if(G.hudT<=0){G.hudT=.12;updateHUD();} if(G.kimT>0)G.kimT-=dt;kimchiTick(dt);
 }
-function kimchiThrow(p){G.kimT=2.5;p.kimFly={t:0,x0:G.player.x,y0:G.player.y};sweepSfx(520,240,.22,'sine',.05);buzz(20);}function kimchiTick(dt){for(const p of G.patients){if(!p.kimFly)continue;p.kimFly.t+=dt;if(p.kimFly.t>=.35){p.kimFly=null;p.kimchi=true;p.angry=0;p.mood=null;const ch=chairs[p.chair];if(ch&&(!ch.occ||ch.occ===p)){ch.occ=p;p.state='toChair';p.wp=[...pathFrom(tileOfFree(p.x,p.y),ch.access.x,ch.access.y).slice(1),{x:ch.x,y:ch.y}];}else sendToExit(p);G.combo=(G.combo||0)+1;if(G.stats)G.stats.kimchi=(G.stats.kimchi||0)+1;sfx('coin');buzz(40);for(let i=0;i<8;i++)particle(p.x+rand(-12,12),p.y,1.5,pick(['🥬','🌶️','💥']),rand(-80,80),rand(1,2.2),.9);popup(p.x,p.y,2.2,'🥬 김치 싸대기!','#ff5252');toast('🥬 김치 싸대기 명중! 진상 진정!','good');}}}function tokParticle(x,y,h,text,vx,vh,life){particle(x,y,h,text,vx,vh,life);G.particles[G.particles.length-1].tok=1;}
-function particle(x,y,h,text,vx,vh,life){G.particles.push({id:G.pid++,x,y,h,text,vx,vh,life,t:0});}
+function kimchiThrow(p){G.kimT=2.5;p.kimFly={t:0,x0:G.player.x,y0:G.player.y};sweepSfx(520,240,.22,'sine',.05);buzz(20);}function kimchiTick(dt){for(const p of G.patients){if(!p.kimFly)continue;p.kimFly.t+=dt;if(p.kimFly.t>=.35){p.kimFly=null;p.kimchi=true;p.angry=0;p.mood=null;const ch=chairs[p.chair];if(ch&&(!ch.occ||ch.occ===p)){ch.occ=p;p.state='toChair';p.wp=[...pathFrom(tileOfFree(p.x,p.y),ch.access.x,ch.access.y).slice(1),{x:ch.x,y:ch.y}];}else sendToExit(p);G.combo=(G.combo||0)+1;if(G.stats)G.stats.kimchi=(G.stats.kimchi||0)+1;sfx('coin');buzz(40);for(let i=0;i<8;i++)particle(p.x+rand(-12,12),p.y,1.5,pick(['🥬','🌶️','💥']),rand(-80,80),rand(1,2.2),.9);popup(p.x,p.y,2.2,'🥬 김치 싸대기!','#ff5252');toast('🥬 김치 싸대기 명중! 진상 진정!','good');}}}function particle(x,y,h,text,vx,vh,life){G.particles.push({id:G.pid++,x,y,h,text,vx,vh,life,t:0});}
 function popup(x,y,h,text,col){G.particles.push({id:G.pid++,x,y,h,text,vx:0,vh:.9,life:1.4,t:0,pop:true,col});}
 
 /* =========================================================
    RENDER (3D sync + DOM overlays)
    ========================================================= */
 const LAMP={idle:0x9e9e9e,auto:0xff9800,done:0x3ec46d,done2:0x1b7a3e,hands:0x42a5f5,next:0xffd23f};
+/* ---------- 🌈☁️ 신비한 열매: while a direct treatment runs, a 3D rainbow on two clouds floats above the patient's head ---------- */
+function rainbowCloudModel(){const g=new THREE.Group(),own=[];
+  // the game's toon shading keeps the reference colours vivid (coral red #f2636c … periwinkle #7d7fe2)
+  const mat=(c)=>M('#'+c.toString(16).padStart(6,'0'),'toon');
+  // five clay bands: half-tori of radius .5 − i·.056 (tube .03) — coral red · orange · yellow · mint green · periwinkle
+  [0xf2636c,0xf7a24a,0xf8d54a,0x5ccb9c,0x7d7fe2].forEach((c,i)=>{const geo=new THREE.TorusGeometry(.5-i*.056,.03,14,56,Math.PI);own.push(geo);g.add(new THREE.Mesh(geo,mat(c)));});
+  // two puffy clouds that hold the ends of the arch (mirrored clusters of six spheres)
+  const cw=mat(0xffffff),sg=new THREE.SphereGeometry(1,22,16);own.push(sg);
+  const PUFF=[[0,.02,.02,.13],[-.13,-.03,.03,.095],[.13,-.035,.03,.09],[-.055,.1,0,.09],[.065,.085,0,.08],[0,0,-.06,.11]];
+  for(const sd of[-1,1])for(const [x,y,z,r] of PUFF){const m=new THREE.Mesh(sg,cw);m.position.set(sd*(.39+x),y,z+.02);m.scale.set(r,r*.86,r);g.add(m);}
+  g.userData.own=own;return g;}
+const _rbv=new THREE.Vector3();
+const easeOutBack=x=>{const c1=1.70158,c3=c1+1;return 1+c3*Math.pow(x-1,3)+c1*Math.pow(x-1,2);};
+function rainbowFx(dt,t){R.rbows=R.rbows||new Map();const want=new Set();
+  if(accOn('fruit'))for(const s of stations)if(s.phase==='hands'&&G.activeHands===s&&s.occ&&(s.cur!=='US'||cartNear(s)))want.add(s);
+  for(const s of want)if(!R.rbows.has(s.id))R.rbows.set(s.id,{s,k:0,o:null});
+  R.camera.getWorldDirection(_rbv);const pitch=Math.asin(clamp(-_rbv.y,-1,1));
+  for(const [id,rb] of R.rbows){const on=want.has(rb.s)&&!!rb.s.occ;rb.k=clamp(rb.k+(on?dt*3.2:-dt*4),0,1);
+    if(!rb.o){rb.o=rainbowCloudModel();R.scene.add(rb.o);}
+    if(on){const ch=R.chars.get(rb.s.occ.id);if(ch&&ch.head){ch.head.getWorldPosition(_rbv);rb.x=_rbv.x;rb.y=_rbv.y;rb.z=_rbv.z;}}
+    if(rb.x==null){rb.x=rb.s.seat.x/T;rb.y=1;rb.z=rb.s.seat.y/T;}
+    const RS=1.1,sc=RS*(rb.k<1?easeOutBack(rb.k):1);
+    // float just above the treatment ring (ring: station centre, h 1.55, ≈46px tall on screen): px→height via the camera projection
+    const a0=proj(rb.x*T,rb.z*T,1.55),a1=proj(rb.x*T,rb.z*T,2.55),k=Math.max(8,a0.y-a1.y);
+    const baseH=Math.max(rb.y+.62,1.55+36/k+.05*RS);
+    rb.o.scale.setScalar(Math.max(.001,sc));
+    rb.o.position.set(rb.x,baseH+Math.sin(t*2.4)*.07,rb.z);                    // 둥둥: bob up and down
+    rb.o.rotation.set(-pitch*.8,Math.sin(t*1.1)*.18,Math.sin(t*1.7)*.05);      // face the camera, sway gently
+    if(rb.k<=0&&!on){R.scene.remove(rb.o);(rb.o.userData.own||[]).forEach(x=>x.dispose());R.rbows.delete(id);}}}
+function clearRainbows(){if(!R.rbows)return;for(const rb of R.rbows.values())if(rb.o){R.scene.remove(rb.o);(rb.o.userData.own||[]).forEach(x=>x.dispose());}R.rbows.clear();}
 function render3D(dt,t){
   if(G.lunch){lunchRender(dt,t);return;}
   const P=G.player;
@@ -2777,6 +2803,7 @@ function render3D(dt,t){
   }
   const unch=G.patients.some(p=>!p.charted&&p.state!=='leaving');
   R.screenMat.color.setHex(G.modal?0xb2ebf2:unch&&Math.sin(t*8)>0?0xfff59d:0x4dd0e1);
+  rainbowFx(dt,t);
   camUpdate(dt,G.state==='countdown');
   R.renderer.render(R.scene,R.camera);
 }
@@ -2831,7 +2858,7 @@ function renderOverlays(t){
   if(cand&&!G.modal){const a=cand.at;ov('hint','hint'+(cand.bad?' bad':''),`<b>E</b>${cand.icon} ${esc(cand.label)}`,a.x,a.y,a.h+Math.sin(t*6)*.04);}
   }
   for(const q of G.particles){const a=1-q.t/q.life;
-    const e=ov('q'+q.id,q.pop?'pop':q.tok?'emo tok':'emo',esc(q.text),q.x,q.y,q.h,'center');e.style.opacity=clamp(a*1.6,0,1);if(q.pop)e.style.setProperty('--c',q.col);}
+    const e=ov('q'+q.id,q.pop?'pop':'emo',esc(q.text),q.x,q.y,q.h,'center');e.style.opacity=clamp(a*1.6,0,1);if(q.pop)e.style.setProperty('--c',q.col);}
   for(const [k,e] of ovPool)if(e._f!==ovFrame){e.remove();ovPool.delete(k);}
 }
 

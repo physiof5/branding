@@ -1680,7 +1680,7 @@ let G=null;
 const keys={};
 let joyVec={x:0,y:0};
 
-const kstDate=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10); const COLL_KEY='alonechief_coll_v1',PET_KEY='alonechief_pet_v1';const collList=()=>{const a=load(COLL_KEY,[]);return Array.isArray(a)?a:[];};const collHas=k=>collList().includes(k);const collAdd=k=>{const a=collList();if(!a.includes(k)){a.push(k);store(COLL_KEY,a);return true;}return false;};const PET_INFO={none:{n:'없음',e:'🚫'},dog:{n:'강아지',e:'🐶'},cat:{n:'고양이',e:'🐱'},monkey:{n:'원숭이',e:'🐵'}};const SPECIAL={kimchi:{tier:'이벤트',cls:'t1',how:'화요일 점심시간(13:00~14:00)에 할머니를 처방대로 치료해 드리면 받아요'},fruit:{tier:'에픽',cls:'t4',how:'일요일 점심시간(13:00~14:00)에 원숭이가 찾아 줘요'},dog:1,cat:1,monkey:1};const curPet=()=>load(PET_KEY,'none');const effPet=()=>{const p=curPet();return PET_INFO[p]&&(p!=='monkey'||collHas('monkey'))?p:'none';};
+const kstDate=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10); const COLL_KEY='alonechief_coll_v1',PET_KEY='alonechief_pet_v1';const collList=()=>{const a=load(COLL_KEY,[]);return Array.isArray(a)?a:[];};const collHas=k=>collList().includes(k);const collAdd=k=>{const a=collList();if(!a.includes(k)){a.push(k);store(COLL_KEY,a);return true;}return false;};const PET_INFO={none:{n:'없음',e:'🚫'},dog:{n:'강아지',e:'🐶'},cat:{n:'고양이',e:'🐱'},monkey:{n:'원숭이',e:'🐵'}};const SPECIAL={kimchi:{tier:'이벤트',cls:'t1',how:'화요일 점심시간(13:00~14:00)에 할머니를 처방대로 치료해 드리면 받아요'},fruit:{tier:'에픽',cls:'t4',how:'평일 점심시간(13:00~14:00)에 원숭이 펫과 함께 휴게실에 가면 원숭이가 찾아 줘요'},dog:1,cat:1,monkey:1};const curPet=()=>load(PET_KEY,'none');const effPet=()=>{const p=curPet();return PET_INFO[p]&&(p!=='monkey'||collHas('monkey'))?p:'none';};
 function accPicked(){const u=load('alonechief_acc_unlock',null);return u&&u.date===kstDate()&&Array.isArray(u.items)?u.items:[];}
 function accState(k){if(!k||k==='none')return 'ok';if(SPECIAL[k])return collHas(k)?'ok':'slock';const d=new Date(Date.now()+9*3600e3),wd=d.getUTCDay();if(wd===0||wd===6)return 'ok';if(!accPicked().includes(k))return 'lock';return d.getUTCHours()>=14?'ok':'got';}
 const effHand=()=>ACC_INFO[charCfg.hand]&&accState(charCfg.hand)==='ok'?charCfg.hand:'none';
@@ -2956,19 +2956,20 @@ let SBC=null;
 function loadSB(){return new Promise((res,rej)=>{if(window.supabase&&window.supabase.createClient)return res(window.supabase);
   const sc=document.createElement('script');sc.src=SBJS_URL;sc.onload=()=>res(window.supabase);sc.onerror=rej;document.head.appendChild(sc);});}
 const stById=id=>stations.find(s=>s.id===id);
-const EV_FORCE=((location.search.match(/[?&]ev=(mon|tue|sun)(?!\w)/)||[])[1]||'').replace('mon','tue')||null;
-// 🍱 lunch events (13:00–14:00 KST): Tuesday → grandma & kimchi · Sunday → monkey pet & mysterious fruit
-function lunchEvent(){if(EV_FORCE)return EV_FORCE;const wd=kstNow().getUTCDay();return wd===2?'tue':wd===0?'sun':null;}
+const EV_FORCE=((location.search.match(/[?&]ev=(mon|tue|sun|wkd)(?!\w)/)||[])[1]||'').replace('mon','tue')||null;
+// 🍱 lunch events (13:00–14:00 KST): Tuesday → grandma & kimchi · Sunday → monkey pet · weekdays → monkey pet sniffs out the mysterious fruit
+function isWeekday(){if(EV_FORCE)return EV_FORCE!=='sun';const wd=kstNow().getUTCDay();return wd>=1&&wd<=5;}
+function lunchEvent(){if(EV_FORCE)return EV_FORCE==='wkd'?null:EV_FORCE;const wd=kstNow().getUTCDay();return wd===2?'tue':wd===0?'sun':null;}
 const GM_RX=[['combo','manual'],['eswt','paraffin'],['manual','combo'],['combo','paraffin']];
 const ST_NAME={combo:'⚡ ICT',manual:'💆 도수',eswt:'💥 충격파',paraffin:'🫧 파라핀'};
-function evLabel(ev){if(ev==='sun')return !collHas('monkey')?'🐒 원숭이 출몰':!collHas('fruit')?'🍇 보라 열매 찾기':'';return '';}
+function evLabel(ev){if(ev==='sun')return collHas('monkey')?'':'🐒 원숭이 출몰';return '';}
 function evBanner(txt){const b=$('#roundBanner');b.textContent=txt;b.classList.remove('show');void b.offsetWidth;b.classList.add('show');emojify(b);}
 const mkSound=()=>playTones([[1700,.05,'triangle'],[2300,.06,'triangle'],[1700,.05,'triangle'],[2500,.09,'triangle']]);
 function dropModel(o){if(!o)return;if(o.parent)o.parent.remove(o);(o.userData.own||[]).forEach(x=>x.dispose&&x.dispose());}
 function evInit(L){const ev=L.ev=lunchEvent();
   if(ev==='tue')L.gm={ph:'pre',t:3,rx:GM_RX[Math.floor(seeded('gm-'+kstDate())()*GM_RX.length)],step:0,x:-24,y:15*T,wp:[],speed:72,dir:'right',face:PI/2,walk:0,moving:false,bed:null,prog:0,say:'',sayT:0,fxT:0};
-  if(ev==='sun'){if(!collHas('monkey'))L.mk={ci:3,x:chairs[3].x,y:chairs[3].y,h:0,hop:null,dodge:0,idle:5,face:0,caught:false,seen:false};
-    else if(!collHas('fruit')){swapLunchPet('monkey');L.hunt={ph:'wait',t:3.5};}}
+  if(ev==='sun'&&!collHas('monkey'))L.mk={ci:3,x:chairs[3].x,y:chairs[3].y,h:0,hop:null,dodge:0,idle:5,face:0,caught:false,seen:false};
+  if(isWeekday()&&L.pet&&L.pet.kind==='monkey'&&!collHas('fruit'))L.hunt={ph:'wait',t:3.5};
   const lb=evLabel(ev);if(lb)setTimeout(()=>{if(G&&G.lunch===L&&!L.left){evBanner('🎉 '+lb);playTones([[523,.08],[659,.08],[784,.08],[1047,.22]]);}},1600);}
 function gmSay(g,txt,sec){g.say=txt;g.sayT=sec||2.5;}
 const gmFollowing=()=>{const g=G&&G.lunch&&G.lunch.gm;return !!g&&g.ph==='follow';};
@@ -3017,7 +3018,7 @@ for(let i=0;i<5;i++)particle(m.x+rand(-10,10),m.y,1.3,pick(['💨','🐒','🍌'
 mkHop(m,best,.45,1.9);mkSound();buzz(25);toast(m.dodge===1?'🐒 끼끼! 약 올리며 도망쳤어요 (1/3)':'🐒 끼끼끼! 한 번만 더! (2/3)','');return;}
 m.caught=true;m.hop={x0:m.x,y0:m.y,x1:P.x,y1:P.y,t:0,d:.5,a:1.4};
 playTones([[1319,.06],[1568,.06],[2093,.14]]);buzz([40,30,80]);for(let i=0;i<10;i++)particle(P.x+rand(-14,14),P.y,1.8,pick(['💗','🍌','✨']),rand(-70,70),rand(1,2),1);
-setTimeout(()=>{const L=G&&G.lunch;if(!L||L.left)return;evReward('monkey');if(!collHas('fruit')){swapLunchPet('monkey');L.hunt={ph:'wait',t:4.5};}},650);}
+setTimeout(()=>{const L=G&&G.lunch;if(!L||L.left)return;evReward('monkey');},650);}
 function swapLunchPet(k){const P=G.player,L=G.lunch;if(!L)return;if(R.lpetObj){dropModel(R.lpetObj);R.lpetObj=null;}
   G.pet=L.pet={kind:k,x:P.x-30,y:P.y,face:0,walk:0,moving:false,wp:[],speed:null,jump:0};}
 function lunchPetTick(dt){const L=G.lunch,Pt=L&&L.pet;if(!Pt||huntBusy())return;const P=G.player;
@@ -3049,7 +3050,7 @@ function fruitPick(){const L=G.lunch;L.fruit=null;dropModel(R.evFruit);R.evFruit
   function evReward(k){const had=collHas(k);if(!had)collAdd(k);
 const sub={kimchi:'화난 환자에게 김치를 던져<br>대기석으로 돌려보내요<br>다시 치료할 수 있고 콤보도 인정!',
 fruit:'☁️ 구름 각성!<br>등 뒤에 구름 고리가 생기고<br>모든 치료가 2배 빨라져요',
-monkey:'희귀 펫 · 출근 점수 +10%<br>어? 원숭이가 무언가<br>냄새를 맡은 것 같아요…!'}[k];
+monkey:'희귀 펫 · 출근 점수 +10%<br>평일 점심시간에 데려오면<br>무언가를 찾아 줄지도…?'}[k];
 const ttl={kimchi:had?'🥬 배추김치 한 포기 더!':'🥬 배추김치 한 포기 획득!',fruit:'🍇 신비한 열매 획득!',monkey:'🐒 원숭이 획득!'}[k];
 const note=had?'✔️ 이미 가지고 있어요':k==='monkey'?'🐾 펫에 추가됐어요! 펫 탭에서 함께 출근할 수 있어요!':'🎒 악세서리에 추가됐어요!';
 evShow(k,ttl,had&&k==='kimchi'?'할머니의 정이 듬뿍 담겼어요':sub,note);}

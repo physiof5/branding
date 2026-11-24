@@ -1982,14 +1982,12 @@ function needsCart(s){return s.occ&&s.occ.state==='seated'&&(s.phase==='handsRea
 function grabCart(){G.cart.held=true;sfx('whoosh');toast('🔊 초음파 치료기를 끌고 가요','');}
 function dropCart(silent){if(!G.cart.held)return;G.cart.held=false;if(!silent)sfx('click');}
 function startHands(s){if(s.cur==='US'){if(!cartNear(s)){toast('🔊 초음파 치료기를 가져오세요','warn');sfx('bad');return;}dropCart(true);}s.phase='hands';sfx('click');}
-function openChart(){
-  const list=G.patients.filter(p=>p.state!=='leaving');
+function openChart(){ // checking the chart at the desk: prescriptions are confirmed right away (no EMR popup)
+  const list=G.patients.filter(p=>p.state!=='leaving'),fresh=list.filter(p=>!p.charted);
   for(const p of list)p.charted=true;
-  G.modal=true;
-  const STL={arriving:'입장 중',waiting:'대기',following:'안내 중',toSeat:'이동 중',toChair:'이동 중',seated:'치료실',chase:'😡 분노'};
-  $('#emrBody').innerHTML=list.length?list.map(p=>`<tr><td>${p.type.emoji} ${esc(p.name)}</td><td><div class="rxl">${p.rx.map(t=>rxChip(t,p.done.has(t),false)).join('')}</div></td><td>${STL[p.state]||''}</td></tr>`).join('')
-    :`<tr><td colspan="3" style="text-align:center;color:#999">현재 차트가 없습니다 ☕</td></tr>`;
-  $('#chartModal').classList.add('show');sfx('click');
+  const x=12.3*T,y=8.6*T;
+  if(fresh.length){popup(x,y,2.1,`💻 처방 확인 ${fresh.length}명`,'#1e88e5');for(const p of fresh)particle(p.x,p.y,2.2,'📋',0,.8,1);playTones([[880,.05],[1175,.08]]);buzz(15);}
+  else{popup(x,y,2.1,list.length?'💻 이미 확인했어요':'💻 차트 없음 ☕','#6b7785');sfx('click');}
 }
 function closeChart(){if(G)G.modal=false;$('#chartModal').classList.remove('show');}
 

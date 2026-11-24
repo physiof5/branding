@@ -3542,7 +3542,8 @@ function renderPreview(dt){
   else if(target!=null){let d=target-pvYaw;d=Math.atan2(Math.sin(d),Math.cos(d));pvYaw+=d*Math.min(1,dt*8);}
   const o=PV.obj;o.yaw=pvYaw;o.root.rotation.y=pvYaw;
   animChar(o,dt,pvT,{moving:pvView==='walk',walk:pvT*10,face:null,mood:null});
-  const ht=o.baseHeight||o.height;PV.cam.position.set(0,ht*.6+.25,ht*1.7+1.6); // same framing as the regular charactersPV.cam.lookAt(0,ht*.5,0);
+  const ht=o.baseHeight||o.height; // same framing as the regular characters
+  PV.cam.position.set(0,ht*.6+.25,ht*1.7+1.6);PV.cam.lookAt(0,ht*.5,0);
   PV.r.render(PV.s,PV.cam);
 }
 

@@ -1993,7 +1993,7 @@ function attachMonkeyForm(o){const mk=createSunGodMonkeyCharacter();
   mk.traverse(m=>{if(m.isMesh)mkSRGB(m.material);});
   for(const c of o.pose.children)c.visible=false;   // hide the regular body but keep its rig (legs, arms, head) for the poses
   mk.scale.setScalar(MK_S);o.pose.add(mk);o.mk=mk;
-  o.mkHeadY=(.66+.36)*MK_S;o.height=1.92*MK_S;}
+  o.baseHeight=o.height;o.mkHeadY=(.66+.36)*MK_S;o.height=1.92*MK_S;}
 // drive the monkey from the regular rig: its own idle animation, plus walk cycle, sitting, cheering and the stun wobble
 function mkSync(o,dt,t,moving){const mk=o.mk,u=mk.userData;
   updateCharacterAnimation(mk,t);
@@ -3542,7 +3542,7 @@ function renderPreview(dt){
   else if(target!=null){let d=target-pvYaw;d=Math.atan2(Math.sin(d),Math.cos(d));pvYaw+=d*Math.min(1,dt*8);}
   const o=PV.obj;o.yaw=pvYaw;o.root.rotation.y=pvYaw;
   animChar(o,dt,pvT,{moving:pvView==='walk',walk:pvT*10,face:null,mood:null});
-  const ht=o.height;PV.cam.position.set(0,ht*.6+.25,ht*1.7+1.6);PV.cam.lookAt(0,ht*.5,0);
+  const ht=o.baseHeight||o.height;PV.cam.position.set(0,ht*.6+.25,ht*1.7+1.6); // same framing as the regular charactersPV.cam.lookAt(0,ht*.5,0);
   PV.r.render(PV.s,PV.cam);
 }
 

@@ -1,7 +1,7 @@
 import { MODES, MODE_ORDER } from '../../data/modes';
 import { tierLabel } from '../../game/rank';
 import { CHALLENGE_DAILY_GAMES, type MatchKind } from '../../game/rewards';
-import { useProfileStore } from '../../store/profileStore';
+import { useChallengeToday, useProfileStore } from '../../store/profileStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useUIStore } from '../../store/uiStore';
 import { Modal } from './Modal';
@@ -13,7 +13,7 @@ export function GameModeSheet() {
   const setPrefs = useSettingsStore((s) => s.setModePrefs);
   const trophies = useProfileStore((s) => s.trophies);
   const flex = useProfileStore((s) => s.flexTrophies);
-  const challenge = useProfileStore((s) => s.challengeToday());
+  const challenge = useChallengeToday();
 
   const status: Record<MatchKind, string> = {
     ranked: `${tierLabel(trophies)} · 🏆 ${trophies}`,

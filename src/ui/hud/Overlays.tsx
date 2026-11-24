@@ -3,8 +3,9 @@ import { MAPS } from '../../data/maps';
 import { passLevelFor } from '../../data/seasonPass';
 import { TIERS } from '../../game/rank';
 import { useBattleStore } from '../../store/battleStore';
+import { CHALLENGE_DAILY_GAMES } from '../../game/rewards';
 import type { MatchReport } from '../../store/profileStore';
-import { useProfileStore } from '../../store/profileStore';
+import { useChallengeToday, useProfileStore } from '../../store/profileStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { Button } from '../components/Button';
 
@@ -19,6 +20,7 @@ export function ResultOverlay({ report, onRematch, onLobby }: { report: MatchRep
   const names = [name0, name1] as const;
   const turns = useBattleStore((s) => s.totalTurns);
   const xp = useProfileStore((s) => s.pass.xp);
+  const challenge = useChallengeToday();
 
   let title = '무승부';
   let color = '#ffffff';
@@ -61,13 +63,22 @@ export function ResultOverlay({ report, onRematch, onLobby }: { report: MatchRep
                 <div className="text-xs text-white/60">골드</div>
                 <div className="font-display text-xl text-[#ffd76a]">+{report.gold}</div>
               </div>
-              <div className="rounded-2xl bg-black/25 p-2">
-                <div className="text-xs text-white/60">{kind === 'flex' ? '자유 랭크' : kind === 'challenge' ? '트로피 (변동 없음)' : '트로피'}</div>
-                <div className={`font-display text-xl ${report.trophies >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
-                  {report.trophies >= 0 ? '+' : ''}
-                  {report.trophies}
+              {kind === 'challenge' ? (
+                <div className="rounded-2xl bg-black/25 p-2">
+                  <div className="text-xs text-white/60">오늘 도전</div>
+                  <div className="font-display text-xl text-[#ff9ab5]">
+                    {challenge.played}/{CHALLENGE_DAILY_GAMES}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="rounded-2xl bg-black/25 p-2">
+                  <div className="text-xs text-white/60">{kind === 'flex' ? '자유 랭크' : '트로피'}</div>
+                  <div className={`font-display text-xl ${report.trophies >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
+                    {report.trophies >= 0 ? '+' : ''}
+                    {report.trophies}
+                  </div>
+                </div>
+              )}
               <div className="rounded-2xl bg-black/25 p-2">
                 <div className="text-xs text-white/60">패스 XP</div>
                 <div className="font-display text-xl text-sky-300">+{report.xp}</div>

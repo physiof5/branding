@@ -5,7 +5,7 @@ import { MODES } from '../../data/modes';
 import { TIERS, tierForTrophies, tierLabel } from '../../game/rank';
 import { CHALLENGE_DAILY_GAMES } from '../../game/rewards';
 import { launchMatch, teamSizeFor, type PartnerKind } from '../../store/matchmaking';
-import { useProfileStore } from '../../store/profileStore';
+import { useChallengeToday, useProfileStore } from '../../store/profileStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useUIStore } from '../../store/uiStore';
 import { Button } from './Button';
@@ -49,7 +49,7 @@ export function LoadoutSheet() {
   const inventory = useProfileStore((s) => s.inventory);
   const trophies = useProfileStore((s) => s.trophies);
   const flexTrophies = useProfileStore((s) => s.flexTrophies);
-  const challenge = useProfileStore((s) => s.challengeToday());
+  const challenge = useChallengeToday();
   const [cat, setCat] = useState<[boolean, boolean]>([false, false]);
 
   const mode = prefs.mode;

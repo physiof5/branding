@@ -33,6 +33,8 @@ const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const eIO = (k: number) => 0.5 - 0.5 * Math.cos(Math.PI * clamp(k));
 
 const WIDE: Shot = { id: 'wide', pos: [0, 2.1, 6.9], look: [0, 1.15, 0], fov: 36, speed: 2.6 };
+/** 개발용: ?wide 를 붙이면 연출 컷 없이 와이드 샷만 (포즈 확인용) */
+const FORCE_WIDE = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('wide');
 
 function attackerOf(s: BattleState): PlayerIndex | null {
   const r = s.result;
@@ -230,7 +232,7 @@ export function CameraDirector() {
 
   useFrame((state, dt) => {
     const s = useBattleStore.getState();
-    const shot = planShot(s);
+    const shot = FORCE_WIDE ? WIDE : planShot(s);
     const fov = fitAspect(shot, size.width / Math.max(1, size.height), tmp.pos, tmp.look);
     const c = cur.current;
     if (shot.cut && shot.id !== c.shot) {

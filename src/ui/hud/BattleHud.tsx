@@ -114,12 +114,16 @@ function TurnTimer() {
   const phase = useBattleStore((s) => s.phase);
   const turn = useBattleStore((s) => s.turn);
   const mode = useBattleStore((s) => s.config?.mode);
-  const secs = useBattleStore((s) => {
+  // 남은 시간 (0.1초 단위). 야자 타임(1.5초)은 소수점까지 보여준다
+  const tenths = useBattleStore((s) => {
     if (s.phase !== 'select') return null;
     const humans = ([0, 1] as const).filter((i) => s.fighters[i].controller === 'human' && s.choices[i] === null);
     if (!humans.length) return 0;
-    return Math.max(0, Math.ceil((Math.max(...humans.map((i) => s.deadlines[i])) - s.clock) / 1000));
+    return Math.max(0, Math.ceil((Math.max(...humans.map((i) => s.deadlines[i])) - s.clock) / 100));
   });
+  const fast = useBattleStore((s) => Math.max(...s.turnDurations) < 2000);
+  const secs = tenths === null ? null : Math.ceil(tenths / 10);
+  const shown = tenths === null ? null : fast && tenths > 0 ? (tenths / 10).toFixed(1) : String(secs);
   const ring = useRef<SVGCircleElement>(null);
   const R = 30;
   const C = 2 * Math.PI * R;
@@ -152,10 +156,10 @@ function TurnTimer() {
           <circle ref={ring} cx="36" cy="36" r={R} fill="none" strokeWidth="6" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C} />
         </svg>
         <div
-          key={`${turn}-${secs}`}
-          className={`font-display absolute inset-0 grid place-items-center ${secs !== null ? 'anim-pop text-4xl' : 'text-lg'} ${secs === 1 ? 'text-[#ff4d5e]' : ''}`}
+          key={`${turn}-${fast ? 'fast' : secs}`}
+          className={`font-display absolute inset-0 grid place-items-center ${shown !== null ? `anim-pop ${fast ? 'text-3xl' : 'text-4xl'}` : 'text-lg'} ${secs === 1 ? 'text-[#ff4d5e]' : ''}`}
         >
-          {secs !== null ? secs : label}
+          {shown !== null ? shown : label}
         </div>
       </div>
       <div className={`font-display -mt-1 rounded-full px-2.5 py-0.5 text-xs ${turn >= OVERTIME_TURN ? 'bg-[#5b2a86] text-[#ffe66b]' : 'bg-[#1b1633]/85'}`}>

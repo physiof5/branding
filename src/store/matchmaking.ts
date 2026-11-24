@@ -4,7 +4,7 @@ import { EFFECT_ORDER } from '../data/effects';
 import { ITEMS } from '../data/items';
 import type { MapId } from '../data/maps';
 import { tierForTrophies } from '../game/rank';
-import type { MatchKind } from '../game/rewards';
+import { CHALLENGE_DAILY_GAMES, type MatchKind } from '../game/rewards';
 import { useBattleStore, type BattleConfig, type FighterSetup } from './battleStore';
 import { useProfileStore } from './profileStore';
 import { useUIStore } from './uiStore';
@@ -82,6 +82,10 @@ export function teamSizeFor(o: Pick<MatchOptions, 'mode' | 'queue' | 'partySize'
 
 export function launchMatch(o: MatchOptions): void {
   const profile = useProfileStore.getState();
+  if (o.mode === 'challenge' && profile.challengeToday().played >= CHALLENGE_DAILY_GAMES) {
+    useUIStore.getState().showToast(`오늘 클래식 도전 ${CHALLENGE_DAILY_GAMES}판을 모두 했어요! 내일 다시 🎯`);
+    return;
+  }
   lastOptions = o;
   const flex = o.mode === 'flex';
   const ladder = flex ? profile.flexTrophies : profile.trophies;
@@ -159,9 +163,5 @@ export function rematch(): void {
     lastOptions.catalyst[0] && profile.inventory.catalyst > 0,
     lastOptions.catalyst[1] && profile.inventory.catalyst > (lastOptions.catalyst[0] ? 1 : 0),
   ];
-  if (lastOptions.mode === 'challenge' && profile.challengeToday().played >= 10) {
-    useUIStore.getState().showToast('오늘 클래식 도전 10판을 모두 했어요!');
-    return;
-  }
   launchMatch({ ...lastOptions, catalyst });
 }

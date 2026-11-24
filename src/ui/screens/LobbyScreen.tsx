@@ -5,7 +5,7 @@ import { passLevelFor, passLevelProgress } from '../../data/seasonPass';
 import { tierForTrophies, tierLabel } from '../../game/rank';
 import { CHALLENGE_DAILY_GAMES } from '../../game/rewards';
 import { LobbyStage } from '../../scene/preview/LobbyStage';
-import { useProfileStore } from '../../store/profileStore';
+import { useChallengeToday, useProfileStore } from '../../store/profileStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { useUIStore } from '../../store/uiStore';
 import { FaceIcon } from '../components/FaceIcon';
@@ -25,7 +25,7 @@ export function LobbyScreen() {
   const trophies = useProfileStore((s) => s.trophies);
   const stats = useProfileStore((s) => s.stats);
   const passXp = useProfileStore((s) => s.pass.xp);
-  const challenge = useProfileStore((s) => s.challengeToday());
+  const challenge = useChallengeToday();
   const prefs = useSettingsStore((s) => s.modePrefs);
   const setPrefs = useSettingsStore((s) => s.setModePrefs);
   const ui = useUIStore();
@@ -97,6 +97,8 @@ export function LobbyScreen() {
 
       <section className="relative mx-4 mt-2 min-h-0 flex-1 overflow-hidden rounded-[28px] border-[3px] border-[#2a2350] bg-[#2a2350] shadow-[0_5px_0_#2a2350]">
         <LobbyStage appearance={appearance} mapId={tier.mapId} wiggleKey={wiggle} onTap={() => ui.go('customize')} />
+        {/* 제목이 맵 배경(칠판 글씨 등)에 묻히지 않도록 위쪽만 살짝 어둡게 */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-[#1b1633]/70 via-[#1b1633]/30 to-transparent sm:h-32" />
         <div className="pointer-events-none absolute inset-x-0 top-2 px-2 text-center">
           <h1 className="font-display text-outline text-[30px] leading-none text-[#fff3c4] sm:text-5xl">
             공부는 <span className="text-[#ff8fb0]">엉덩이</span> 싸움

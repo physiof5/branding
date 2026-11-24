@@ -300,10 +300,10 @@ function buttThrust(p: Pose, i: PoseInput, me: FighterOutcome, opp: FighterOutco
     p.x = lerp(impactX, i.baseX, eOutC(seg(t, I + 120, I + 560)));
     p.buttPop = 1 + popPeak * (1 - seg(t, I, I + 320)) + 0.15 * Math.sin(a * 0.06) * Math.exp(-a / 160);
   } else if (res === 'dodged') {
-    // 허공을 들이받고 휘청
-    const over = eOutC(seg(t, I, I + 180));
-    const ret = eIO(seg(t, I + 340, I + 820));
-    p.x = lerp(lerp(impactX, impactX + i.dir * 0.45, over), i.baseX, ret);
+    // 상대가 골반을 앞으로 빼서 비운 자리를 들이받고 휘청 (상대 몸을 뚫고 지나가지 않게 조금만 더 밀림)
+    const over = eOutC(seg(t, I, I + 140));
+    const ret = eIO(seg(t, I + 220, I + 640));
+    p.x = lerp(lerp(impactX, impactX + i.dir * 0.08, over), i.baseX, ret);
     p.lean = 0.55 + 0.35 * bump(t, I, I + 520);
     p.tilt = 0.22 * bump(t, I, I + 620) * -i.dir;
     p.buttPop = 1 + popPeak * (1 - seg(t, I, I + 400));
@@ -339,13 +339,13 @@ function chargeAnim(p: Pose, i: PoseInput, me: FighterOutcome, I: number): void 
 
 /** 피하기: 골반을 앞으로 쭉 빼며 상체를 뒤로 젖힘 → 엉덩이가 쏙 들어감 */
 function dodgeAnim(p: Pose, i: PoseInput, I: number, special: boolean): void {
-  const a = seg(i.t, I - 400, I + 360);
-  const env = Math.sin(Math.PI * a);
+  // 공격이 닿기 직전에 쭉 빼고, 공격자가 물러날 때까지 버틴 뒤 복귀
+  const env = eOutC(seg(i.t, I - 420, I - 120)) * (1 - eIO(seg(i.t, I + 380, I + 700)));
   const k = special ? 0.6 : 1;
   p.pelvis = env * k;
   p.lean = -0.5 * env * k;
   p.lookUp = 0.22 * env;
-  p.x += -i.dir * 0.14 * env * k;
+  p.x += -i.dir * 0.2 * env * k;
   p.armL = p.armR = 0.75 * env;
   p.armFwd = -0.35 * env;
   p.squash = 1 - 0.04 * env;

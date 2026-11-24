@@ -70,7 +70,7 @@ export function Fighter({ index }: { index: PlayerIndex }) {
     const r = rig.current;
     if (!r) return;
     // 골반 앞으로 내밀기: 골반·상체를 앞으로 옮기고 다리는 고관절에서 기울여 발은 제자리
-    const shift = 0.22 * pose.pelvis;
+    const shift = 0.26 * pose.pelvis;
     const legTilt = Math.asin(Math.min(0.9, shift / Math.max(0.2, layout.hipY)));
     r.hips.position.set(pose.hipSway, layout.pelvisY, shift);
     r.hips.rotation.set(-0.35 * pose.pelvis, 0, pose.hipSway * 1.3);

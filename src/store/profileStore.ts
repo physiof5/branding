@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { clamp01, DEFAULT_APPEARANCE, randomAppearance, type Appearance } from '../data/appearance';
@@ -295,3 +296,12 @@ export const useProfileStore = create<ProfileState>()(
     },
   ),
 );
+
+/** 오늘 클래식 도전 기록 (컴포넌트용 — 날짜가 바뀌었으면 0부터인 새 기록) */
+export function useChallengeToday(): ChallengeDay {
+  const raw = useProfileStore((s) => s.challenge);
+  return useMemo(() => {
+    const today = todayKey();
+    return raw.date === today ? raw : { date: today, played: 0, wins: 0, rewards: [] };
+  }, [raw]);
+}

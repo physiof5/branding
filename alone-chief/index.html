@@ -1808,7 +1808,7 @@ function showCombo(n){
   const base=520*Math.pow(1.06,Math.min(n,14));playTones([[base,.07,'square'],[base*1.26,.07,'square'],[base*1.5,.14,'triangle']]);
   if(COMBO_TXT[n])buzz([30,30,30]);
 }
-function newGame(){
+function newGame(){{const c=$('#comboPop');if(c){c.className='';c.innerHTML='';}const rb=$('#roundBanner');if(rb)rb.classList.remove('show');} // stale end-of-game animations would replay when the game screen is shown again
   for(const s of stations)Object.assign(s,{phase:'idle',occ:null,t:0,dur:0,autoList:[],handsList:[],cur:null,neglect:0});
   for(const ch of chairs)ch.occ=null;
   if(R.chars){for(const o of R.chars.values())disposeChar(o);R.chars.clear();}
@@ -1982,12 +1982,9 @@ function needsCart(s){return s.occ&&s.occ.state==='seated'&&(s.phase==='handsRea
 function grabCart(){G.cart.held=true;sfx('whoosh');toast('🔊 초음파 치료기를 끌고 가요','');}
 function dropCart(silent){if(!G.cart.held)return;G.cart.held=false;if(!silent)sfx('click');}
 function startHands(s){if(s.cur==='US'){if(!cartNear(s)){toast('🔊 초음파 치료기를 가져오세요','warn');sfx('bad');return;}dropCart(true);}s.phase='hands';sfx('click');}
-function openChart(){ // checking the chart at the desk: prescriptions are confirmed right away (no EMR popup)
-  const list=G.patients.filter(p=>p.state!=='leaving'),fresh=list.filter(p=>!p.charted);
-  for(const p of list)p.charted=true;
-  const x=12.3*T,y=8.6*T;
-  if(fresh.length){popup(x,y,2.1,`💻 처방 확인 ${fresh.length}명`,'#1e88e5');for(const p of fresh)particle(p.x,p.y,2.2,'📋',0,.8,1);playTones([[880,.05],[1175,.08]]);buzz(15);}
-  else{popup(x,y,2.1,list.length?'💻 이미 확인했어요':'💻 차트 없음 ☕','#6b7785');sfx('click');}
+function openChart(){ // checking the chart at the desk: prescriptions are confirmed right away, silently (no EMR popup)
+  for(const p of G.patients)if(p.state!=='leaving')p.charted=true;
+  sfx('click');
 }
 function closeChart(){if(G)G.modal=false;$('#chartModal').classList.remove('show');}
 

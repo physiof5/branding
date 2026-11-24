@@ -401,6 +401,9 @@ body.final10 #game::before{content:'';position:absolute;inset:0;pointer-events:n
 #comboPop small{display:block;font-family:var(--head);font-size:.5em;-webkit-text-stroke:0;color:var(--ink);background:#fff;border:3px solid var(--ink);border-radius:12px;padding:2px 12px;margin:4px auto 0;width:max-content;text-shadow:none}
 #comboPop.lv1 b{color:#7ed957}#comboPop.lv2 b{color:#ff9a2e}#comboPop.lv3 b{color:#4fc3f7}#comboPop.lv4 b{color:#ff5c8a}
 #comboPop.show{animation:comboIn 1.1s cubic-bezier(.2,1.6,.4,1) forwards}
+#checkPop{position:absolute;left:50%;top:40%;transform:translate(-50%,-100%) scale(0);z-index:7;pointer-events:none;white-space:nowrap;font-family:'Bagel Fat One',var(--head);font-size:clamp(20px,4.6vw,30px);color:#fff;-webkit-text-stroke:.14em var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 rgba(0,0,0,.25);opacity:0}
+#checkPop.show{animation:checkIn .9s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes checkIn{0%{opacity:0;transform:translate(-50%,-100%) scale(.3) rotate(-8deg)}22%{opacity:1;transform:translate(-50%,-100%) scale(1.12) rotate(-4deg)}70%{opacity:1;transform:translate(-50%,-110%) scale(1) rotate(-4deg)}100%{opacity:0;transform:translate(-50%,-160%) scale(1) rotate(-4deg)}}
 @keyframes comboIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(-10deg)}18%{opacity:1;transform:translate(-50%,-50%) scale(1.15) rotate(-4deg)}70%{opacity:1;transform:translate(-50%,-50%) scale(1) rotate(-4deg)}100%{opacity:0;transform:translate(-50%,-80%) scale(1) rotate(-4deg)}}
 #abIcons{position:absolute;right:calc(var(--sar) + 8px);top:calc(var(--sat) + 104px);z-index:4;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .abchip{position:relative;width:34px;height:34px;border-radius:10px;border:2.5px solid var(--ink);background:#fff;display:grid;place-items:center;font-size:18px;box-shadow:0 2px 0 rgba(0,0,0,.3)}
@@ -771,6 +774,7 @@ body.touch #joyHint{display:grid}
   <div id="help">WASD/방향키 이동 · E/Space 상호작용 · P 일시정지 · 마우스 휠 확대/축소 · 환자에 마우스를 올리면 처방 확인</div>
   <div id="roundBanner">📣 원장님 회진!</div>
   <div id="comboPop"></div>
+  <div id="checkPop">CHECK!</div>
   <div id="abIcons"></div>
   <div class="overlay" id="abilOv"><div class="abwrap"><div class="abhead" id="abHead">⬆️ 레벨 업!</div><div class="absub">새로운 어빌리티를 선택하세요!</div><div class="abcards" id="abCards"></div></div></div>
   <div id="joyHint">드래그해서<br>이동</div>
@@ -1808,7 +1812,7 @@ function showCombo(n){
   const base=520*Math.pow(1.06,Math.min(n,14));playTones([[base,.07,'square'],[base*1.26,.07,'square'],[base*1.5,.14,'triangle']]);
   if(COMBO_TXT[n])buzz([30,30,30]);
 }
-function newGame(){{const c=$('#comboPop');if(c){c.className='';c.innerHTML='';}const rb=$('#roundBanner');if(rb)rb.classList.remove('show');} // stale end-of-game animations would replay when the game screen is shown again
+function newGame(){{const c=$('#comboPop');if(c){c.className='';c.innerHTML='';}const ck=$('#checkPop');if(ck)ck.classList.remove('show');const rb=$('#roundBanner');if(rb)rb.classList.remove('show');} // stale end-of-game animations would replay when the game screen is shown again
   for(const s of stations)Object.assign(s,{phase:'idle',occ:null,t:0,dur:0,autoList:[],handsList:[],cur:null,neglect:0});
   for(const ch of chairs)ch.occ=null;
   if(R.chars){for(const o of R.chars.values())disposeChar(o);R.chars.clear();}
@@ -1985,6 +1989,8 @@ function startHands(s){if(s.cur==='US'){if(!cartNear(s)){toast('🔊 초음파 �
 function openChart(){ // checking the chart at the desk: prescriptions are confirmed right away, silently (no EMR popup)
   for(const p of G.patients)if(p.state!=='leaving')p.charted=true;
   sfx('click');
+  const el=$('#checkPop'),sp=proj(12.3*T,8.6*T,2.3);if(sp.ok){el.style.left=sp.x+'px';el.style.top=sp.y+'px';}
+  el.classList.remove('show');void el.offsetWidth;el.classList.add('show');
 }
 function closeChart(){if(G)G.modal=false;$('#chartModal').classList.remove('show');}
 

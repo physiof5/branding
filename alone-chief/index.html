@@ -1409,9 +1409,9 @@ const HSX=1.4, HSY=1.22, HSZ=1.3; // head scale: wide, round, big
 // hidden rare character: 원장님 (director) — fixed costume, only from the dice
 const DIRECTOR_PARTS={hair:'short',hairColor:'#161616',skin:'#f1c8a3',eyes:'dot',brows:'thick',nose:'button',lips:'smile',
   top:'#f7f6f0',bottom:'#4a4a50',crocs:'#151515',hat:'none',face:'dirGlasses',neck:'tie',hand:'tablet',accColor:'#9aa0a6',height:1.06,bulk:1.02,extra:null};
-/* ===== ☁️🐒 신비한 열매 변신 캐릭터 (user-provided design) ===== */
+/* ===== ☁️🐒 신비한 열매 변신 캐릭터 (user-provided sungodmonkeycharacter.js, verbatim) ===== */
 /**
- * 태양신 원숭이(Sun God Monkey) 로우폴리 SD 피규어 캐릭터를 생성합니다.
+ * 태양신 원숭이(Sun God Monkey) 스무스(매끄러운 곡면) SD 피규어 캐릭터를 생성합니다.
  * 외부 3D 모델 파일 없이 순수 Three.js 지오메트리와 MeshStandardMaterial만 사용합니다.
  *
  * @returns {THREE.Group} 관절 피벗별로 구조화된 캐릭터 최상위 그룹 (발바닥 y = 0 정렬)
@@ -1420,23 +1420,23 @@ function createSunGodMonkeyCharacter() {
   const character = new THREE.Group();
   character.name = 'SunGodMonkeyCharacter';
 
-  // --- 컬러 팔레트 & 머티리얼 (로우폴리 flatShading + 쿨그레이 화이트) ---
-  const createMat = (color, roughness = 0.75, metalness = 0.05) =>
+  // --- 컬러 팔레트 & 머티리얼 (매끄러운 곡면 셰이딩 + 쿨그레이 화이트) ---
+  const createMat = (color, roughness = 0.72, metalness = 0.05) =>
     new THREE.MeshStandardMaterial({
       color,
       roughness,
       metalness,
-      flatShading: true,
+      flatShading: false,
     });
 
   const materials = {
     white: createMat(0xefeff4, 0.75, 0.05),      // 머리카락, 구름, 재킷, 반바지
-    skin: createMat(0xc8966e, 0.78, 0.05),       // 피부 (두상, 귀, 상체, 손, 발)
-    innerEar: createMat(0x9e6b47, 0.8, 0.05),    // 귀 안쪽
-    muzzle: createMat(0xe5c8a2, 0.78, 0.05),     // 입매 돌출부
-    darkBrown: createMat(0x4a3525, 0.7, 0.05),   // 눈, 입선, 흉터
-    nose: createMat(0x8c5a3c, 0.75, 0.05),       // 코
-    sash: createMat(0x8a4fbe, 0.72, 0.05),       // 보라색 허리띠
+    skin: createMat(0x87614e, 0.75, 0.05),       // 피부 (두상, 귀, 상체, 손, 발)
+    innerEar: createMat(0x654535, 0.78, 0.05),   // 귀 안쪽
+    muzzle: createMat(0xe5c8a2, 0.75, 0.05),     // 입매 돌출부
+    darkBrown: createMat(0x4a3525, 0.65, 0.05),  // 눈, 입선, 흉터
+    nose: createMat(0x8c5a3c, 0.72, 0.05),       // 코
+    sash: createMat(0x8a4fbe, 0.7, 0.05),        // 보라색 허리띠
   };
 
   // 모든 메쉬에 그림자 설정을 일괄 적용하는 헬퍼
@@ -1460,8 +1460,8 @@ function createSunGodMonkeyCharacter() {
   // 머리 중심은 피벗 위 +0.36 (월드 y ≈ 1.02)
   const headCenterY = 0.36;
 
-  // 1-1. 두상 베이스
-  const skullGeo = new THREE.IcosahedronGeometry(0.41, 2);
+  // 1-1. 두상 베이스 (고해상도 구체로 매끄럽게 구성)
+  const skullGeo = new THREE.SphereGeometry(0.41, 32, 24);
   const skull = makeMesh(skullGeo, materials.skin, 'skull');
   skull.position.set(0, headCenterY, 0);
   skull.scale.set(1.06, 0.96, 0.98);
@@ -1473,35 +1473,51 @@ function createSunGodMonkeyCharacter() {
   muzzleGroup.position.set(0, headCenterY - 0.09, 0.25);
   headGroup.add(muzzleGroup);
 
-  const muzzleL = makeMesh(new THREE.IcosahedronGeometry(0.21, 2), materials.muzzle, 'muzzleLeft');
+  // 눈 주변 및 양쪽 눈 사이 연한 베이지/크림색(#E5C8A2) 페이스 마스크
+  [-1, 1].forEach((side) => {
+    const eyeMask = makeMesh(
+      new THREE.SphereGeometry(0.18, 24, 18),
+      materials.muzzle,
+      side < 0 ? 'eyeMaskRight' : 'eyeMaskLeft'
+    );
+    eyeMask.position.set(side * 0.135, headCenterY + 0.055, 0.235);
+    eyeMask.scale.set(1.12, 0.96, 0.9);
+    headGroup.add(eyeMask);
+  });
+  const eyeMaskBridge = makeMesh(new THREE.SphereGeometry(0.125, 22, 16), materials.muzzle, 'eyeMaskBridge');
+  eyeMaskBridge.position.set(0, headCenterY + 0.06, 0.312);
+  eyeMaskBridge.scale.set(1.42, 1.26, 0.82);
+  headGroup.add(eyeMaskBridge);
+
+  const muzzleL = makeMesh(new THREE.SphereGeometry(0.21, 24, 18), materials.muzzle, 'muzzleLeft');
   muzzleL.position.set(-0.105, -0.015, 0.02);
   muzzleL.scale.set(1.05, 0.88, 0.75);
   muzzleGroup.add(muzzleL);
 
-  const muzzleR = makeMesh(new THREE.IcosahedronGeometry(0.21, 2), materials.muzzle, 'muzzleRight');
+  const muzzleR = makeMesh(new THREE.SphereGeometry(0.21, 24, 18), materials.muzzle, 'muzzleRight');
   muzzleR.position.set(0.105, -0.015, 0.02);
   muzzleR.scale.set(1.05, 0.88, 0.75);
   muzzleGroup.add(muzzleR);
 
-  const muzzleTopBridge = makeMesh(new THREE.IcosahedronGeometry(0.145, 2), materials.muzzle, 'muzzleBridge');
-  muzzleTopBridge.position.set(0, 0.055, 0.055);
-  muzzleTopBridge.scale.set(0.95, 0.9, 0.72);
+  const muzzleTopBridge = makeMesh(new THREE.SphereGeometry(0.145, 24, 18), materials.muzzle, 'muzzleBridge');
+  muzzleTopBridge.position.set(0, 0.068, 0.065);
+  muzzleTopBridge.scale.set(1.38, 1.05, 0.7);
   muzzleGroup.add(muzzleTopBridge);
 
-  const muzzleChin = makeMesh(new THREE.IcosahedronGeometry(0.19, 2), materials.muzzle, 'muzzleChin');
+  const muzzleChin = makeMesh(new THREE.SphereGeometry(0.19, 24, 18), materials.muzzle, 'muzzleChin');
   muzzleChin.position.set(0, -0.06, 0.01);
   muzzleChin.scale.set(1.15, 0.78, 0.76);
   muzzleGroup.add(muzzleChin);
 
   // 1-3. 표정 디테일 (눈, 눈썹, 코, 입선, 흉터)
-  // 눈: 초승달 모양 (^ ^)
+  // 눈: 매끄러운 초승달 모양 (^ ^)
   const createEye = (side) => {
     const curve = new THREE.CatmullRomCurve3([
       new THREE.Vector3(side * 0.11, headCenterY + 0.045, 0.395),
       new THREE.Vector3(side * 0.175, headCenterY + 0.088, 0.388),
-      new THREE.Vector3(side * 0.24, headCenterY + 0.042, 0.345),
+      new THREE.Vector3(side * 0.24, headCenterY + 0.042, 0.362),
     ]);
-    const geo = new THREE.TubeGeometry(curve, 6, 0.015, 4, false);
+    const geo = new THREE.TubeGeometry(curve, 20, 0.015, 12, false);
     return makeMesh(geo, materials.darkBrown, side < 0 ? 'eyeRight' : 'eyeLeft');
   };
   headGroup.add(createEye(-1));
@@ -1512,7 +1528,6 @@ function createSunGodMonkeyCharacter() {
     const browGroup = new THREE.Group();
     browGroup.name = side < 0 ? 'eyebrowRight' : 'eyebrowLeft';
 
-    // 바깥쪽에서 미간으로 내려오며 안쪽으로 말리는 3D 커브
     const pts = [
       new THREE.Vector3(side * 0.25, headCenterY + 0.165, 0.345),
       new THREE.Vector3(side * 0.18, headCenterY + 0.135, 0.395),
@@ -1523,7 +1538,7 @@ function createSunGodMonkeyCharacter() {
       new THREE.Vector3(side * 0.102, headCenterY + 0.145, 0.416),
     ];
     const curve = new THREE.CatmullRomCurve3(pts);
-    const geo = new THREE.TubeGeometry(curve, 14, 0.021, 5, false);
+    const geo = new THREE.TubeGeometry(curve, 28, 0.021, 12, false);
     browGroup.add(makeMesh(geo, materials.white, 'browCurve'));
 
     return browGroup;
@@ -1531,30 +1546,29 @@ function createSunGodMonkeyCharacter() {
   headGroup.add(createEyebrow(-1));
   headGroup.add(createEyebrow(1));
 
-  // 코: 작은 역삼각형 갈색 코 (#8C5A3C)
-  const noseGeo = new THREE.CylinderGeometry(0.036, 0.008, 0.036, 4);
+  // 코: 둥글게 다듬어진 작은 역삼각형 갈색 코 (#8C5A3C)
+  const noseGeo = new THREE.CylinderGeometry(0.036, 0.01, 0.036, 16);
   const nose = makeMesh(noseGeo, materials.nose, 'nose');
-  nose.position.set(0, headCenterY - 0.018, 0.432);
-  nose.rotation.y = Math.PI / 4;
-  nose.scale.set(1.1, 0.85, 0.7);
+  nose.position.set(0, headCenterY - 0.018, 0.422);
+  nose.scale.set(1.1, 0.85, 0.72);
   headGroup.add(nose);
 
   // 인중 수직선: 코 아래에서 입 중앙까지
-  const philtrumGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.105, 4);
+  const philtrumGeo = new THREE.CylinderGeometry(0.007, 0.007, 0.105, 12);
   const philtrum = makeMesh(philtrumGeo, materials.darkBrown, 'philtrumLine');
-  philtrum.position.set(0, headCenterY - 0.082, 0.425);
-  philtrum.rotation.x = 0.08;
+  philtrum.position.set(0, headCenterY - 0.082, 0.420);
+  philtrum.rotation.x = 0.06;
   headGroup.add(philtrum);
 
-  // 큰 웃는 입선: 입매 전체를 가로지르며 양끝이 올라간 형태
+  // 큰 웃는 입선: 입매 돌출부 표면을 따라 양끝이 활짝 올라간 매끄러운 곡선
   const smileCurve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(-0.24, headCenterY - 0.055, 0.305),
-    new THREE.Vector3(-0.15, headCenterY - 0.112, 0.388),
-    new THREE.Vector3(0, headCenterY - 0.132, 0.422),
-    new THREE.Vector3(0.15, headCenterY - 0.112, 0.388),
-    new THREE.Vector3(0.24, headCenterY - 0.055, 0.305),
+    new THREE.Vector3(-0.235, headCenterY - 0.058, 0.375),
+    new THREE.Vector3(-0.145, headCenterY - 0.112, 0.422),
+    new THREE.Vector3(0, headCenterY - 0.132, 0.435),
+    new THREE.Vector3(0.145, headCenterY - 0.112, 0.422),
+    new THREE.Vector3(0.235, headCenterY - 0.058, 0.375),
   ]);
-  const smileGeo = new THREE.TubeGeometry(smileCurve, 12, 0.01, 4, false);
+  const smileGeo = new THREE.TubeGeometry(smileCurve, 28, 0.01, 12, false);
   headGroup.add(makeMesh(smileGeo, materials.darkBrown, 'smileLine'));
 
   // 흉터: 캐릭터 기준 왼쪽 눈(정면에서 볼 때 오른쪽 +X) 바로 아래, 2개의 세로 스티치가 교차하는 곡선
@@ -1563,39 +1577,40 @@ function createSunGodMonkeyCharacter() {
   const scarCurve = new THREE.CatmullRomCurve3([
     new THREE.Vector3(0.125, headCenterY + 0.005, 0.405),
     new THREE.Vector3(0.18, headCenterY - 0.008, 0.395),
-    new THREE.Vector3(0.235, headCenterY + 0.004, 0.365),
+    new THREE.Vector3(0.235, headCenterY + 0.004, 0.376),
   ]);
-  scarGroup.add(makeMesh(new THREE.TubeGeometry(scarCurve, 6, 0.007, 4, false), materials.darkBrown, 'scarMain'));
+  scarGroup.add(makeMesh(new THREE.TubeGeometry(scarCurve, 16, 0.007, 10, false), materials.darkBrown, 'scarMain'));
 
   const stitchPositions = [
     { x: 0.16, y: 0.0, z: 0.402, rz: -0.22 },
     { x: 0.205, y: -0.002, z: 0.385, rz: -0.1 },
   ];
   stitchPositions.forEach((st, idx) => {
-    const stitchGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.036, 4);
+    const stitchGeo = new THREE.CylinderGeometry(0.006, 0.006, 0.036, 10);
     const stitch = makeMesh(stitchGeo, materials.darkBrown, `scarStitch${idx + 1}`);
     stitch.position.set(st.x, headCenterY + st.y, st.z);
     stitch.rotation.z = st.rz;
-    headGroup.add(stitch);
+    scarGroup.add(stitch);
   });
   headGroup.add(scarGroup);
 
-  // 1-4. 원숭이 귀 (좌우)
+  // 1-4. 원숭이 귀 (좌우: 바깥쪽 둥근 테두리 + 안쪽 깔끔한 귓바퀴 단차)
   const createEar = (side) => {
     const earGroup = new THREE.Group();
     earGroup.name = side < 0 ? 'earRight' : 'earLeft';
-    earGroup.position.set(side * 0.425, headCenterY - 0.01, -0.02);
-    earGroup.rotation.y = side * -0.18;
+    earGroup.position.set(side * 0.435, headCenterY - 0.015, 0.01);
+    earGroup.rotation.y = side * -0.15;
 
-    const outerGeo = new THREE.IcosahedronGeometry(0.135, 1);
+    const outerGeo = new THREE.SphereGeometry(0.14, 24, 18);
     const outerEar = makeMesh(outerGeo, materials.skin, 'outerEar');
-    outerEar.scale.set(0.95, 1.05, 0.48);
+    outerEar.scale.set(0.95, 1.08, 0.46);
     earGroup.add(outerEar);
 
-    const innerGeo = new THREE.IcosahedronGeometry(0.082, 1);
+    const innerGeo = new THREE.CylinderGeometry(0.082, 0.082, 0.028, 22);
     const innerEar = makeMesh(innerGeo, materials.innerEar, 'innerEar');
-    innerEar.position.set(side * -0.008, 0, 0.038);
-    innerEar.scale.set(0.9, 1.0, 0.35);
+    innerEar.position.set(side * -0.005, 0, 0.048);
+    innerEar.rotation.x = Math.PI / 2;
+    innerEar.scale.set(0.92, 1.0, 1.04);
     earGroup.add(innerEar);
 
     return earGroup;
@@ -1609,110 +1624,120 @@ function createSunGodMonkeyCharacter() {
   hairGroup.position.set(0, headCenterY, 0);
   headGroup.add(hairGroup);
 
-  // 후두부 마감: 뒤통수 전체를 감싸는 로우폴리 화이트 돔 (후면 뷰에서 피부가 비치지 않도록)
-  const backHeadGeo = new THREE.SphereGeometry(0.422, 8, 6, Math.PI * 0.72, Math.PI * 1.56, 0, Math.PI * 0.92);
-  const backHead = makeMesh(backHeadGeo, materials.white, 'backHeadCap');
-  backHead.rotation.y = Math.PI / 2;
+  // 후두부 마감: 뒤통수 전체와 목덜미를 빈틈없이 감싸는 매끄러운 화이트 돔
+  const backHead = makeMesh(new THREE.SphereGeometry(0.415, 28, 22), materials.white, 'backHeadCap');
+  backHead.position.set(0, 0.02, -0.055);
+  backHead.scale.set(1.05, 0.96, 0.96);
   hairGroup.add(backHead);
 
-  // 정수리 덮개 (머리 윗부분)
-  const crownCap = makeMesh(new THREE.IcosahedronGeometry(0.36, 1), materials.white, 'crownCap');
-  crownCap.position.set(0, 0.2, -0.06);
-  crownCap.scale.set(1.12, 0.78, 1.08);
+  // 정수리 & 이마 상단 볼륨 베이스
+  const crownCap = makeMesh(new THREE.SphereGeometry(0.36, 24, 18), materials.white, 'crownCap');
+  crownCap.position.set(0, 0.21, 0.02);
+  crownCap.scale.set(1.1, 0.78, 1.06);
   hairGroup.add(crownCap);
 
-  // 앞머리 불꽃 모양 솟구친 머리카락 다발
-  const spikes = [
-    { pos: [0, 0.42, 0.14], scale: [0.16, 0.24, 0.15], rot: [0.22, 0, 0] },
-    { pos: [-0.14, 0.38, 0.15], scale: [0.13, 0.20, 0.13], rot: [0.25, 0, 0.35] },
-    { pos: [0.15, 0.37, 0.14], scale: [0.13, 0.19, 0.13], rot: [0.25, 0, -0.35] },
-    { pos: [-0.26, 0.28, 0.16], scale: [0.12, 0.18, 0.12], rot: [0.2, 0, 0.65] },
-    { pos: [0.26, 0.28, 0.16], scale: [0.12, 0.18, 0.12], rot: [0.2, 0, -0.65] },
-    { pos: [0.06, 0.34, 0.24], scale: [0.12, 0.16, 0.12], rot: [0.45, 0, -0.15] },
+  const foreheadMass = makeMesh(new THREE.SphereGeometry(0.24, 24, 18), materials.white, 'foreheadHairMass');
+  foreheadMass.position.set(0, 0.24, 0.22);
+  foreheadMass.scale.set(1.38, 0.65, 0.72);
+  hairGroup.add(foreheadMass);
+
+  // 앞머리 불꽃 모양으로 위로 솟구치며 뻗어나가는 둥근 머리카락 다발
+  const flameTufts = [
+    { pos: [0, 0.42, 0.14], scale: [0.24, 0.20, 0.21], rot: [0.24, 0.1, 0] },
+    { pos: [-0.15, 0.37, 0.15], scale: [0.19, 0.17, 0.17], rot: [0.26, 0, 0.38] },
+    { pos: [0.16, 0.36, 0.14], scale: [0.19, 0.16, 0.17], rot: [0.26, 0, -0.38] },
+    { pos: [-0.28, 0.28, 0.14], scale: [0.16, 0.15, 0.15], rot: [0.2, 0, 0.68] },
+    { pos: [0.28, 0.28, 0.14], scale: [0.16, 0.15, 0.15], rot: [0.2, 0, -0.68] },
+    { pos: [0.05, 0.34, 0.23], scale: [0.17, 0.14, 0.15], rot: [0.45, 0, -0.14] },
   ];
-  spikes.forEach((s, i) => {
-    const spikeGeo = new THREE.ConeGeometry(1, 2.2, 5);
-    const spike = makeMesh(spikeGeo, materials.white, `hairSpike${i + 1}`);
-    spike.position.set(...s.pos);
-    spike.scale.set(...s.scale);
-    spike.rotation.set(...s.rot);
-    hairGroup.add(spike);
+  flameTufts.forEach((s, i) => {
+    const tuftGeo = new THREE.ConeGeometry(1, 1.85, 20);
+    const tuft = makeMesh(tuftGeo, materials.white, `hairFlameTuft${i + 1}`);
+    tuft.position.set(...s.pos);
+    tuft.scale.set(...s.scale);
+    tuft.rotation.set(...s.rot);
+    hairGroup.add(tuft);
   });
 
-  // 이마 중앙 소용돌이(회오리) 입체 컬 디테일
-  const createSpiralCurl = (cx, cy, cz, startRadius, turns, tubeRadius, dir = 1) => {
+  // 이마 중앙 부근 소용돌이(회오리) 입체 컬 디테일
+  const createSpiralCurl = (cx, cy, cz, startRadius, turns, tubeRadius, dir = 1, name = 'foreheadCurl') => {
     const pts = [];
-    const steps = 16;
+    const steps = 28;
     for (let i = 0; i <= steps; i++) {
       const t = i / steps;
       const angle = t * Math.PI * 2 * turns * dir;
-      const r = startRadius * (1 - t * 0.85);
+      const r = startRadius * (1 - t * 0.86);
       pts.push(
         new THREE.Vector3(
           cx + Math.cos(angle) * r,
           cy + Math.sin(angle) * r,
-          cz + t * 0.025
+          cz + t * 0.022
         )
       );
     }
     const curve = new THREE.CatmullRomCurve3(pts);
-    return makeMesh(new THREE.TubeGeometry(curve, 14, tubeRadius, 5, false), materials.white, 'foreheadCurl');
+    return makeMesh(new THREE.TubeGeometry(curve, 36, tubeRadius, 14, false), materials.white, name);
   };
 
-  // 메인 이마 중앙 컬 & 보조 컬
-  hairGroup.add(createSpiralCurl(-0.04, 0.23, 0.35, 0.115, 1.45, 0.032, 1));
-  hairGroup.add(createSpiralCurl(0.16, 0.29, 0.30, 0.075, 1.25, 0.024, -1));
-  hairGroup.add(createSpiralCurl(-0.22, 0.23, 0.28, 0.07, 1.2, 0.022, 1));
+  hairGroup.add(createSpiralCurl(-0.035, 0.235, 0.34, 0.115, 1.45, 0.042, 1, 'foreheadMainCurl'));
+  hairGroup.add(createSpiralCurl(0.165, 0.295, 0.295, 0.078, 1.25, 0.03, -1, 'foreheadRightCurl'));
+  hairGroup.add(createSpiralCurl(-0.225, 0.23, 0.275, 0.072, 1.2, 0.028, 1, 'foreheadLeftCurl'));
 
-  // 옆머리 (관자놀이에서 귀 앞/위로 흐르는 로우폴리 가닥)
+  // 옆머리 & 기다란 구렛나루 (관자놀이에서 귀 앞·볼 옆을 따라 턱선 아래까지 길게 내려오는 가닥)
   [-1, 1].forEach((side) => {
-    const sideLock1 = makeMesh(new THREE.IcosahedronGeometry(0.14, 1), materials.white, `sideHairUpper_${side}`);
-    sideLock1.position.set(side * 0.35, 0.18, 0.16);
-    sideLock1.scale.set(0.75, 1.25, 0.9);
-    sideLock1.rotation.z = side * -0.25;
+    const sideLock1 = makeMesh(new THREE.SphereGeometry(0.145, 20, 16), materials.white, `sideHairUpper_${side}`);
+    sideLock1.position.set(side * 0.345, 0.175, 0.155);
+    sideLock1.scale.set(0.8, 1.25, 0.92);
+    sideLock1.rotation.z = side * -0.22;
     hairGroup.add(sideLock1);
 
-    const sideLock2 = makeMesh(new THREE.ConeGeometry(0.09, 0.24, 5), materials.white, `sideHairTip_${side}`);
-    sideLock2.position.set(side * 0.37, 0.06, 0.16);
-    sideLock2.rotation.z = side * 2.8;
-    sideLock2.rotation.x = 0.2;
-    hairGroup.add(sideLock2);
+    // 기다란 구렛나루 본체 (귀 앞쪽에서 볼 옆을 따라 아래로 길게 이어짐)
+    const sideburnCurve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side * 0.36, 0.14, 0.15),
+      new THREE.Vector3(side * 0.395, 0.02, 0.16),
+      new THREE.Vector3(side * 0.385, -0.10, 0.17),
+      new THREE.Vector3(side * 0.345, -0.20, 0.185),
+    ]);
+    const sideburnGeo = new THREE.TubeGeometry(sideburnCurve, 20, 0.062, 14, false);
+    const sideburn = makeMesh(sideburnGeo, materials.white, `longSideburn_${side}`);
+    hairGroup.add(sideburn);
+
+    // 구렛나루 끝단 뾰족한 마무리
+    const sideLockTip = makeMesh(new THREE.ConeGeometry(0.064, 0.15, 18), materials.white, `sideHairTip_${side}`);
+    sideLockTip.position.set(side * 0.335, -0.245, 0.19);
+    sideLockTip.rotation.z = side * 2.75;
+    sideLockTip.rotation.x = 0.22;
+    hairGroup.add(sideLockTip);
   });
 
-  // 거대한 흰색 구름 아치(Cloud Halo): 정수리 위에서 양옆을 거쳐 목 뒤쪽까지 둘러싸는 구조
+
+  // 거대한 흰색 구름 고리/아치(Cloud Halo):
+  // 정수리 위에서 시작해 양옆을 거쳐 목 뒤쪽까지 두툼하게 둘러싸는 구조
   const cloudGroup = new THREE.Group();
   cloudGroup.name = 'cloudHaloGroup';
   hairGroup.add(cloudGroup);
 
+  // 13개의 구름 구체: 정수리 위에서 양옆을 거쳐 양쪽 날개뼈(등 상단)까지 두툼하게 내려오는 아치
   const cloudPuffs = [
-    // 정수리 최상단 중앙 큰 구름
-    { pos: [0, 0.56, -0.14], r: 0.27 },
-    { pos: [-0.24, 0.50, -0.15], r: 0.23 },
-    { pos: [0.24, 0.50, -0.15], r: 0.23 },
-    // 좌우 상단 측면 구름
-    { pos: [-0.43, 0.36, -0.15], r: 0.22 },
-    { pos: [0.43, 0.36, -0.15], r: 0.22 },
-    // 좌우 중단(귀 뒤쪽) 구름
-    { pos: [-0.51, 0.15, -0.17], r: 0.21 },
-    { pos: [0.51, 0.15, -0.17], r: 0.21 },
-    // 좌우 하단(목 뒤쪽으로 감싸는 아치 끝부분)
-    { pos: [-0.47, -0.07, -0.19], r: 0.19 },
-    { pos: [0.47, -0.07, -0.19], r: 0.19 },
-    { pos: [-0.36, -0.25, -0.21], r: 0.165 },
-    { pos: [0.36, -0.25, -0.21], r: 0.165 },
-    { pos: [-0.21, -0.34, -0.23], r: 0.135 },
-    { pos: [0.21, -0.34, -0.23], r: 0.135 },
-    // 후면 아치 볼륨 보강용 뒤쪽 구름
-    { pos: [0, 0.46, -0.27], r: 0.22 },
-    { pos: [-0.26, 0.32, -0.26], r: 0.19 },
-    { pos: [0.26, 0.32, -0.26], r: 0.19 },
+    { pos: [0, 0.58, -0.17], r: 0.32 },
+    { pos: [-0.27, 0.50, -0.18], r: 0.25 },
+    { pos: [0.26, 0.51, -0.18], r: 0.28 },
+    { pos: [-0.46, 0.33, -0.19], r: 0.26 },
+    { pos: [0.47, 0.32, -0.19], r: 0.23 },
+    { pos: [-0.53, 0.09, -0.21], r: 0.22 },
+    { pos: [0.54, 0.08, -0.21], r: 0.24 },
+    { pos: [-0.48, -0.16, -0.23], r: 0.20 },
+    { pos: [0.48, -0.17, -0.23], r: 0.19 },
+    { pos: [-0.37, -0.36, -0.25], r: 0.175 },
+    { pos: [0.37, -0.37, -0.25], r: 0.185 },
+    { pos: [-0.23, -0.52, -0.27], r: 0.15 },
+    { pos: [0.23, -0.52, -0.27], r: 0.16 },
   ];
 
   cloudPuffs.forEach((puff, idx) => {
-    const puffGeo = new THREE.IcosahedronGeometry(puff.r, 1);
+    const puffGeo = new THREE.IcosahedronGeometry(puff.r, 2);
     const puffMesh = makeMesh(puffGeo, materials.white, `cloudPuff${idx + 1}`);
     puffMesh.position.set(...puff.pos);
-    puffMesh.rotation.set(idx * 0.4, idx * 0.7, 0);
     cloudGroup.add(puffMesh);
   });
 
@@ -1725,20 +1750,17 @@ function createSunGodMonkeyCharacter() {
   bodyGroup.position.set(0, 0.32, 0);
   character.add(bodyGroup);
 
-  // 2-1. 살구빛 탄탄한 상체 (가슴과 배 중앙 노출)
-  const torsoGeo = new THREE.CylinderGeometry(0.205, 0.225, 0.34, 8);
+  const torsoGeo = new THREE.CylinderGeometry(0.205, 0.225, 0.34, 24);
   const torso = makeMesh(torsoGeo, materials.skin, 'torso');
   torso.position.set(0, 0.18, 0);
   torso.scale.set(1.08, 1, 0.92);
   bodyGroup.add(torso);
 
-  // 2-2. 흰색 오픈 재킷(조끼) — 앞섬이 열려 가슴이 드러남
-  // 뒷면과 양옆을 감싸는 열린 원통형 재킷
   const jacketBodyGeo = new THREE.CylinderGeometry(
     0.232,
     0.248,
     0.295,
-    10,
+    24,
     1,
     false,
     Math.PI * 0.28,
@@ -1749,7 +1771,22 @@ function createSunGodMonkeyCharacter() {
   jacketBody.scale.set(1.1, 1, 0.96);
   bodyGroup.add(jacketBody);
 
-  // 재킷 앞섬 좌우 옷깃(라펠) 패널
+  // 뒤 목부분(#87614E)이 보이지 않도록 감싸는 흰색 재킷 뒷깃 마감
+  const backNeckCollarGeo = new THREE.CylinderGeometry(
+    0.218,
+    0.236,
+    0.06,
+    24,
+    1,
+    false,
+    Math.PI * 0.28,
+    Math.PI * 1.44
+  );
+  const backNeckCollar = makeMesh(backNeckCollarGeo, materials.white, 'backNeckCollar');
+  backNeckCollar.position.set(0, 0.34, -0.005);
+  backNeckCollar.scale.set(1.1, 1, 0.96);
+  bodyGroup.add(backNeckCollar);
+
   [-1, 1].forEach((side) => {
     const lapelGeo = new THREE.BoxGeometry(0.11, 0.285, 0.08);
     const lapel = makeMesh(lapelGeo, materials.white, `jacketLapel_${side}`);
@@ -1758,35 +1795,30 @@ function createSunGodMonkeyCharacter() {
     lapel.rotation.z = side * 0.06;
     bodyGroup.add(lapel);
 
-    // 어깨 상단 덮개
-    const shoulderCap = makeMesh(new THREE.IcosahedronGeometry(0.11, 1), materials.white, `jacketShoulder_${side}`);
+    const shoulderCap = makeMesh(new THREE.SphereGeometry(0.11, 20, 14), materials.white, `jacketShoulder_${side}`);
     shoulderCap.position.set(side * 0.185, 0.28, 0.01);
     shoulderCap.scale.set(1.15, 0.65, 1.05);
     bodyGroup.add(shoulderCap);
   });
 
-  // 2-3. 반바지 골반 연결부 (다리 사이 틈 마감)
-  const pelvisGeo = new THREE.CylinderGeometry(0.235, 0.21, 0.12, 8);
+  const pelvisGeo = new THREE.CylinderGeometry(0.235, 0.21, 0.12, 24);
   const pelvis = makeMesh(pelvisGeo, materials.white, 'shortsPelvis');
   pelvis.position.set(0, -0.03, 0);
   pelvis.scale.set(1.06, 1, 0.92);
   bodyGroup.add(pelvis);
 
-  // 2-4. 보라색 허리띠(Sash) + 오른쪽(캐릭터 왼쪽 골반 앞쪽, +X) 매듭 & 두 갈래 천 자락
-  const sashBandGeo = new THREE.CylinderGeometry(0.246, 0.252, 0.082, 10);
+  const sashBandGeo = new THREE.CylinderGeometry(0.246, 0.252, 0.082, 28);
   const sashBand = makeMesh(sashBandGeo, materials.sash, 'purpleSashBand');
   sashBand.position.set(0, 0.025, 0);
   sashBand.scale.set(1.08, 1, 0.95);
   sashBand.rotation.z = -0.03;
   bodyGroup.add(sashBand);
 
-  // 매듭 (정면 기준 오른쪽 = +X)
-  const sashKnot = makeMesh(new THREE.IcosahedronGeometry(0.052, 1), materials.sash, 'sashKnot');
+  const sashKnot = makeMesh(new THREE.SphereGeometry(0.052, 18, 14), materials.sash, 'sashKnot');
   sashKnot.position.set(0.195, 0.015, 0.175);
   sashKnot.scale.set(1.05, 0.95, 0.9);
   bodyGroup.add(sashKnot);
 
-  // 늘어져 있는 두 갈래 천 자락
   const sashTail1 = makeMesh(new THREE.BoxGeometry(0.062, 0.18, 0.028), materials.sash, 'sashTailOuter');
   sashTail1.position.set(0.228, -0.085, 0.155);
   sashTail1.rotation.z = 0.22;
@@ -1807,38 +1839,40 @@ function createSunGodMonkeyCharacter() {
     const armGroup = new THREE.Group();
     armGroup.name = side > 0 ? 'leftArm' : 'rightArm';
     armGroup.position.set(side * 0.255, 0.59, 0);
-    // 양옆으로 살짝 벌어진 자연스러운 A-포즈
     armGroup.rotation.z = side * 0.52;
 
-    // 반팔 소매 (#EFEFF4)
-    const sleeveGeo = new THREE.CylinderGeometry(0.072, 0.102, 0.165, 7);
+    const sleeveGeo = new THREE.CylinderGeometry(0.072, 0.102, 0.165, 20);
     const sleeve = makeMesh(sleeveGeo, materials.white, 'sleeve');
     sleeve.position.set(0, -0.07, 0);
     armGroup.add(sleeve);
 
-    // 소매 아래 드러난 팔목/손 (#C8966E)
-    const wristGeo = new THREE.CylinderGeometry(0.056, 0.062, 0.06, 7);
+    const wristGeo = new THREE.CylinderGeometry(0.056, 0.062, 0.06, 20);
     const wrist = makeMesh(wristGeo, materials.skin, 'wrist');
     wrist.position.set(0, -0.155, 0);
     armGroup.add(wrist);
 
-    const handGeo = new THREE.IcosahedronGeometry(0.07, 1);
+    const handGeo = new THREE.SphereGeometry(0.07, 20, 16);
     const hand = makeMesh(handGeo, materials.skin, 'hand');
     hand.position.set(0, -0.21, 0.01);
     hand.scale.set(0.95, 1.05, 0.95);
     armGroup.add(hand);
 
-    // 앙증맞은 엄지 돌기
-    const thumbGeo = new THREE.IcosahedronGeometry(0.028, 1);
-    const thumb = makeMesh(thumbGeo, materials.skin, 'thumb');
+    const palmGeo = new THREE.SphereGeometry(0.054, 18, 14);
+    const palm = makeMesh(palmGeo, materials.muzzle, 'innerPalm');
+    palm.position.set(side * -0.024, -0.212, 0.028);
+    palm.scale.set(0.76, 0.95, 0.82);
+    armGroup.add(palm);
+
+    const thumbGeo = new THREE.SphereGeometry(0.028, 16, 12);
+    const thumb = makeMesh(thumbGeo, materials.muzzle, 'thumb');
     thumb.position.set(side * -0.05, -0.19, 0.045);
     armGroup.add(thumb);
 
     return armGroup;
   };
 
-  const leftArm = createArm(1);   // 캐릭터 기준 왼쪽 (+X)
-  const rightArm = createArm(-1); // 캐릭터 기준 오른쪽 (-X)
+  const leftArm = createArm(1);
+  const rightArm = createArm(-1);
   character.add(leftArm);
   character.add(rightArm);
 
@@ -1851,34 +1885,28 @@ function createSunGodMonkeyCharacter() {
     legGroup.name = side > 0 ? 'leftLeg' : 'rightLeg';
     legGroup.position.set(side * 0.125, 0.30, 0);
 
-    // 흰색 반바지 통
-    const shortsLegGeo = new THREE.CylinderGeometry(0.115, 0.118, 0.135, 8);
+    const shortsLegGeo = new THREE.CylinderGeometry(0.115, 0.118, 0.135, 24);
     const shortsLeg = makeMesh(shortsLegGeo, materials.white, 'shortsLeg');
     shortsLeg.position.set(0, -0.065, 0);
     legGroup.add(shortsLeg);
 
-    // 바지 밑단 롤업(Roll-up) 커프스 디테일
-    const cuffGeo = new THREE.CylinderGeometry(0.128, 0.128, 0.042, 8);
+    const cuffGeo = new THREE.CylinderGeometry(0.128, 0.128, 0.042, 24);
     const cuff = makeMesh(cuffGeo, materials.white, 'shortsCuff');
     cuff.position.set(0, -0.132, 0);
     legGroup.add(cuff);
 
-    // 살구빛 발목
-    const ankleGeo = new THREE.CylinderGeometry(0.068, 0.078, 0.08, 7);
+    const ankleGeo = new THREE.CylinderGeometry(0.068, 0.078, 0.08, 20);
     const ankle = makeMesh(ankleGeo, materials.skin, 'ankle');
     ankle.position.set(0, -0.19, 0);
     legGroup.add(ankle);
 
-    // 맨발 (발바닥 평면이 정확히 y = -0.30 -> 월드 y = 0 에 닿도록 반구형/납작한 로우폴리 발 구성)
-    const footGeo = new THREE.CylinderGeometry(0.072, 0.088, 0.072, 8);
+    const footGeo = new THREE.CylinderGeometry(0.072, 0.088, 0.072, 24);
     const foot = makeMesh(footGeo, materials.skin, 'foot');
-    // 원기둥 높이 0.072의 절반인 0.036을 더해 중심을 -0.264에 배치 -> 바닥면 정확히 -0.300 (월드 y = 0)
     foot.position.set(0, -0.264, 0.032);
     foot.scale.set(1.0, 1.0, 1.32);
     legGroup.add(foot);
 
-    // 뭉툭한 발가락 앞코 디테일 (바닥면이 -0.30 아래로 내려가지 않도록 배치)
-    const toeCapGeo = new THREE.IcosahedronGeometry(0.054, 1);
+    const toeCapGeo = new THREE.SphereGeometry(0.054, 20, 14);
     const toeCap = makeMesh(toeCapGeo, materials.skin, 'toes');
     toeCap.position.set(0, -0.266, 0.105);
     toeCap.scale.set(1.32, 0.62, 0.85);
@@ -1892,7 +1920,6 @@ function createSunGodMonkeyCharacter() {
   character.add(leftLeg);
   character.add(rightLeg);
 
-  // 애니메이션 및 외부 제어를 위해 userData에 주요 파츠 참조 저장
   character.userData = {
     headGroup,
     bodyGroup,
@@ -1929,7 +1956,6 @@ function updateCharacterAnimation(character, elapsedTime) {
   const bounce = Math.abs(Math.sin(elapsedTime * 3.2)) * 0.025;
   const sway = Math.sin(elapsedTime * 1.6);
 
-  // 몸통 & 머리 상하 바운스
   if (bodyGroup) {
     bodyGroup.position.y = 0.32 + bounce;
     bodyGroup.rotation.z = sway * 0.035;
@@ -1941,13 +1967,11 @@ function updateCharacterAnimation(character, elapsedTime) {
     headGroup.rotation.x = Math.sin(elapsedTime * 3.2) * 0.03;
   }
 
-  // 구름 헤일로 특유의 몽실몽실한 부유감
   if (cloudGroup) {
     cloudGroup.position.y = Math.sin(elapsedTime * 2.4) * 0.018;
     cloudGroup.rotation.z = Math.cos(elapsedTime * 1.8) * 0.025;
   }
 
-  // 팔의 경쾌한 흔들림
   if (leftArm && rightArm) {
     leftArm.position.y = 0.59 + bounce;
     rightArm.position.y = 0.59 + bounce;
@@ -1955,47 +1979,27 @@ function updateCharacterAnimation(character, elapsedTime) {
     rightArm.rotation.z = -0.52 - Math.sin(elapsedTime * 3.2) * 0.08;
   }
 
-  // 다리는 접지(y = 0)를 유지하되 바운스에 맞춰 살짝 무릎/고관절 느낌의 미세 기울기만 적용
   if (leftLeg && rightLeg) {
     leftLeg.rotation.x = Math.sin(elapsedTime * 3.2) * 0.03;
     rightLeg.rotation.x = -Math.sin(elapsedTime * 3.2) * 0.03;
   }
 }
 /* ---------- ☁️ 신비한 열매: the wearer transforms into the monkey above (body/limbs follow the normal character rig) ---------- */
-const MK_S=.8; // monkey head ≈ the regular characters' head size (feet→head-top 1.43, cloud top 1.86)
-const MK_MC=new Map();
-function attachMonkeyForm(o){const mk=createSunGodMonkeyCharacter(),u=mk.userData;
-  // cloud halo spins around the head like the earlier cloud ring: its puffs move into a spinner centred on the ring
-  const cg=u.cloudGroup,sp=new THREE.Group();sp.position.y=.1;
-  for(const c of [...cg.children]){c.position.y-=.1;sp.add(c);}cg.add(sp);u.cloudSpin=sp;
-  // close the bottom of the ring so the spin has no gap
-  const wm=sp.children[0].material;for(const [x,y,z,r] of [[0,-.48,-.24,.13],[-.11,-.47,-.235,.12],[.11,-.47,-.235,.12]]){const m=new THREE.Mesh(new THREE.IcosahedronGeometry(r,1),wm);m.position.set(x,y,z);m.castShadow=true;sp.add(m);}
-  // same colours & facets, in the game's toon shading (the scene lights are tuned for toon materials; standard PBR would read grey)
-  mk.traverse(m=>{if(!m.isMesh||!m.material||!m.material.isMeshStandardMaterial)return;const hex=m.material.color.getHex();
-    if(!MK_MC.has(hex))MK_MC.set(hex,new THREE.MeshToonMaterial({color:hex,gradientMap:toonGrad,flatShading:true}));m.material=MK_MC.get(hex);});
+const MK_S=.8; // monkey head ≈ the regular characters' head size (feet→head-top 1.41, cloud top 1.92)
+// The reference preview renders with renderer.outputEncoding = sRGBEncoding; the game renders linear.
+// The monkey's own MeshStandardMaterials (unchanged) encode their final colour to sRGB so they look as in the preview.
+function mkSRGB(mat){if(!mat||mat.userData.mkSRGB)return;mat.userData.mkSRGB=1;
+  // ×1.22: the game's lights give ~80% of the preview's light (hemi .52 + key .58 vs hemi .62 + key .76 + rim .42), measured on white/skin/sash
+  mat.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace('#include <encodings_fragment>','gl_FragColor.rgb *= 1.22;\n  gl_FragColor = LinearTosRGB( gl_FragColor );');};
+  mat.customProgramCacheKey=()=>'mk-srgb';mat.needsUpdate=true;}
+function attachMonkeyForm(o){const mk=createSunGodMonkeyCharacter();
+  mk.traverse(m=>{if(m.isMesh)mkSRGB(m.material);});
   for(const c of o.pose.children)c.visible=false;   // hide the regular body but keep its rig (legs, arms, head) for the poses
-  mkFixFace(mk);
   mk.scale.setScalar(MK_S);o.pose.add(mk);o.mk=mk;
-  o.mkHeadY=(.66+.36)*MK_S;o.height=1.86*MK_S;}
-// two small fixes so the model matches the reference sheet: the smile line sat inside the muzzle (invisible from the front)
-// and the white back-of-head cap was slightly smaller than the skull (skin showed through from behind)
-function mkFixFace(mk){const hg=mk.userData.headGroup;let smile=null,cap=null,mg=null;
-  let skull=null;hg.traverse(m=>{if(m.name==='smileLine')smile=m;if(m.name==='backHeadCap')cap=m;if(m.name==='muzzleGroup')mg=m;if(m.name==='skull')skull=m;});
-  // back-of-head shell: the skull's own faceted surface (+1.5%), the part from the ears backwards (z<.06), in the cap's white
-  if(skull&&cap){const src=skull.geometry.index?skull.geometry.toNonIndexed():skull.geometry.clone(),P=src.attributes.position,keep=[];
-    for(let i=0;i<P.count;i+=3){const cz=(P.getZ(i)+P.getZ(i+1)+P.getZ(i+2))/3;if(cz<.06)for(let k=0;k<3;k++)keep.push(P.getX(i+k),P.getY(i+k),P.getZ(i+k));}
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(keep,3));g.computeVertexNormals();
-    const sh=new THREE.Mesh(g,cap.material);sh.name='backHeadShell';sh.position.copy(skull.position);sh.scale.copy(skull.scale).multiplyScalar(1.015);sh.castShadow=true;skull.parent.add(sh);}
-  if(!smile||!mg)return;
-  // exact front surface of the muzzle: max over its ellipsoids  z = cz + rz·√(1 − ((x−cx)/rx)² − ((y−cy)/ry)²)
-  const E=mg.children.filter(m=>m.isMesh).map(m=>{const r=m.geometry.parameters.radius;return {c:[mg.position.x+m.position.x,mg.position.y+m.position.y,mg.position.z+m.position.z],r:[r*m.scale.x,r*m.scale.y,r*m.scale.z]};});
-  const zS=(x,y)=>{let z=-9;for(const e of E){const q=1-((x-e.c[0])/e.r[0])**2-((y-e.c[1])/e.r[1])**2;if(q>0)z=Math.max(z,e.c[2]+e.r[2]*Math.sqrt(q));}return z;};
-  const src=smile.geometry.parameters.path,pts=[];for(let i=0;i<=24;i++){const p=src.getPoint(i/24);const z=zS(p.x,p.y);pts.push(new THREE.Vector3(p.x,p.y,z>-9?z+.006:p.z));}
-  smile.geometry.dispose();smile.geometry=new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),24,.01,4,false);}
-// drive the monkey from the regular rig: walk cycle, sitting, cheering, stun wobble, plus its own idle bounce and the spinning cloud
+  o.mkHeadY=(.66+.36)*MK_S;o.height=1.92*MK_S;}
+// drive the monkey from the regular rig: its own idle animation, plus walk cycle, sitting, cheering and the stun wobble
 function mkSync(o,dt,t,moving){const mk=o.mk,u=mk.userData;
   updateCharacterAnimation(mk,t);
-  u.cloudSpin.rotation.z+=dt*1.6;
   const L=[u.rightLeg,u.leftLeg],A=[u.rightArm,u.leftArm];
   if(o.poseMode==='sit'){for(const l of L)l.rotation.x=-1.35;}
   else if(moving){o.legs.forEach((f,i)=>{L[i].rotation.x=f.rotation.x*1.4;});}

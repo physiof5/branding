@@ -2285,7 +2285,7 @@ let G=null;
 const keys={};
 let joyVec={x:0,y:0};
 
-const kstDate=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10); const COLL_KEY='alonechief_coll_v1',PET_KEY='alonechief_pet_v1';const collList=()=>{const a=load(COLL_KEY,[]);return Array.isArray(a)?a:[];};const collHas=k=>collList().includes(k);const collAdd=k=>{const a=collList();if(!a.includes(k)){a.push(k);store(COLL_KEY,a);return true;}return false;};const PET_INFO={none:{n:'없음',e:'🚫'},dog:{n:'강아지',e:'🐶'},cat:{n:'고양이',e:'🐱'},monkey:{n:'원숭이',e:'🐵'}};const SPECIAL={kimchi:{tier:'이벤트',cls:'t1',how:'화요일 점심시간(13:00~14:00)에 할머니를 처방대로 치료해 드리면 받아요'},fruit:{tier:'에픽',cls:'t4',how:'평일 점심시간(13:00~14:00)에 원숭이 펫과 함께 휴게실에 가면 원숭이가 찾아 줘요'},dog:1,cat:1,monkey:1};const curPet=()=>load(PET_KEY,'none');const effPet=()=>{const p=curPet();return PET_INFO[p]&&(p!=='monkey'||collHas('monkey'))?p:'none';};
+const kstDate=()=>new Date(Date.now()+9*3600e3).toISOString().slice(0,10); const COLL_KEY='alonechief_coll_v1',PET_KEY='alonechief_pet_v1';const collList=()=>{const a=load(COLL_KEY,[]);return Array.isArray(a)?a:[];};const collHas=k=>collList().includes(k);const collAdd=k=>{const a=collList();if(!a.includes(k)){a.push(k);store(COLL_KEY,a);return true;}return false;};const PET_INFO={none:{n:'없음',e:'🚫'},dog:{n:'강아지',e:'🐶'},cat:{n:'고양이',e:'🐱'},monkey:{n:'원숭이',e:'🐵'}};const SPECIAL={kimchi:{tier:'이벤트',cls:'t1',how:'평일 점심 13:00~13:10에 휴게실에 들어가 할머니를 처방대로 치료해 드리면 받아요'},fruit:{tier:'에픽',cls:'t4',how:'평일 점심시간(13:00~14:00)에 원숭이 펫과 함께 휴게실에 가면 원숭이가 찾아 줘요'},dog:1,cat:1,monkey:1};const curPet=()=>load(PET_KEY,'none');const effPet=()=>{const p=curPet();return PET_INFO[p]&&(p!=='monkey'||collHas('monkey'))?p:'none';};
 function accPicked(){const u=load('alonechief_acc_unlock',null);return u&&u.date===kstDate()&&Array.isArray(u.items)?u.items:[];}
 function accState(k){if(!k||k==='none')return 'ok';if(SPECIAL[k])return collHas(k)?'ok':'slock';const d=new Date(Date.now()+9*3600e3),wd=d.getUTCDay();if(wd===0||wd===6)return 'ok';if(!accPicked().includes(k))return 'lock';return d.getUTCHours()>=14?'ok':'got';}
 const effHand=()=>ACC_INFO[charCfg.hand]&&accState(charCfg.hand)==='ok'?charCfg.hand:'none';
@@ -3593,10 +3593,12 @@ let SBC=null;
 function loadSB(){return new Promise((res,rej)=>{if(window.supabase&&window.supabase.createClient)return res(window.supabase);
   const sc=document.createElement('script');sc.src=SBJS_URL;sc.onload=()=>res(window.supabase);sc.onerror=rej;document.head.appendChild(sc);});}
 const stById=id=>stations.find(s=>s.id===id);
-const EV_FORCE=((location.search.match(/[?&]ev=(mon|tue|sun|wkd)(?!\w)/)||[])[1]||'').replace('mon','tue')||null;
-// 🍱 lunch events (13:00–14:00 KST): Tuesday → grandma & kimchi · Sunday → monkey pet · weekdays → monkey pet sniffs out the mysterious fruit
+const EV_FORCE=((location.search.match(/[?&]ev=(mon|tue|gm|sun|wkd)(?!\w)/)||[])[1]||'').replace(/^(mon|tue)$/,'gm')||null;
+// 🍱 lunch events (13:00–14:00 KST): weekdays 13:00–13:10 → grandma & kimchi · Sunday → monkey pet · weekdays → monkey pet sniffs out the mysterious fruit
 function isWeekday(){if(EV_FORCE)return EV_FORCE!=='sun';const wd=kstNow().getUTCDay();return wd>=1&&wd<=5;}
-function lunchEvent(){if(EV_FORCE)return EV_FORCE==='wkd'?null:EV_FORCE;const wd=kstNow().getUTCDay();return wd===2?'tue':wd===0?'sun':null;}
+function lunchEvent(){if(EV_FORCE)return EV_FORCE==='wkd'?null:EV_FORCE;const d=kstNow(),wd=d.getUTCDay();
+  if(wd>=1&&wd<=5&&d.getUTCHours()===13&&d.getUTCMinutes()<10)return 'gm'; // grandma: weekdays, entering 13:00–13:10
+  return wd===0?'sun':null;}
 const GM_RX=[['combo','manual'],['eswt','paraffin'],['manual','combo'],['combo','paraffin']];
 const ST_NAME={combo:'⚡ ICT',manual:'💆 도수',eswt:'💥 충격파',paraffin:'🧤 파라핀'};
 function evLabel(ev){if(ev==='sun')return collHas('monkey')?'':'🐒 원숭이 출몰';return '';}
@@ -3604,7 +3606,7 @@ function evBanner(txt){const b=$('#roundBanner');b.textContent=txt;b.classList.r
 const mkSound=()=>playTones([[1700,.05,'triangle'],[2300,.06,'triangle'],[1700,.05,'triangle'],[2500,.09,'triangle']]);
 function dropModel(o){if(!o)return;if(o.parent)o.parent.remove(o);(o.userData.own||[]).forEach(x=>x.dispose&&x.dispose());}
 function evInit(L){const ev=L.ev=lunchEvent();
-  if(ev==='tue')L.gm={ph:'pre',t:3,rx:GM_RX[Math.floor(seeded('gm-'+kstDate())()*GM_RX.length)],step:0,x:-24,y:15*T,wp:[],speed:72,dir:'right',face:PI/2,walk:0,moving:false,bed:null,prog:0,say:'',sayT:0,fxT:0};
+  if(ev==='gm')L.gm={ph:'pre',t:3,rx:GM_RX[Math.floor(seeded('gm-'+kstDate())()*GM_RX.length)],step:0,x:-24,y:15*T,wp:[],speed:72,dir:'right',face:PI/2,walk:0,moving:false,bed:null,prog:0,say:'',sayT:0,fxT:0};
   if(ev==='sun'&&!collHas('monkey'))L.mk={ci:3,x:chairs[3].x,y:chairs[3].y,h:0,hop:null,dodge:0,idle:5,face:0,caught:false,seen:false};
   if(isWeekday()&&L.pet&&L.pet.kind==='monkey'&&!collHas('fruit'))L.hunt={ph:'wait',t:3.5};
   const lb=evLabel(ev);if(lb)setTimeout(()=>{if(G&&G.lunch===L&&!L.left){evBanner('🎉 '+lb);playTones([[523,.08],[659,.08],[784,.08],[1047,.22]]);}},1600);}

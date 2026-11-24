@@ -27,7 +27,7 @@ export const HAIR_STYLES: readonly { id: HairStyleId; name: string }[] = [
 ];
 
 export const SKIN_TONES: readonly { name: string; color: string }[] = [
-  { name: '기본 (레퍼런스)', color: '#ecc8b8' },
+  { name: '기본 (레퍼런스)', color: '#ecc9bc' },
   { name: '밝은 톤', color: '#f8dfd0' },
   { name: '황금빛', color: '#e3b38d' },
   { name: '구릿빛', color: '#c48a61' },
@@ -46,12 +46,12 @@ export const HAIR_COLORS: readonly { name: string; color: string }[] = [
 
 /** 사용자 레퍼런스 캐릭터 (민머리 · 네이비 스크럽 · 빨간 입술) */
 export const DEFAULT_APPEARANCE: Appearance = {
-  skin: '#ecc8b8',
+  skin: '#ecc9bc',
   hairStyle: 'bald',
   hairColor: '#2b2730',
   bodyType: 0.4,
   height: 0.5,
-  buttVolume: 0.45,
+  buttVolume: 0.35,
   costumeId: 'scrubs',
   effectId: 'basic',
 };

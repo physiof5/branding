@@ -45,6 +45,19 @@ export function nextTier(trophies: number): TierDef | null {
   return TIERS[tierIndexFor(trophies) + 1] ?? null;
 }
 
+/** 티어 안의 단계: 구간을 반으로 나눠 I → II (마스터는 1200 부터 II) */
+export function divisionFor(trophies: number): 'I' | 'II' {
+  const cur = tierForTrophies(trophies);
+  const next = nextTier(trophies);
+  const mid = next ? (cur.min + next.min) / 2 : cur.min + 200;
+  return trophies >= mid ? 'II' : 'I';
+}
+
+/** "브론즈 II" 같은 표시용 이름 */
+export function tierLabel(trophies: number): string {
+  return `${tierForTrophies(trophies).name} ${divisionFor(trophies)}`;
+}
+
 /** 현재 티어 구간 진행도 0~1 (마스터는 1) */
 export function tierProgress(trophies: number): number {
   const cur = tierForTrophies(trophies);

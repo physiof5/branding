@@ -12,7 +12,8 @@ export function HelpModal() {
       <div className="space-y-4 text-sm leading-relaxed text-white/85">
         <section>
           <h3 className="font-display mb-1 text-lg text-[#ff8fb0]">1. 3초 안에 동시에 고른다!</h3>
-          <p>매 턴 두 사람이 <b>3초 안에</b> 행동 하나를 동시에 고르고, 동시에 공개돼요. 못 고르면 💤 멍때리기(무방비).</p>
+          <p>두 사람은 <b>엉덩이를 마주하고</b> 서 있어요. 매 턴 <b>3초 안에</b> 행동 하나를 동시에 고르고, 동시에 공개돼요. 못 고르면 💤 멍때리기(무방비).</p>
+          <p className="mt-1 text-white/70">🍑 공격: 상체를 숙이며 엉덩이로 뒤를 들이받기 · 💨 피하기: 골반을 앞으로 쭉 빼서 엉덩이를 거둬들이기</p>
         </section>
         <section>
           <h3 className="font-display mb-2 text-lg text-[#ff8fb0]">2. 물고 물리는 상성</h3>
@@ -61,7 +62,7 @@ export function HelpModal() {
           </table>
           <p className="mt-2 text-white/70">동시에 공격하면: 같은 단계는 💥상쇄, 다른 단계는 높은 쪽이 압도!</p>
           <p className="mt-1 text-white/70">
-            🌙 <b>야자 타임</b>: {OVERTIME_TURN}턴부터 매 턴 두 사람 모두 기 +1 — 누가 먼저 필살기를 쏠까? ({TIMING.maxTurns}턴이 지나면 체력 판정)
+            🌙 <b>야자 타임</b>: {OVERTIME_TURN}턴부터 선택 시간 <b>{TIMING.overtimeTurnMs / 1000}초</b> + 매 턴 두 사람 모두 기 +1 — 누가 먼저 필살기를 쏠까? ({TIMING.maxTurns}턴이 지나면 체력 판정)
           </p>
         </section>
         <section>
@@ -75,7 +76,17 @@ export function HelpModal() {
           </ul>
         </section>
         <section>
-          <h3 className="font-display mb-1 text-lg text-[#ff8fb0]">5. 티어 & 무대</h3>
+          <h3 className="font-display mb-1 text-lg text-[#ff8fb0]">5. 게임 모드</h3>
+          <ul className="space-y-1">
+            <li>🏆 <b>클래식 랭크전</b> — 솔로(1:1) 또는 파트너와 듀오(2:2 릴레이)로 티어 올리기</li>
+            <li>🤝 <b>자유 랭크전</b> — 1~3인 파티 팀 랭크 (한 명씩 나가 싸우는 릴레이, 별도 트로피)</li>
+            <li>🎯 <b>클래식 도전</b> — 하루 10판, 이길 때마다 아이템 1개</li>
+            <li>👥 <b>클래식 1v1</b> — 한 기기 2인 친선전 (누른 버튼은 비밀)</li>
+          </ul>
+          <p className="mt-1 text-white/70">⚡ 기폭제는 전투 준비 화면에서 쓸지 정하고 참가해요.</p>
+        </section>
+        <section>
+          <h3 className="font-display mb-1 text-lg text-[#ff8fb0]">6. 티어 & 무대</h3>
           <div className="grid grid-cols-2 gap-1 text-xs sm:grid-cols-3">
             {TIERS.map((t) => (
               <div key={t.id} className="rounded-xl bg-white/7 px-2 py-1">

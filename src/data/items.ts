@@ -30,7 +30,7 @@ export const ITEMS: Record<ItemId, ItemDef> = {
     id: 'jam',
     name: '먹물 폭탄',
     emoji: '🦑',
-    description: '상대 시야를 먹물로 가려요. 다음 턴 상대 선택 시간 3초 → 1.5초 (AI는 판단력 저하)',
+    description: '상대 시야를 먹물로 가려요. 3턴 동안 상대는 내 기 게이지를 볼 수 없어요 (게이지가 멈춰 보임 · AI 도 속아요)',
     price: 100,
     usage: 'inBattle',
     maxPerBattle: 1,

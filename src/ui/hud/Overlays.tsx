@@ -1,6 +1,6 @@
+import { ITEMS } from '../../data/items';
 import { MAPS } from '../../data/maps';
 import { passLevelFor } from '../../data/seasonPass';
-import { TIMING } from '../../game/constants';
 import { TIERS } from '../../game/rank';
 import { useBattleStore } from '../../store/battleStore';
 import type { MatchReport } from '../../store/profileStore';
@@ -12,10 +12,12 @@ export function ResultOverlay({ report, onRematch, onLobby }: { report: MatchRep
   const winner = useBattleStore((s) => s.winner);
   const reason = useBattleStore((s) => s.finishReason);
   const mode = useBattleStore((s) => s.config?.mode);
+  const kind = useBattleStore((s) => s.config?.kind);
+  const teamSize = useBattleStore((s) => s.config?.teams[0].length ?? 1);
   const name0 = useBattleStore((s) => s.fighters[0].name);
   const name1 = useBattleStore((s) => s.fighters[1].name);
   const names = [name0, name1] as const;
-  const turn = useBattleStore((s) => s.turn);
+  const turns = useBattleStore((s) => s.totalTurns);
   const xp = useProfileStore((s) => s.pass.xp);
 
   let title = '무승부';
@@ -29,7 +31,9 @@ export function ResultOverlay({ report, onRematch, onLobby }: { report: MatchRep
       color = winner === 0 ? '#7cc0ff' : '#ff8a95';
     }
   }
-  const reasonText = reason === 'ko' ? `K.O. · ${turn}턴` : reason === 'timeover' ? `${TIMING.maxTurns}턴 종료 · 체력 판정` : '기권';
+  const reasonText = reason === 'ko' ? `K.O. · ${turns}턴` : reason === 'timeover' ? `턴 제한 · 체력 판정` : '기권';
+  const modeLabel =
+    kind === 'flex' ? `자유 랭크전 · ${teamSize}인 파티` : kind === 'challenge' ? '클래식 도전' : kind === 'local' ? '클래식 1v1' : teamSize > 1 ? '클래식 랭크전 · 듀오' : '클래식 랭크전 · 솔로';
   const promoted = report && report.tierAfter.min > report.tierBefore.min;
   const demoted = report && report.tierAfter.min < report.tierBefore.min;
 
@@ -39,9 +43,16 @@ export function ResultOverlay({ report, onRematch, onLobby }: { report: MatchRep
         <div className="font-display text-outline text-6xl" style={{ color }}>
           {title}
         </div>
-        <div className="font-display mt-1 text-white/70">{reasonText}</div>
+        <div className="font-display mt-1 text-white/70">
+          {modeLabel} · {reasonText}
+        </div>
 
         {mode === 'local' && <p className="mt-3 text-sm text-white/70">친선전은 랭크·재화 변동이 없어요.</p>}
+        {report?.item && (
+          <div className="font-display anim-pop mt-3 rounded-2xl bg-gradient-to-r from-amber-300 to-pink-300 px-3 py-2 text-[#2a1600]">
+            🎁 도전 보상: {ITEMS[report.item].emoji} {ITEMS[report.item].name} 획득!
+          </div>
+        )}
 
         {report && (
           <div className="mt-4 space-y-2 text-left">
@@ -51,7 +62,7 @@ export function ResultOverlay({ report, onRematch, onLobby }: { report: MatchRep
                 <div className="font-display text-xl text-[#ffd76a]">+{report.gold}</div>
               </div>
               <div className="rounded-2xl bg-black/25 p-2">
-                <div className="text-xs text-white/60">트로피</div>
+                <div className="text-xs text-white/60">{kind === 'flex' ? '자유 랭크' : kind === 'challenge' ? '트로피 (변동 없음)' : '트로피'}</div>
                 <div className={`font-display text-xl ${report.trophies >= 0 ? 'text-emerald-300' : 'text-rose-300'}`}>
                   {report.trophies >= 0 ? '+' : ''}
                   {report.trophies}

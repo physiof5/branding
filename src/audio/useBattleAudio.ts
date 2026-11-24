@@ -103,6 +103,9 @@ export function useBattleAudio(): void {
           sound.setIntensity(0);
           break;
         }
+        case 'swap':
+          later(150, () => sound.play('fight'));
+          break;
         case 'exit':
           sound.stopBgm();
           break;

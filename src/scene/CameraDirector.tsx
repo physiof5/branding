@@ -32,7 +32,7 @@ const clamp = (v: number, a = 0, b = 1) => Math.min(b, Math.max(a, v));
 const lerp = (a: number, b: number, k: number) => a + (b - a) * k;
 const eIO = (k: number) => 0.5 - 0.5 * Math.cos(Math.PI * clamp(k));
 
-const WIDE: Shot = { id: 'wide', pos: [0, 2.0, 6.8], look: [0, 1.05, 0], fov: 36, speed: 2.6 };
+const WIDE: Shot = { id: 'wide', pos: [0, 2.1, 6.9], look: [0, 1.15, 0], fov: 36, speed: 2.6 };
 
 function attackerOf(s: BattleState): PlayerIndex | null {
   const r = s.result;
@@ -75,6 +75,14 @@ export function planShot(s: BattleState): Shot {
       return actionShot(s, t);
     case 'aftermath':
       return { ...WIDE, speed: 2.4 };
+    case 'swap': {
+      // 팀전: 새 주자가 등장하는 쪽을 비춘다
+      const [l, r] = s.swapSides;
+      if (l === r) return { ...WIDE, id: 'swap-wide' };
+      const side: PlayerIndex = l ? 0 : 1;
+      const x = baseXFor(side);
+      return { id: 'swap', pos: [x * 0.6, 1.7, 5.4], look: [x, 1.5, 0], fov: 38, speed: 3 };
+    }
     case 'ko':
     case 'finished': {
       const w = s.winner;
@@ -136,12 +144,13 @@ function actionShot(s: BattleState, t: number): Shot {
       return { id: 'atk-track', pos: [ax - da * 2.2, 1.5, 4.3], look: [(ax + vx) / 2 + da * 0.3, 1.05, 0], fov: 38, speed: 5 };
     }
     if (dodged && t < I + 520) {
-      return { id: 'dodge-cam', pos: [vx + da * 0.15, 0.95, 3.3], look: [vx, 1.1, 0], fov: 40, cut: true, speed: 5 };
+      // 피하는 쪽 정면: 골반을 쭉 빼는 모습
+      return { id: 'dodge-cam', pos: [vx + da * 1.3, 1.0, 3.3], look: [vx - da * 0.1, 1.0, 0], fov: 40, cut: true, speed: 5 };
     }
     if (!dodged && t < I + 650) {
-      const cx = vx - da * 0.34;
+      // 맞는 쪽 정면에서: 뒤에서 들이받히는 표정 + 상대 엉덩이
       const power = r.kind === 'power';
-      return { id: 'impact-close', pos: [vx - da * 0.15, 1.25, power ? 2.9 : 3.2], look: [cx, 1.0, 0], fov: power ? 34 : 37, cut: true, speed: 5 };
+      return { id: 'impact-close', pos: [vx + da * 1.35, 1.3, power ? 2.9 : 3.2], look: [vx - da * 0.25, 0.95, 0], fov: power ? 34 : 37, cut: true, speed: 5 };
     }
     return WIDE;
   }

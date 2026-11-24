@@ -1,17 +1,23 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_APPEARANCE } from '../data/appearance';
-import { OVERTIME_TURN, TIMING } from '../game/constants';
+import { INK_TURNS, OVERTIME_TURN, TIMING } from '../game/constants';
 import type { ChosenAction } from '../game/types';
-import { battleEvents, useBattleStore, type BattleConfig, type BattleEvent, type Controller } from './battleStore';
+import { battleEvents, perceivedStacks, teamRemaining, useBattleStore, type BattleConfig, type BattleEvent, type Controller, type FighterSetup } from './battleStore';
+
+const member = (name: string, controller: Controller, items = { shield: 0, jam: 0 }): FighterSetup => ({
+  name,
+  appearance: DEFAULT_APPEARANCE,
+  controller,
+  items,
+  startStacks: 0,
+});
 
 const config = (c1: Controller = 'human', c2: Controller = 'human', items = { shield: 0, jam: 0 }): BattleConfig => ({
   mode: c2 === 'ai' ? 'ai' : 'local',
+  kind: c2 === 'ai' ? 'ranked' : 'local',
   mapId: 'classroom',
   aiLevel: 2,
-  fighters: [
-    { name: 'P1', appearance: DEFAULT_APPEARANCE, controller: c1, items, startStacks: 0 },
-    { name: 'P2', appearance: DEFAULT_APPEARANCE, controller: c2, items, startStacks: 0 },
-  ],
+  teams: [[member('P1', c1, items)], [member('P2', c2, items)]],
 });
 
 const store = () => useBattleStore.getState();
@@ -115,17 +121,22 @@ describe('battleStore 상태 머신', () => {
     expect(store().fighters[1].shield).toBe(false);
   });
 
-  it('먹물 아이템: 상대의 다음 턴 선택 시간이 1.5초로 단축', () => {
+  it(`먹물 폭탄: 맞은 쪽은 ${INK_TURNS}턴 동안 상대 기 게이지가 멈춰 보인다`, () => {
     store().start(config('human', 'human', { shield: 0, jam: 1 }));
     untilPhase('select');
     store().useItem(0, 'jam');
+    expect(store().fighters[1].inkTurns).toBe(INK_TURNS);
     store().choose(0, 'charge');
-    store().choose(1, 'charge');
+    store().choose(1, 'dodge');
     untilPhase('aftermath');
+    // P1 은 기가 1 이 됐지만 먹물 맞은 P2 눈에는 0 으로 보인다
+    expect(store().fighters[0].stacks).toBe(1);
+    expect(perceivedStacks(store(), 1)).toBe(0);
+    expect(perceivedStacks(store(), 0)).toBe(0);
+    for (let i = 0; i < INK_TURNS - 1; i++) playTurn('charge', 'dodge');
     untilPhase('select');
-    expect(store().turn).toBe(2);
-    expect(store().fighters[1].jammed).toBe(true);
-    expect(store().turnDurations).toEqual([TIMING.turnMs, TIMING.jammedTurnMs]);
+    expect(store().fighters[1].inkTurns).toBe(0);
+    expect(perceivedStacks(store(), 1)).toBe(INK_TURNS);
   });
 
   it('AI 컨트롤러는 스스로 선택을 확정한다', () => {
@@ -144,6 +155,7 @@ describe('battleStore 상태 머신', () => {
     expect(untilPhase('select')).toBe(true);
     expect(store().turn).toBe(OVERTIME_TURN);
     expect(store().fighters.map((f) => f.stacks)).toEqual([1, 1]);
+    expect(store().turnDurations).toEqual([TIMING.overtimeTurnMs, TIMING.overtimeTurnMs]);
     playTurn('dodge', 'dodge');
     untilPhase('select');
     expect(store().fighters.map((f) => f.stacks)).toEqual([2, 2]);
@@ -161,6 +173,31 @@ describe('battleStore 상태 머신', () => {
     store().setPaused(false);
     advance(100);
     expect(store().clock).toBeGreaterThan(clock);
+  });
+
+  it('팀 릴레이: 쓰러지면 다음 주자가 나오고, 전멸하면 패배', () => {
+    const swaps: BattleEvent[] = [];
+    battleEvents.on((e) => e.type === 'swap' && swaps.push(e));
+    store().start({
+      mode: 'local',
+      kind: 'local',
+      mapId: 'classroom',
+      aiLevel: 0,
+      teams: [[member('A1', 'human'), member('A2', 'human')], [member('B1', 'human')]],
+    });
+    for (let i = 0; i < 10; i++) playTurn('charge', 'attack');
+    expect(untilPhase('swap')).toBe(true);
+    expect(swaps).toHaveLength(1);
+    expect(store().fighters[0].name).toBe('A2');
+    expect(store().fighters[0].hp).toBe(100);
+    expect(store().fighters[1].hp).toBe(100);
+    expect(store().fighters[1].stacks).toBe(0);
+    expect(teamRemaining(store(), 0)).toBe(1);
+    expect(untilPhase('select')).toBe(true);
+    expect(store().turn).toBe(1);
+    for (let i = 0; i < 10; i++) playTurn('charge', 'attack');
+    expect(untilPhase('finished')).toBe(true);
+    expect(store().winner).toBe(1);
   });
 
   it('기권하면 상대 승리', () => {

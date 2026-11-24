@@ -13,13 +13,13 @@ const pill = 'font-display whitespace-nowrap rounded-full px-3 py-1 text-[15px] 
 function FighterBubble({ index }: { index: PlayerIndex }) {
   const ref = useRef<HTMLDivElement>(null);
   const x = baseXFor(index);
-  useFollowWorld(ref, () => [x, 2.6, 0]);
+  useFollowWorld(ref, () => [x, 2.78, 0]);
   const phase = useBattleStore((s) => s.phase);
   const turn = useBattleStore((s) => s.turn);
   const choice = useBattleStore((s) => s.choices[index]);
   const timedOut = useBattleStore((s) => s.timedOut[index]);
   const controller = useBattleStore((s) => s.fighters[index].controller);
-  const jammed = useBattleStore((s) => s.fighters[index].jammed);
+  const inked = useBattleStore((s) => s.fighters[index].inkTurns > 0);
   const stacks = useBattleStore((s) => s.fighters[index].stacks);
   const resultTier = useBattleStore((s) => s.result?.outcomes[index].tier ?? null);
 
@@ -32,7 +32,7 @@ function FighterBubble({ index }: { index: PlayerIndex }) {
         <div className={`${pill} anim-pop bg-emerald-300 text-emerald-950`}>✔ 선택 완료</div>
       );
     } else if (controller === 'ai') {
-      bubble = <div className={`${pill} anim-bob bg-white text-[#1b1633]`}>{jammed ? '🦑 앞이 안 보여!' : '🤔 …'}</div>;
+      bubble = <div className={`${pill} anim-bob bg-white text-[#1b1633]`}>{inked ? '🦑 앞이 안 보여!' : '🤔 …'}</div>;
     }
   } else if ((phase === 'reveal' || phase === 'action') && choice) {
     const tier = choice === 'attack' ? (resultTier ?? attackTierFor(stacks)) : null;
@@ -67,7 +67,7 @@ function FighterBubble({ index }: { index: PlayerIndex }) {
 function DamagePops({ index }: { index: PlayerIndex }) {
   const ref = useRef<HTMLDivElement>(null);
   const x = baseXFor(index);
-  useFollowWorld(ref, () => [x, 1.95, 0.3]);
+  useFollowWorld(ref, () => [x, 2.15, 0.3]);
   const phase = useBattleStore((s) => s.phase);
   const turn = useBattleStore((s) => s.turn);
   const impactDone = useBattleStore((s) => s.impactDone);

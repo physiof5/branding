@@ -16,6 +16,8 @@ export const GEO = {
   taper8: new THREE.CylinderGeometry(0.86, 1, 1, 8),
   /** 위가 넓은 (모자 등) */
   flare16: new THREE.CylinderGeometry(1, 0.86, 1, 16),
+  /** 아래로 갈수록 가늘어지는 팔 */
+  taperDown8: new THREE.CylinderGeometry(1, 0.87, 1, 8),
   cone4: new THREE.ConeGeometry(1, 1, 4),
   cone8: new THREE.ConeGeometry(1, 1, 8),
   torus: new THREE.TorusGeometry(1, 0.07, 6, 20),

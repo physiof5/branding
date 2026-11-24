@@ -42,10 +42,11 @@ export const COSTUMES: Record<CostumeId, CostumeDef> = {
     theme: { kind: 'basic', label: '기본' },
     price: 0,
     topStyle: 'vneck',
-    top: '#3b3f66',
-    topAccent: '#2f3354',
-    bottom: '#3d4060',
-    shoes: '#2e2d33',
+    // 기본 캐릭터 디자인 시트에서 측정한 색
+    top: '#62647f',
+    topAccent: '#4f5170',
+    bottom: '#5e607c',
+    shoes: '#38373e',
     accessories: ['badge'],
   },
   uniform: {

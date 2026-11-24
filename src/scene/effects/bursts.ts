@@ -26,11 +26,12 @@ export function burstFor(r: TurnResult, clock: number): Burst | null {
     case 'overpower': {
       const a = r.attacker!;
       const v = other(a);
-      const x = r.kind === 'overpower' ? 0 : baseXFor(v) - dirFor(a) * 0.32;
+      // 엉덩이끼리 맞닿는 지점 (등을 맞댄 두 캐릭터 사이)
+      const x = r.kind === 'overpower' ? 0 : baseXFor(v) - dirFor(a) * 0.22;
       const power = r.kind !== 'hit';
       return {
         ...base,
-        pos: [x, 1.0, 0.2],
+        pos: [x, 0.72, 0.15],
         color: power ? '#ff7a2f' : '#ffd23f',
         text: r.kind === 'hit' ? '퍽!' : r.kind === 'power' ? '콰앙!!' : '뻐억!!',
         textColor: power ? '#ff5a2f' : '#ffd23f',
@@ -42,7 +43,7 @@ export function burstFor(r: TurnResult, clock: number): Burst | null {
       const v = other(r.attacker!);
       return {
         ...base,
-        pos: [baseXFor(v), 0.35, 0],
+        pos: [baseXFor(v), 0.3, 0],
         color: '#ffe66b',
         text: '쿠콰콰쾅!!!',
         textColor: '#ffe66b',
@@ -54,7 +55,7 @@ export function burstFor(r: TurnResult, clock: number): Burst | null {
     case 'clash':
       return {
         ...base,
-        pos: [0, 0.9, 0.2],
+        pos: [0, 0.72, 0.15],
         color: r.topTier === 'special' ? '#ffe66b' : '#8fe0ff',
         text: r.topTier === 'special' ? '콰과광!!!' : '띠요옹~!',
         textColor: '#8fe0ff',
@@ -63,11 +64,11 @@ export function burstFor(r: TurnResult, clock: number): Burst | null {
       };
     case 'blocked': {
       const d: PlayerIndex = r.outcomes[0].shieldBlocked ? 0 : 1;
-      return { ...base, pos: [baseXFor(d) + dirFor(d) * 0.9, 1.05, 0.2], color: '#7fe3ff', text: '팅!', textColor: '#7fe3ff', size: 1.1 };
+      return { ...base, pos: [baseXFor(d) + dirFor(d) * 1.0, 0.9, 0.15], color: '#7fe3ff', text: '팅!', textColor: '#7fe3ff', size: 1.1 };
     }
     case 'dodge': {
       const d: PlayerIndex = r.outcomes[0].dodgedAttack ? 0 : 1;
-      return { ...base, pos: [baseXFor(d), 1.2, 0.3], color: '#bfefff', text: '슉~', textColor: '#e8fbff', size: 0.8, count: 10 };
+      return { ...base, pos: [baseXFor(d) + dirFor(d) * 0.3, 0.8, 0.3], color: '#bfefff', text: '쏙~', textColor: '#e8fbff', size: 0.8, count: 10 };
     }
     default:
       return null;

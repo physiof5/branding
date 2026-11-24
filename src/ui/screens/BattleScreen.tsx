@@ -27,13 +27,13 @@ export function BattleScreen() {
         const mode = s.config?.mode;
         if (e.type === 'start') setReport(null);
         // 랭크전에서 쓴 전투 아이템은 인벤토리에서 차감
-        if (e.type === 'item' && e.player === 0 && mode === 'ai') useProfileStore.getState().consumeItem(e.item);
-        if (e.type === 'finish' && mode === 'ai') {
+        if (e.type === 'item' && e.player === 0 && mode === 'ai' && s.fighters[0].member === 0) useProfileStore.getState().consumeItem(e.item);
+        if (e.type === 'finish' && s.config && s.config.kind !== 'local') {
           const outcome: MatchOutcome = e.winner === 'draw' ? 'draw' : e.winner === 0 ? 'win' : 'lose';
           const last = s.log[s.log.length - 1];
           setReport(
             useProfileStore.getState().applyMatch({
-              mode: 'ai',
+              kind: s.config.kind,
               outcome,
               finisher: e.reason === 'ko' && last?.result.attacker === 0 ? last.result.topTier : null,
               perfect: s.fighters[0].damageTaken === 0,

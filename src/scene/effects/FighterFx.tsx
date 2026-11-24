@@ -3,12 +3,21 @@ import { useEffect, useMemo, useRef, type RefObject } from 'react';
 import * as THREE from 'three';
 import { EFFECTS, type EffectId } from '../../data/effects';
 import type { PlayerIndex } from '../../game/types';
-import { battleEvents, useBattleStore } from '../../store/battleStore';
+import { battleEvents, useBattleStore, type BattleState } from '../../store/battleStore';
 import { GEO } from '../geometries';
 import type { Pose } from '../fighterPose';
 
 const additive = (color: string, opacity = 0.9) =>
   new THREE.MeshBasicMaterial({ color, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false });
+
+/** 사람 플레이어가 먹물에 맞아 이 파이터의 기를 볼 수 없는가 */
+export function stacksHiddenFor(s: BattleState, index: PlayerIndex): boolean {
+  const viewer: PlayerIndex = index === 0 ? 1 : 0;
+  const v = s.fighters[viewer];
+  if (v.inkTurns <= 0) return false;
+  // AI 대전은 화면 주인이 P1 → P1 이 먹물이면 P2 의 기가 가려짐. 로컬은 공유 화면이라 둘 다 적용
+  return s.config?.mode === 'local' || viewer === 0;
+}
 
 /** 기 모으기 오라: 나선으로 솟는 파편 + 발밑 링 + 포인트 라이트 */
 export function ChargeAura({ index, poseRef, effectId }: { index: PlayerIndex; poseRef: RefObject<Pose>; effectId: EffectId }) {
@@ -26,7 +35,8 @@ export function ChargeAura({ index, poseRef, effectId }: { index: PlayerIndex; p
     const pose = poseRef.current;
     if (!pose) return;
     const stacks = s.fighters[index].stacks;
-    const idleGlow = s.phase === 'idle' ? 0 : stacks >= 10 ? 0.75 : stacks >= 3 ? 0.28 : 0;
+    const hidden = stacksHiddenFor(s, index);
+    const idleGlow = s.phase === 'idle' || hidden ? 0 : stacks >= 10 ? 0.75 : stacks >= 3 ? 0.28 : 0;
     const level = Math.max(pose.aura, idleGlow * (pose.fall > 0.5 ? 0 : 1));
     const big = stacks >= 10 ? 1.45 : 1;
     const c = s.clock;
@@ -79,7 +89,7 @@ export function StackOrbs({ index, poseRef, effectId }: { index: PlayerIndex; po
     const s = useBattleStore.getState();
     const stacks = s.fighters[index].stacks;
     const pose = poseRef.current;
-    const hidden = s.phase === 'idle' || (pose?.fall ?? 0) > 0.3;
+    const hidden = s.phase === 'idle' || (pose?.fall ?? 0) > 0.3 || stacksHiddenFor(s, index);
     const mat = stacks >= 10 ? mats.max : stacks >= 3 ? mats.power : mats.low;
     for (let k = 0; k < 10; k++) {
       const m = orbs.current[k];
@@ -139,15 +149,15 @@ export function ShieldBubble({ index }: { index: PlayerIndex }) {
     mesh.current.visible = wire.current.visible = vis;
     if (!vis) return;
     const scale = shattering ? 1 + 0.7 * k : 1 + 0.03 * Math.sin(s.clock * 0.006);
-    mesh.current.scale.setScalar(1.08 * scale);
-    wire.current.scale.setScalar(1.1 * scale);
+    mesh.current.scale.set(1.0 * scale, 1.22 * scale, 1.0 * scale);
+    wire.current.scale.set(1.02 * scale, 1.24 * scale, 1.02 * scale);
     mat.opacity = shattering ? 0.4 * (1 - k) : 0.22;
     wireMat.opacity = shattering ? 0.8 * (1 - k) : 0.5;
     wire.current.rotation.y = s.clock * 0.0008;
   });
 
   return (
-    <group position={[0, 1.05, 0]}>
+    <group position={[0, 1.12, 0]}>
       <mesh ref={mesh} geometry={GEO.ico1} material={mat} visible={false} />
       <mesh ref={wire} geometry={GEO.ico1} material={wireMat} visible={false} />
     </group>
@@ -166,7 +176,7 @@ export function DizzyStars({ poseRef }: { poseRef: RefObject<Pose> }) {
     g.rotation.y = clock.elapsedTime * 3;
   });
   return (
-    <group ref={group} position={[0, 0.72, 0]} visible={false}>
+    <group ref={group} position={[0, 0, 0]} visible={false}>
       {[0, 1, 2].map((k) => (
         <mesh key={k} geometry={GEO.oct} material={mat} position={[Math.cos((k * Math.PI * 2) / 3) * 0.42, 0, Math.sin((k * Math.PI * 2) / 3) * 0.42]} scale={[0.07, 0.11, 0.07]} />
       ))}

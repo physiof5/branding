@@ -10,10 +10,35 @@ export function SettingsModal() {
   const close = () => useUIStore.getState().setSettingsOpen(false);
   const s = useSettingsStore();
   const reset = useProfileStore((p) => p.resetProfile);
+  const nickname = useProfileStore((p) => p.nickname);
+  const setNickname = useProfileStore((p) => p.setNickname);
+  const [draft, setDraft] = useState(nickname);
   const [confirm, setConfirm] = useState(false);
   return (
     <Modal title="⚙️ 설정" onClose={close}>
       <div className="space-y-4">
+        <form
+          className="flex items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setNickname(draft);
+            useUIStore.getState().showToast('닉네임을 바꿨어요');
+          }}
+        >
+          <label className="min-w-0 flex-1" htmlFor="nickname">
+            <span className="font-display mb-1 block text-lg">닉네임</span>
+            <input
+              id="nickname"
+              value={draft}
+              maxLength={12}
+              onChange={(e) => setDraft(e.target.value)}
+              className="font-display w-full rounded-xl bg-white/12 px-3 py-2 text-lg outline-none focus:ring-2 focus:ring-[#ffd23f]"
+            />
+          </label>
+          <Button variant="gold" className="px-4 py-2 text-base" type="submit">
+            저장
+          </Button>
+        </form>
         <Slider label="전체 볼륨" value={s.masterVolume} onChange={(v) => s.setVolume('masterVolume', v)} left="0" right="100" accent="#4da3ff" />
         <Slider label="배경음악" value={s.bgmVolume} onChange={(v) => s.setVolume('bgmVolume', v)} left="0" right="100" accent="#4da3ff" />
         <Slider label="효과음" value={s.sfxVolume} onChange={(v) => s.setVolume('sfxVolume', v)} left="0" right="100" accent="#4da3ff" />

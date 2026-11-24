@@ -3,7 +3,7 @@ import { DEFAULT_APPEARANCE, type Appearance } from '../data/appearance';
 import type { BattleItemId } from '../data/items';
 import type { MapId } from '../data/maps';
 import { decideAiAction, decideAiItem } from '../game/ai';
-import { MAX_HP, MAX_STACKS, OVERTIME_TURN, TIMING } from '../game/constants';
+import { INK_TURNS, MAX_HP, MAX_STACKS, OVERTIME_TURN, TIMING } from '../game/constants';
 import { describeTurn } from '../game/describe';
 import { createEmitter } from '../game/events';
 import { randRange } from '../game/rng';
@@ -13,15 +13,21 @@ import type { ActionType, ChosenAction, CombatState, PlayerIndex, TurnResult } f
 // ─────────────────────────────────────────────────────────────
 // 배틀 상태 머신
 //
-//   idle → intro → [ select(3초) → reveal → action(임팩트) → aftermath ]×N → ko → finished
+//   idle → intro → [ select(3초 / 야자 1.5초) → reveal → action(임팩트) → aftermath ]×N
+//        → ko ─┬─ (팀에 다음 주자 있음) → swap → select …
+//              └─ (팀 전멸) → finished
 //
 // - 모든 시간은 '배틀 시계(clock)' 기준. 일시정지/슬로모션/히트스톱이 시계 속도로 표현되어
 //   로직·3D 애니메이션·HUD 가 같은 시간축을 공유한다.
+// - 팀전(듀오/자유 랭크)은 KOF 식 릴레이: 한 명씩 1:1 로 싸우고, 쓰러지면 다음 주자가 나온다.
 // - 연출(사운드/카메라/이펙트)은 battleEvents 를 구독해서 반응 → 로직과 표현을 분리.
 // ─────────────────────────────────────────────────────────────
 
+/** 조작 방식: ai = 팀0(사람+파트너) vs AI 팀 / local = 한 기기에서 2인 */
 export type BattleMode = 'ai' | 'local';
-export type BattlePhase = 'idle' | 'intro' | 'select' | 'reveal' | 'action' | 'aftermath' | 'ko' | 'finished';
+/** 경기 종류 (보상·랭크 계산용) */
+export type MatchKindId = 'ranked' | 'flex' | 'challenge' | 'local';
+export type BattlePhase = 'idle' | 'intro' | 'select' | 'reveal' | 'action' | 'aftermath' | 'ko' | 'swap' | 'finished';
 /** 'remote' 는 온라인 매칭 확장용 (src/net 참고) */
 export type Controller = 'human' | 'ai' | 'remote';
 export type FinishReason = 'ko' | 'timeover' | 'forfeit';
@@ -39,10 +45,12 @@ export interface FighterSetup {
 
 export interface BattleConfig {
   mode: BattleMode;
+  kind: MatchKindId;
   mapId: MapId;
   /** AI 난이도 0~3 */
   aiLevel: number;
-  fighters: [FighterSetup, FighterSetup];
+  /** 각 팀 출전 순서 (1~3명) */
+  teams: [FighterSetup[], FighterSetup[]];
   turnMs?: number;
 }
 
@@ -52,11 +60,13 @@ export interface FighterRuntime extends CombatState {
   controller: Controller;
   items: Record<BattleItemId, number>;
   history: ActionType[];
-  /** 이번 선택 시간 동안 먹물에 맞은 상태 */
-  jammed: boolean;
-  /** 다음 턴에 먹물 적용 예약 */
-  jamQueued: boolean;
+  /** 🦑 먹물: 남은 턴 수 — 그동안 상대의 기 게이지를 볼 수 없다 */
+  inkTurns: number;
+  /** 먹물 맞을 때 본 상대의 기 (게이지가 이 값에서 멈춰 보임) */
+  inkSeen: number;
   damageTaken: number;
+  /** 팀 내 순번 (0부터) */
+  member: number;
 }
 
 export interface TurnLogEntry {
@@ -78,11 +88,13 @@ export type BattleEvent =
   | { type: 'start'; config: BattleConfig }
   | { type: 'phase'; phase: BattlePhase; turn: number }
   | { type: 'countdown'; seconds: number }
-  /** 야자 타임: 턴 시작 시 두 사람 모두 기 +1 */
+  /** 야자 타임: 턴 시작 시 두 사람 모두 기 +1, 선택 시간 1.5초 */
   | { type: 'overtime'; turn: number; first: boolean }
   | { type: 'lock'; player: PlayerIndex; timeout: boolean }
   | { type: 'item'; player: PlayerIndex; item: BattleItemId }
   | { type: 'impact'; result: TurnResult; turn: number }
+  /** 팀전: 다음 주자 등장 */
+  | { type: 'swap'; sides: [boolean, boolean] }
   | { type: 'finish'; winner: Winner; reason: FinishReason }
   | { type: 'pause'; paused: boolean }
   | { type: 'exit' };
@@ -97,8 +109,17 @@ export interface BattleState {
   timeScale: number;
   slowmo: { until: number; scale: number };
   phaseStart: number;
+  /** 현재 대결(1:1)의 턴 */
   turn: number;
+  /** 경기 전체 누적 턴 */
+  totalTurns: number;
   fighters: [FighterRuntime, FighterRuntime];
+  /** 팀별 현재 출전 순번 */
+  activeIdx: [number, number];
+  /** 팀별 탈락 인원 */
+  eliminated: [number, number];
+  /** 이번 KO 뒤 교체될 쪽 */
+  swapSides: [boolean, boolean];
   choices: [ActionType | null, ActionType | null];
   deadlines: [number, number];
   turnDurations: [number, number];
@@ -135,18 +156,20 @@ const emptyFighter = (): FighterRuntime => ({
   shield: false,
   items: { shield: 0, jam: 0 },
   history: [],
-  jammed: false,
-  jamQueued: false,
+  inkTurns: 0,
+  inkSeen: 0,
   damageTaken: 0,
+  member: 0,
 });
 
-const fighterFromSetup = (s: FighterSetup): FighterRuntime => ({
+const fighterFromSetup = (s: FighterSetup, member: number): FighterRuntime => ({
   ...emptyFighter(),
   name: s.name,
   appearance: s.appearance,
   controller: s.controller,
   stacks: Math.min(MAX_STACKS, Math.max(0, s.startStacks)),
   items: { ...s.items },
+  member,
 });
 
 /** 이번 턴 판정이 필살기 연출(긴 타임라인)을 쓰는가 */
@@ -158,6 +181,13 @@ export function actionTiming(r: TurnResult | null): { impactMs: number; duration
   return isSpecialTurn(r)
     ? { impactMs: TIMING.specialImpactMs, durationMs: TIMING.specialActionMs }
     : { impactMs: TIMING.impactMs, durationMs: TIMING.actionMs };
+}
+
+/** 뷰어 v 가 볼 수 있는 상대(other(v))의 기 — 먹물에 맞았으면 멈춘 값 */
+export function perceivedStacks(s: Pick<BattleState, 'fighters'>, viewer: PlayerIndex): number {
+  const me = s.fighters[viewer];
+  const opp = s.fighters[other(viewer)];
+  return me.inkTurns > 0 ? me.inkSeen : opp.stacks;
 }
 
 /** 아이템 적용 (사람/AI 공용). 적용 불가면 null */
@@ -172,7 +202,10 @@ function applyItem(
   const next: [FighterRuntime, FighterRuntime] = [{ ...fighters[0] }, { ...fighters[1] }];
   next[p] = { ...next[p], items: { ...me.items, [item]: me.items[item] - 1 } };
   if (item === 'shield') next[p].shield = true;
-  if (item === 'jam') next[other(p)] = { ...next[other(p)], jamQueued: true };
+  if (item === 'jam') {
+    // 상대 시야를 먹물로 가림: 상대는 INK_TURNS 동안 내 기 게이지를 지금 값으로만 본다
+    next[other(p)] = { ...next[other(p)], inkTurns: INK_TURNS, inkSeen: me.stacks };
+  }
   return next;
 }
 
@@ -184,7 +217,11 @@ const initialData = {
   slowmo: { until: 0, scale: 1 },
   phaseStart: 0,
   turn: 0,
+  totalTurns: 0,
   fighters: [emptyFighter(), emptyFighter()] as [FighterRuntime, FighterRuntime],
+  activeIdx: [0, 0] as [number, number],
+  eliminated: [0, 0] as [number, number],
+  swapSides: [false, false] as [boolean, boolean],
   choices: [null, null] as [ActionType | null, ActionType | null],
   deadlines: [0, 0] as [number, number],
   turnDurations: [TIMING.turnMs, TIMING.turnMs] as [number, number],
@@ -207,28 +244,27 @@ export const useBattleStore = create<BattleState>()((set, get) => {
     const overtime = turn >= OVERTIME_TURN;
     const fighters = s.fighters.map((f) => ({
       ...f,
-      jammed: f.jamQueued,
-      jamQueued: false,
+      inkTurns: turn > 1 ? Math.max(0, f.inkTurns - 1) : f.inkTurns,
       stacks: overtime ? Math.min(MAX_STACKS, f.stacks + 1) : f.stacks,
     })) as [FighterRuntime, FighterRuntime];
     if (overtime) events.push({ type: 'overtime', turn, first: turn === OVERTIME_TURN });
-    const base = cfg.turnMs ?? TIMING.turnMs;
-    const durations = fighters.map((f) => (f.jammed && f.controller === 'human' ? TIMING.jammedTurnMs : base)) as [
-      number,
-      number,
-    ];
+
+    const base = overtime ? TIMING.overtimeTurnMs : (cfg.turnMs ?? TIMING.turnMs);
+    const durations: [number, number] = [base, base];
     const aiPlans = fighters.map((f, i): AiPlan | null => {
       if (f.controller !== 'ai') return null;
       const opp = fighters[other(i as PlayerIndex)];
-      const ctx = { self: f, opp, oppHistory: opp.history, level: cfg.aiLevel, confused: f.jammed };
+      // 먹물에 맞은 AI 는 상대 기를 멈춘 값으로만 안다
+      const oppSeen = f.inkTurns > 0 ? { ...opp, stacks: f.inkSeen } : opp;
+      const ctx = { self: f, opp: oppSeen, oppHistory: opp.history, level: cfg.aiLevel };
       const action = decideAiAction(ctx);
       const item = decideAiItem({ ...ctx, items: f.items, planned: action });
       return {
         action,
-        // 너무 빨리 확정하면 기계 같으니 0.4~1.4초 사이에 '선택 완료'
-        lockAt: now + randRange(400, Math.min(1400, durations[i] - 350)),
+        // 너무 빨리 확정하면 기계 같으니 마감 전에 랜덤하게 '선택 완료'
+        lockAt: now + randRange(Math.min(400, base * 0.25), Math.min(1400, base - 300)),
         item,
-        itemAt: now + randRange(250, 800),
+        itemAt: now + randRange(200, Math.min(800, base - 400)),
         itemDone: false,
       };
     }) as [AiPlan | null, AiPlan | null];
@@ -238,6 +274,7 @@ export const useBattleStore = create<BattleState>()((set, get) => {
       phase: 'select',
       phaseStart: now,
       turn,
+      totalTurns: s.totalTurns + 1,
       fighters,
       choices: [null, null],
       deadlines: [now + durations[0], now + durations[1]],
@@ -343,7 +380,7 @@ export const useBattleStore = create<BattleState>()((set, get) => {
         fighters,
         impactDone: true,
         slowmo,
-        log: [...s.log, { turn: s.turn, result: r, headline: desc.headline, log: desc.log }].slice(-40),
+        log: [...s.log, { turn: s.turn, result: r, headline: desc.headline, log: desc.log }].slice(-60),
       };
       events.push({ type: 'impact', result: r, turn: s.turn });
     }
@@ -353,6 +390,43 @@ export const useBattleStore = create<BattleState>()((set, get) => {
       patch = { ...patch, phase: 'aftermath', phaseStart: now };
     }
     return patch;
+  };
+
+  /** 1:1 대결이 끝났는지 → 탈락 처리 (팀에 남은 주자가 있으면 교체 대기) */
+  const resolveBout = (s: BattleState, now: number, events: BattleEvent[]): Partial<BattleState> | null => {
+    const [a, b] = s.fighters;
+    let elim: [boolean, boolean] = [a.hp <= 0, b.hp <= 0];
+    let reason: FinishReason = 'ko';
+    if (!elim[0] && !elim[1]) {
+      if (s.turn < TIMING.maxTurns) return null;
+      reason = 'timeover';
+      elim = a.hp === b.hp ? [true, true] : a.hp < b.hp ? [true, false] : [false, true];
+    }
+    const teams = s.config!.teams;
+    const eliminated: [number, number] = [s.eliminated[0] + (elim[0] ? 1 : 0), s.eliminated[1] + (elim[1] ? 1 : 0)];
+    const left: [number, number] = [teams[0].length - eliminated[0], teams[1].length - eliminated[1]];
+    events.push({ type: 'phase', phase: 'ko', turn: s.turn });
+    if (left[0] <= 0 || left[1] <= 0) {
+      const winner: Winner = left[0] <= 0 && left[1] <= 0 ? 'draw' : left[0] <= 0 ? 1 : 0;
+      return { phase: 'ko', phaseStart: now, eliminated, winner, finishReason: reason, swapSides: [false, false] };
+    }
+    return { phase: 'ko', phaseStart: now, eliminated, swapSides: elim, finishReason: reason };
+  };
+
+  const enterSwap = (s: BattleState, now: number, events: BattleEvent[]): Partial<BattleState> => {
+    const teams = s.config!.teams;
+    const activeIdx: [number, number] = [...s.activeIdx];
+    const fighters = s.fighters.map((f, i) => {
+      if (s.swapSides[i]) {
+        activeIdx[i] = s.eliminated[i];
+        return fighterFromSetup({ ...teams[i][activeIdx[i]], startStacks: 0 }, activeIdx[i]);
+      }
+      // 살아남은 쪽은 체력 유지, 기·방어막·먹물은 초기화
+      return { ...f, stacks: 0, shield: false, inkTurns: 0, inkSeen: 0 };
+    }) as [FighterRuntime, FighterRuntime];
+    events.push({ type: 'swap', sides: s.swapSides });
+    events.push({ type: 'phase', phase: 'swap', turn: 0 });
+    return { phase: 'swap', phaseStart: now, fighters, activeIdx, turn: 0, result: null, finishReason: null };
   };
 
   const finishPatch = (winner: Winner, reason: FinishReason, now: number, events: BattleEvent[]): Partial<BattleState> => {
@@ -365,16 +439,8 @@ export const useBattleStore = create<BattleState>()((set, get) => {
     ...initialData,
 
     start: (config) => {
-      const fighters: [FighterRuntime, FighterRuntime] = [fighterFromSetup(config.fighters[0]), fighterFromSetup(config.fighters[1])];
-      set({
-        ...initialData,
-        config,
-        fighters,
-        phase: 'intro',
-        phaseStart: 0,
-        clock: 0,
-        turn: 1,
-      });
+      const fighters: [FighterRuntime, FighterRuntime] = [fighterFromSetup(config.teams[0][0], 0), fighterFromSetup(config.teams[1][0], 0)];
+      set({ ...initialData, config, fighters, phase: 'intro', phaseStart: 0, clock: 0, turn: 1 });
       battleEvents.emit({ type: 'start', config });
       battleEvents.emit({ type: 'phase', phase: 'intro', turn: 1 });
     },
@@ -431,23 +497,17 @@ export const useBattleStore = create<BattleState>()((set, get) => {
           patch = stepAction(s, now, t, events);
           break;
         case 'aftermath':
-          if (t >= TIMING.aftermathMs) {
-            const [a, b] = s.fighters;
-            if (a.hp <= 0 || b.hp <= 0) {
-              const winner: Winner = a.hp <= 0 && b.hp <= 0 ? 'draw' : a.hp <= 0 ? 1 : 0;
-              events.push({ type: 'phase', phase: 'ko', turn: s.turn });
-              patch = { phase: 'ko', phaseStart: now, winner, finishReason: 'ko' };
-            } else if (s.turn >= TIMING.maxTurns) {
-              const winner: Winner = a.hp === b.hp ? 'draw' : a.hp > b.hp ? 0 : 1;
-              events.push({ type: 'phase', phase: 'ko', turn: s.turn });
-              patch = { phase: 'ko', phaseStart: now, winner, finishReason: 'timeover' };
-            } else {
-              patch = enterSelect(s, now, s.turn + 1, events);
-            }
+          if (t >= TIMING.aftermathMs) patch = resolveBout(s, now, events) ?? enterSelect(s, now, s.turn + 1, events);
+          break;
+        case 'ko': {
+          const finalKo = s.winner !== null;
+          if (t >= (finalKo ? TIMING.koMs : TIMING.koShortMs)) {
+            patch = finalKo ? finishPatch(s.winner!, s.finishReason ?? 'ko', now, events) : enterSwap(s, now, events);
           }
           break;
-        case 'ko':
-          if (t >= TIMING.koMs) patch = finishPatch(s.winner ?? 'draw', s.finishReason ?? 'ko', now, events);
+        }
+        case 'swap':
+          if (t >= TIMING.swapMs) patch = enterSelect(s, now, 1, events);
           break;
         case 'finished':
           break;
@@ -478,6 +538,11 @@ export const useBattleStore = create<BattleState>()((set, get) => {
     },
   };
 });
+
+/** 팀 남은 인원 */
+export function teamRemaining(s: Pick<BattleState, 'config' | 'eliminated'>, side: PlayerIndex): number {
+  return (s.config?.teams[side].length ?? 1) - s.eliminated[side];
+}
 
 // ── 셀렉터 헬퍼 ──────────────────────────────────────────────
 export const selectPhaseTime = (s: BattleState): number => s.clock - s.phaseStart;

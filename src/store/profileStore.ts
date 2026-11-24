@@ -5,8 +5,9 @@ import { COSTUMES, type CostumeId } from '../data/costumes';
 import type { EffectId } from '../data/effects';
 import { ITEMS, type ItemId } from '../data/items';
 import { PASS_LEVELS, passLevelFor, type PassReward, type PassTrack } from '../data/seasonPass';
+import { TROPHY_ROAD } from '../data/trophyRoad';
 import { applyTrophies, SEASON, tierForTrophies, type TierDef } from '../game/rank';
-import { computeRewards, type MatchSummary, type RewardSummary } from '../game/rewards';
+import { computeRewards, todayKey, type MatchSummary, type RewardSummary } from '../game/rewards';
 import { safeJSONStorage } from './safeStorage';
 
 export interface PlayerStats {
@@ -24,7 +25,16 @@ export interface PassProgress {
   claimed: Record<PassTrack, number[]>;
 }
 
+/** 클래식 도전 오늘 기록 (날짜가 바뀌면 초기화) */
+export interface ChallengeDay {
+  date: string;
+  played: number;
+  wins: number;
+  rewards: ItemId[];
+}
+
 export interface MatchReport extends RewardSummary {
+  kind: MatchSummary['kind'];
   trophiesBefore: number;
   trophiesAfter: number;
   tierBefore: TierDef;
@@ -37,13 +47,18 @@ export interface ProfileData {
   nickname: string;
   appearance: Appearance;
   gold: number;
+  /** 클래식 랭크전(솔로/듀오) 트로피 */
   trophies: number;
   bestTrophies: number;
+  /** 자유 랭크전(1~3인 파티) 트로피 */
+  flexTrophies: number;
+  bestFlexTrophies: number;
   seasonId: number;
   stats: PlayerStats;
   inventory: Record<ItemId, number>;
-  /** 로비 토글: 다음 랭크전에 기폭제 자동 사용 */
-  useCatalyst: boolean;
+  challenge: ChallengeDay;
+  /** 받은 트로피 로드 보상 (트로피 기준값) */
+  roadClaimed: number[];
   ownedCostumes: CostumeId[];
   ownedEffects: EffectId[];
   pass: PassProgress;
@@ -54,13 +69,15 @@ export interface ProfileActions {
   updateAppearance(patch: Partial<Appearance>): void;
   resetAppearance(): void;
   randomizeAppearance(): void;
-  setUseCatalyst(on: boolean): void;
   buyItem(id: ItemId): boolean;
   buyCostume(id: CostumeId): boolean;
   consumeItem(id: ItemId): boolean;
-  /** 경기 결과 반영 (골드·트로피·패스 XP·전적) */
+  /** 경기 결과 반영 (골드·트로피·패스 XP·전적·도전 보상) */
   applyMatch(summary: Omit<MatchSummary, 'winStreakBefore'>): MatchReport;
   claimPassReward(track: PassTrack, level: number): PassReward | null;
+  claimRoadReward(trophies: number): PassReward | null;
+  /** 오늘 클래식 도전 기록 (날짜 바뀌면 0부터) */
+  challengeToday(): ChallengeDay;
   /** 데모: 실제 결제 연동 전, 프리미엄 트랙 해금 */
   unlockPremium(): void;
   resetProfile(): void;
@@ -74,11 +91,14 @@ export const INITIAL_PROFILE: ProfileData = {
   gold: 300,
   trophies: 0,
   bestTrophies: 0,
+  flexTrophies: 0,
+  bestFlexTrophies: 0,
   seasonId: SEASON.id,
   stats: { wins: 0, losses: 0, draws: 0, winStreak: 0, bestStreak: 0, specialFinishes: 0 },
   // 첫 판부터 아이템을 체험할 수 있도록 웰컴 키트 지급
   inventory: { shield: 1, jam: 1, catalyst: 1 },
-  useCatalyst: false,
+  challenge: { date: '', played: 0, wins: 0, rewards: [] },
+  roadClaimed: [],
   ownedCostumes: ['scrubs'],
   ownedEffects: ['basic'],
   pass: { xp: 0, premium: false, claimed: { free: [], premium: [] } },
@@ -124,8 +144,6 @@ export const useProfileStore = create<ProfileState>()(
       randomizeAppearance: () =>
         set((s) => ({ appearance: randomAppearance(Math.random, s.ownedCostumes, s.ownedEffects) })),
 
-      setUseCatalyst: (on) => set({ useCatalyst: on }),
-
       buyItem: (id) => {
         const s = get();
         const price = ITEMS[id].price;
@@ -151,10 +169,13 @@ export const useProfileStore = create<ProfileState>()(
 
       applyMatch: (summary) => {
         const s = get();
+        const flex = summary.kind === 'flex';
+        const ranked = summary.kind === 'ranked' || flex;
         const rewards = computeRewards({ ...summary, winStreakBefore: s.stats.winStreak });
-        const trophiesAfter = applyTrophies(s.trophies, rewards.trophies);
+        const before = flex ? s.flexTrophies : s.trophies;
+        const after = ranked ? applyTrophies(before, rewards.trophies) : before;
         const stats = { ...s.stats };
-        if (summary.mode === 'ai') {
+        if (summary.kind !== 'local') {
           if (summary.outcome === 'win') {
             stats.wins++;
             stats.winStreak++;
@@ -167,23 +188,48 @@ export const useProfileStore = create<ProfileState>()(
             stats.draws++;
           }
         }
-        const xpAfter = s.pass.xp + rewards.xp;
-        set({
+        const patch: Partial<ProfileData> = {
           gold: s.gold + rewards.gold,
-          trophies: trophiesAfter,
-          bestTrophies: Math.max(s.bestTrophies, trophiesAfter),
           stats,
-          pass: { ...s.pass, xp: xpAfter },
-        });
+          pass: { ...s.pass, xp: s.pass.xp + rewards.xp },
+        };
+        if (flex) Object.assign(patch, { flexTrophies: after, bestFlexTrophies: Math.max(s.bestFlexTrophies, after) });
+        else if (ranked) Object.assign(patch, { trophies: after, bestTrophies: Math.max(s.bestTrophies, after) });
+        if (summary.kind === 'challenge') {
+          const day = get().challengeToday();
+          patch.challenge = {
+            ...day,
+            played: day.played + 1,
+            wins: day.wins + (summary.outcome === 'win' ? 1 : 0),
+            rewards: rewards.item ? [...day.rewards, rewards.item] : day.rewards,
+          };
+          if (rewards.item) patch.inventory = { ...s.inventory, [rewards.item]: s.inventory[rewards.item] + 1 };
+        }
+        set(patch);
         return {
           ...rewards,
-          trophiesBefore: s.trophies,
-          trophiesAfter,
-          tierBefore: tierForTrophies(s.trophies),
-          tierAfter: tierForTrophies(trophiesAfter),
+          kind: summary.kind,
+          trophiesBefore: before,
+          trophiesAfter: after,
+          tierBefore: tierForTrophies(before),
+          tierAfter: tierForTrophies(after),
           passLevelBefore: passLevelFor(s.pass.xp),
-          passLevelAfter: passLevelFor(xpAfter),
+          passLevelAfter: passLevelFor(s.pass.xp + rewards.xp),
         };
+      },
+
+      challengeToday: () => {
+        const c = get().challenge;
+        const today = todayKey();
+        return c.date === today ? c : { date: today, played: 0, wins: 0, rewards: [] };
+      },
+
+      claimRoadReward: (trophies) => {
+        const s = get();
+        const step = TROPHY_ROAD.find((r) => r.trophies === trophies);
+        if (!step || s.bestTrophies < trophies || s.roadClaimed.includes(trophies)) return null;
+        set({ ...grant(s, step.reward), roadClaimed: [...s.roadClaimed, trophies] });
+        return step.reward;
       },
 
       claimPassReward: (track, level) => {
@@ -217,10 +263,13 @@ export const useProfileStore = create<ProfileState>()(
         gold: s.gold,
         trophies: s.trophies,
         bestTrophies: s.bestTrophies,
+        flexTrophies: s.flexTrophies,
+        bestFlexTrophies: s.bestFlexTrophies,
         seasonId: s.seasonId,
         stats: s.stats,
         inventory: s.inventory,
-        useCatalyst: s.useCatalyst,
+        challenge: s.challenge,
+        roadClaimed: s.roadClaimed,
         ownedCostumes: s.ownedCostumes,
         ownedEffects: s.ownedEffects,
         pass: s.pass,
@@ -234,6 +283,8 @@ export const useProfileStore = create<ProfileState>()(
           appearance: { ...DEFAULT_APPEARANCE, ...p.appearance },
           stats: { ...INITIAL_PROFILE.stats, ...p.stats },
           inventory: { ...INITIAL_PROFILE.inventory, ...p.inventory },
+          challenge: { ...INITIAL_PROFILE.challenge, ...p.challenge },
+          roadClaimed: p.roadClaimed ?? [],
           pass: {
             ...INITIAL_PROFILE.pass,
             ...p.pass,

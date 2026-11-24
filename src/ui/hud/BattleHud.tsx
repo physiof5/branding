@@ -6,17 +6,20 @@ import { describeTurn, type HeadlineTone } from '../../game/describe';
 import { attackPreview } from '../../game/rules';
 import type { ChosenAction, PlayerIndex } from '../../game/types';
 import { PLAYER_COLORS } from '../../scene/layout';
-import { battleEvents, useBattleStore } from '../../store/battleStore';
+import { stacksHiddenFor } from '../../scene/effects/FighterFx';
+import { battleEvents, teamRemaining, useBattleStore } from '../../store/battleStore';
 import { FaceIcon } from '../components/FaceIcon';
 import { WorldLabels } from './WorldLabels';
 
 const hpColor = (hp: number) => (hp > 60 ? '#3ccf8e' : hp > 30 ? '#ffc542' : '#ff4d5e');
 
 function StackPips({ index }: { index: PlayerIndex }) {
-  const stacks = useBattleStore((s) => s.fighters[index].stacks);
+  const hidden = useBattleStore((s) => stacksHiddenFor(s, index));
+  // 먹물에 맞은 쪽 눈에는 상대 게이지가 먹물 맞을 때 값에서 멈춰 보인다
+  const stacks = useBattleStore((s) => (stacksHiddenFor(s, index) ? s.fighters[index === 0 ? 1 : 0].inkSeen : s.fighters[index].stacks));
   const right = index === 1;
   return (
-    <div className={`mt-1 flex items-center gap-1 ${right ? 'flex-row-reverse' : ''}`}>
+    <div className={`relative mt-1 flex items-center gap-1 ${right ? 'flex-row-reverse' : ''}`}>
       <div className={`flex gap-[2px] sm:gap-[3px] ${right ? 'flex-row-reverse' : ''}`}>
         {Array.from({ length: SPECIAL_STACKS }, (_, k) => {
           const on = k < stacks;
@@ -26,13 +29,15 @@ function StackPips({ index }: { index: PlayerIndex }) {
             <span
               key={k}
               className={`block h-2 w-2 rotate-45 rounded-[2px] border border-[#1b1633] sm:h-3.5 sm:w-3.5 sm:rounded-[3px] ${k === 2 || k === 9 ? 'outline outline-1 outline-white/60' : ''}`}
-              style={{ background: bg, boxShadow: on && special ? '0 0 8px #ffe66b' : undefined }}
+              style={{ background: bg, boxShadow: on && special && !hidden ? '0 0 8px #ffe66b' : undefined }}
             />
           );
         })}
       </div>
       <span className="font-display ml-1 text-xs whitespace-nowrap text-white/85 sm:text-sm">
-        {stacks >= SPECIAL_STACKS ? (
+        {hidden ? (
+          <span className="text-[#c9b8ff]">??</span>
+        ) : stacks >= SPECIAL_STACKS ? (
           <span className="text-[#fff1a8]">필살!</span>
         ) : stacks >= POWER_STACKS ? (
           <span className="text-[#ffb27a]">
@@ -46,6 +51,30 @@ function StackPips({ index }: { index: PlayerIndex }) {
           </>
         )}
       </span>
+      {hidden && (
+        <div className="pointer-events-none absolute -inset-1 flex items-center justify-center rounded-md bg-[#14101f]/75" title="먹물 때문에 상대 기가 안 보여요">
+          <span className="font-display text-xs text-[#c9b8ff] sm:text-sm">🦑 먹물! 기 안 보임</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 팀전: 남은 주자 표시 */
+function TeamDots({ index }: { index: PlayerIndex }) {
+  const size = useBattleStore((s) => s.config?.teams[index].length ?? 1);
+  const out = useBattleStore((s) => s.eliminated[index]);
+  if (size <= 1) return null;
+  return (
+    <div className={`mt-1 flex gap-1 ${index === 1 ? 'justify-end' : ''}`} aria-label={`남은 주자 ${size - out}명`}>
+      {Array.from({ length: size }, (_, k) => (
+        <span
+          key={k}
+          className={`grid h-4 w-4 place-items-center rounded-full border border-[#1b1633] text-[9px] ${k < out ? 'bg-black/50 text-white/60' : 'bg-white text-[#1b1633]'}`}
+        >
+          {k < out ? '✕' : k + 1}
+        </span>
+      ))}
     </div>
   );
 }
@@ -55,7 +84,7 @@ function FighterPanel({ index }: { index: PlayerIndex }) {
   const appearance = useBattleStore((s) => s.fighters[index].appearance);
   const hp = useBattleStore((s) => s.fighters[index].hp);
   const shield = useBattleStore((s) => s.fighters[index].shield);
-  const jammed = useBattleStore((s) => s.fighters[index].jammed && s.phase === 'select');
+  const inked = useBattleStore((s) => s.fighters[index].inkTurns > 0);
   const right = index === 1;
   const side = right ? { right: 0 } : { left: 0 };
   return (
@@ -63,7 +92,7 @@ function FighterPanel({ index }: { index: PlayerIndex }) {
       <div className="relative shrink-0 rounded-full border-[3px] bg-white/15 p-0.5" style={{ borderColor: PLAYER_COLORS[index] }}>
         <FaceIcon appearance={appearance} size={46} flip={right} />
         {shield && <span className="absolute -right-1 -bottom-1 text-lg drop-shadow">🛡️</span>}
-        {jammed && <span className="absolute -top-1 -left-1 text-lg">🦑</span>}
+        {inked && <span className="absolute -top-1 -left-1 text-lg" title="먹물에 맞음">🦑</span>}
       </div>
       <div className="min-w-0 flex-1">
         <div className={`font-display flex items-center justify-between gap-2 text-sm sm:text-base ${right ? 'flex-row-reverse' : ''}`}>
@@ -75,6 +104,7 @@ function FighterPanel({ index }: { index: PlayerIndex }) {
           <div className="absolute inset-y-0 transition-[width,background] duration-150" style={{ ...side, width: `${hp}%`, background: hpColor(hp) }} />
         </div>
         <StackPips index={index} />
+        <TeamDots index={index} />
       </div>
     </div>
   );
@@ -177,7 +207,12 @@ function Announcer() {
       }
       if (e.type === 'item') {
         const who = s.fighters[e.player].name;
-        show({ text: `${who} ${ITEMS[e.item].emoji} ${ITEMS[e.item].name}!`, tone: 'neutral' }, 1000);
+        const sub = e.item === 'jam' ? `${s.fighters[e.player === 0 ? 1 : 0].name}: 상대 기가 안 보여요!` : undefined;
+        show({ text: `${who} ${ITEMS[e.item].emoji} ${ITEMS[e.item].name}!`, sub, tone: 'neutral' }, 1200);
+      }
+      if (e.type === 'swap') {
+        const names = ([0, 1] as const).filter((i) => e.sides[i]).map((i) => `${s.fighters[i].member + 1}번 주자 ${s.fighters[i].name}`);
+        show({ text: '다음 주자 등장!', sub: names.join(' · '), tone: 'epic', big: true }, 1700);
       }
       if (e.type === 'start' || e.type === 'exit') setA(null);
     });
@@ -298,8 +333,8 @@ function ScreenFx() {
   const mode = useBattleStore((s) => s.config?.mode);
   const inkSide = useBattleStore((s) => {
     if (s.phase !== 'select') return null;
-    const j0 = s.fighters[0].jammed && s.fighters[0].controller === 'human';
-    const j1 = s.fighters[1].jammed && s.fighters[1].controller === 'human';
+    const j0 = s.fighters[0].inkTurns > 0 && s.fighters[0].controller === 'human';
+    const j1 = s.fighters[1].inkTurns > 0 && s.fighters[1].controller === 'human';
     return j0 && j1 ? 'both' : j0 ? 'p1' : j1 ? 'p2' : null;
   });
   useEffect(() => {
@@ -327,11 +362,11 @@ function ScreenFx() {
       {inkSide && (
         <div className={`pointer-events-none absolute inset-0 overflow-hidden ${inkStyle}`}>
           {[
-            [18, 30, 46],
-            [62, 22, 38],
-            [40, 58, 54],
-            [78, 66, 34],
-            [12, 74, 30],
+            [8, 26, 34],
+            [92, 30, 30],
+            [20, 62, 26],
+            [84, 68, 28],
+            [50, 14, 22],
           ].map(([x, y, s], k) => (
             <svg
               key={k}
@@ -342,27 +377,43 @@ function ScreenFx() {
               <path
                 d="M50 8 C62 10 66 24 78 22 C92 20 96 38 86 48 C78 56 94 66 84 78 C74 90 60 80 52 92 C42 100 34 86 24 86 C10 86 6 70 14 60 C20 52 4 44 12 32 C20 20 34 26 38 16 C42 8 46 8 50 8 Z"
                 fill="#14101f"
-                opacity="0.93"
+                opacity="0.85"
               />
             </svg>
           ))}
-          <div className="font-display text-outline absolute inset-x-0 top-1/2 text-center text-3xl text-white">🦑 먹물! 빨리 골라!</div>
+          <div className="font-display text-outline absolute inset-x-0 top-[38%] text-center text-2xl text-[#d9ccff] sm:text-3xl">🦑 먹물! 상대 기가 안 보여요</div>
         </div>
       )}
     </>
   );
 }
 
-function LastLog() {
-  const line = useBattleStore((s) => (s.log.length ? s.log[s.log.length - 1].log : ''));
-  if (!line) return null;
-  return <div className="mx-auto mt-1 w-fit max-w-[min(92vw,560px)] truncate rounded-full bg-[#1b1633]/70 px-3 py-0.5 text-center text-[11px] text-white/80 sm:text-xs">{line}</div>;
+/** 팀0 현재 주자가 누구인가 (나 / 같은 기기 친구 / AI 파트너) */
+function useActiveSeat(): 'me' | 'friend' | 'ai' {
+  return useBattleStore((s) => {
+    const f = s.fighters[0];
+    if (f.controller === 'ai') return 'ai';
+    return f.member === 0 ? 'me' : 'friend';
+  });
+}
+
+function SeatBanner() {
+  const seat = useActiveSeat();
+  const name = useBattleStore((s) => s.fighters[0].name);
+  if (seat === 'me') return null;
+  return (
+    <div className="font-display mx-auto mb-1 w-fit rounded-full bg-[#1b1633]/85 px-4 py-1 text-sm text-[#ffe66b]">
+      {seat === 'ai' ? `🤖 ${name} 출전 중 — 응원해 주세요!` : `👥 ${name} 차례! 기기를 넘겨주세요`}
+    </div>
+  );
 }
 
 export function BattleHud({ onPause }: { onPause: () => void }) {
   const mode = useBattleStore((s) => s.config?.mode);
   const phase = useBattleStore((s) => s.phase);
-  const showPads = phase !== 'finished' && phase !== 'ko';
+  const seat = useActiveSeat();
+  const remaining = useBattleStore((s) => teamRemaining(s, 0));
+  const showPads = phase !== 'finished' && phase !== 'ko' && phase !== 'swap';
   return (
     <div className="pointer-events-none absolute inset-0 flex flex-col">
       <WorldLabels />
@@ -373,7 +424,6 @@ export function BattleHud({ onPause }: { onPause: () => void }) {
           <TurnTimer />
           <FighterPanel index={1} />
         </div>
-        <LastLog />
       </div>
       <button
         onClick={onPause}
@@ -388,8 +438,10 @@ export function BattleHud({ onPause }: { onPause: () => void }) {
         <div className="pointer-events-auto px-4 pb-[max(10px,env(safe-area-inset-bottom))]">
           {mode === 'ai' ? (
             <div className="mx-auto flex max-w-xl flex-col gap-2">
-              <ItemBar />
-              <ActionPad player={0} hidden={false} keys={['A', 'S', 'D']} />
+              <SeatBanner />
+              {seat === 'me' && <ItemBar />}
+              {seat !== 'ai' && <ActionPad player={0} hidden={false} keys={['A', 'S', 'D']} />}
+              {seat === 'ai' && remaining > 0 && <div className="h-2" />}
             </div>
           ) : (
             <div className="flex items-end justify-between gap-3">

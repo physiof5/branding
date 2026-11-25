@@ -2515,6 +2515,7 @@ function nextStep(s){
 function startChase(p){
   if(p.state==='chase'||p.state==='leaving')return;
   const s=p.station;
+  p.homeSt=s||null; // remembered so a kimchi hit can send the patient back to this bed
   if(s){if(s.occ===p){s.occ=null;s.phase='idle';s.autoList=[];s.handsList=[];s.cur=null;s.t=0;}p.wp=[tc(s.access.x,s.access.y)];p.station=null;}
   else if(p.chair!=null){const ch=chairs[p.chair];if(ch.occ===p)ch.occ=null;p.wp=[tc(ch.access.x,ch.access.y)];p.chair=null;}
   else p.wp=[];
@@ -2728,7 +2729,9 @@ function update(dt){
 }
 const lerp=(a,b,f)=>a+(b-a)*f;
 function kimchiThrow(p){G.kimT=2.5;p.kimFly={t:0,x0:G.player.x,y0:G.player.y};G.player.swingT=.42;sweepSfx(520,240,.22,'sine',.05);buzz(20);}function kimchiTick(dt){for(const p of G.patients){if(!p.kimFly)continue;p.kimFly.t+=dt;if(p.kimFly.t>=.35){p.kimFly=null;p.kimchi=true;p.angry=0;p.mood=null;p.speed=p.type.speed;p.chaseT=0;p.patience=p.patMax=75*patMul();
-const ci=chairs.findIndex(c=>!c.occ);if(ci>=0){const ch=chairs[ci];ch.occ=p;p.chair=ci;p.state='toChair';p.wp=[...pathFrom(tileOfFree(p.x,p.y),ch.access.x,ch.access.y).slice(1),{x:ch.x,y:ch.y}];}else sendToExit(p);G.combo=(G.combo||0)+1;if(G.stats)G.stats.kimchi=(G.stats.kimchi||0)+1;sfx('coin');buzz(40);for(let i=0;i<8;i++)particle(p.x+rand(-12,12),p.y,1.5,pick(['🥬','🌶️','💥']),rand(-80,80),rand(1,2.2),.9);popup(p.x,p.y,2.2,'🥬 김치 싸대기!','#ff5252');toast('🥬 김치 싸대기 명중! 진상 진정!','good');}}}function particle(x,y,h,text,vx,vh,life){G.particles.push({id:G.pid++,x,y,h,text,vx,vh,life,t:0});}
+const hs=p.homeSt;p.homeSt=null;
+if(hs&&!hs.occ&&remaining(p).some(t=>hs.sup.includes(t))){p.station=hs;hs.occ=p;hs.phase='arriving';p.state='toSeat';p.wp=[...pathFrom(tileOfFree(p.x,p.y),hs.access.x,hs.access.y).slice(1),{x:hs.seat.x,y:hs.seat.y}];} // back to the bed it left
+else{const ci=chairs.findIndex(c=>!c.occ);if(ci>=0){const ch=chairs[ci];ch.occ=p;p.chair=ci;p.state='toChair';p.wp=[...pathFrom(tileOfFree(p.x,p.y),ch.access.x,ch.access.y).slice(1),{x:ch.x,y:ch.y}];}else sendToExit(p);}G.combo=(G.combo||0)+1;if(G.stats)G.stats.kimchi=(G.stats.kimchi||0)+1;sfx('coin');buzz(40);for(let i=0;i<8;i++)particle(p.x+rand(-12,12),p.y,1.5,pick(['🥬','🌶️','💥']),rand(-80,80),rand(1,2.2),.9);popup(p.x,p.y,2.2,'🥬 김치 싸대기!','#ff5252');toast('🥬 김치 싸대기 명중! 진상 진정!','good');}}}function particle(x,y,h,text,vx,vh,life){G.particles.push({id:G.pid++,x,y,h,text,vx,vh,life,t:0});}
 function popup(x,y,h,text,col){G.particles.push({id:G.pid++,x,y,h,text,vx:0,vh:.9,life:1.4,t:0,pop:true,col});}
 
 /* =========================================================

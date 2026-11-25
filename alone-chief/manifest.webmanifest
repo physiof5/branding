@@ -1,0 +1,17 @@
+{
+  "name": "나홀로 실장!",
+  "short_name": "나홀로 실장",
+  "description": "물리치료실 실장님은 단 한 명! 3분 동안 몰려드는 환자를 치료하라",
+  "lang": "ko",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1f86c6",
+  "theme_color": "#2b1d16",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
